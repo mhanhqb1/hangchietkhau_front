@@ -56,13 +56,22 @@ class AppController extends Controller {
 
         $this->loadComponent('RequestHandler');
         $this->loadComponent('Flash');
-
+        $this->loadComponent('Auth', array(
+            'loginRedirect' => false,
+            'logoutRedirect' => false,
+            'loginAction' => array(
+                'controller' => 'login',
+                'action' => 'index',
+                'plugin' => null
+            ),
+            'sessionKey' => 'Auth.HangChietKhau'
+        ));
         /*
          * Enable the following components for recommended CakePHP security settings.
          * see https://book.cakephp.org/3.0/en/controllers/components/security.html
          */
-//        $this->loadComponent('Security');
-//        $this->loadComponent('Csrf');
+        $this->loadComponent('Security');
+        $this->loadComponent('Csrf');
     }
 
     /**
@@ -144,10 +153,10 @@ class AppController extends Controller {
     public function setLayout() {
         if ($this->controller == 'ajax') {
             $this->viewBuilder()->layout('ajax');
-        } elseif ($this->controller == 'cart' && in_array($this->action, array('checkout', 'complete'))) {
-            $this->viewBuilder()->layout('checkout');
+        } elseif ($this->controller == 'home') {
+            $this->viewBuilder()->layout('home');
         } else {
-            $this->viewBuilder()->layout('lyona');
+            $this->viewBuilder()->layout('layout');
         }
     }
 

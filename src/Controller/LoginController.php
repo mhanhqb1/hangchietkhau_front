@@ -1,16 +1,14 @@
 <?php
 
-/* 
- * Home page
- */
-
 namespace App\Controller;
 
 use Cake\Event\Event;
-use App\Lib\Api;
-use Cake\Core\Configure;
 
-class HomeController extends AppController {
+/**
+ * Login page
+ */
+class LoginController extends AppController {
+    
     /**
      * Before filter event
      * @param Event $event
@@ -19,12 +17,19 @@ class HomeController extends AppController {
         parent::beforeFilter($event);
         $this->Auth->allow();
     }
+    
     /**
-     * People top page
+     * Login page
      */
     public function index() {
-//        $data = array();
-//        $data = Api::call(Configure::read('API.url_settings_gethomedata'), array());
-//        $this->set('data', $data);
+        include ('Bus/Login/index.php');
     }
+    
+    /**
+     * Logout action
+     */
+    public function logout() {
+        include ('Bus/Login/logout.php');
+    }
+    
 }
