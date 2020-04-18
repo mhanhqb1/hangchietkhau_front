@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,8 +15,8 @@ declare(strict_types=1);
 namespace Cake\Controller\Component;
 
 use Cake\Controller\Component;
-use Cake\Http\Exception\InternalErrorException;
-use Cake\Http\Session;
+use Cake\Controller\ComponentRegistry;
+use Cake\Network\Exception\InternalErrorException;
 use Cake\Utility\Inflector;
 use Exception;
 
@@ -32,6 +30,14 @@ use Exception;
  */
 class FlashComponent extends Component
 {
+
+    /**
+     * The Session object instance
+     *
+     * @var \Cake\Network\Session
+     */
+    protected $_session;
+
     /**
      * Default configuration
      *
@@ -42,8 +48,20 @@ class FlashComponent extends Component
         'element' => 'default',
         'params' => [],
         'clear' => false,
-        'duplicate' => true,
+        'duplicate' => true
     ];
+
+    /**
+     * Constructor
+     *
+     * @param \Cake\Controller\ComponentRegistry $registry A ComponentRegistry for this component
+     * @param array $config Array of config.
+     */
+    public function __construct(ComponentRegistry $registry, array $config = [])
+    {
+        parent::__construct($registry, $config);
+        $this->_session = $registry->getController()->request->getSession();
+    }
 
     /**
      * Used to set a session variable that can be used to output messages in the view.
@@ -66,9 +84,9 @@ class FlashComponent extends Component
      * @param array $options An array of options
      * @return void
      */
-    public function set($message, array $options = []): void
+    public function set($message, array $options = [])
     {
-        $options += (array)$this->getConfig();
+        $options += $this->getConfig();
 
         if ($message instanceof Exception) {
             if (!isset($options['params']['code'])) {
@@ -81,17 +99,17 @@ class FlashComponent extends Component
             $options['params']['escape'] = $options['escape'];
         }
 
-        [$plugin, $element] = pluginSplit($options['element']);
+        list($plugin, $element) = pluginSplit($options['element']);
 
         if ($plugin) {
-            $options['element'] = $plugin . '.flash/' . $element;
+            $options['element'] = $plugin . '.Flash/' . $element;
         } else {
-            $options['element'] = 'flash/' . $element;
+            $options['element'] = 'Flash/' . $element;
         }
 
         $messages = [];
         if (!$options['clear']) {
-            $messages = (array)$this->getSession()->read('Flash.' . $options['key']);
+            $messages = (array)$this->_session->read('Flash.' . $options['key']);
         }
 
         if (!$options['duplicate']) {
@@ -106,17 +124,17 @@ class FlashComponent extends Component
             'message' => $message,
             'key' => $options['key'],
             'element' => $options['element'],
-            'params' => $options['params'],
+            'params' => $options['params']
         ];
 
-        $this->getSession()->write('Flash.' . $options['key'], $messages);
+        $this->_session->write('Flash.' . $options['key'], $messages);
     }
 
     /**
      * Magic method for verbose flash methods based on element names.
      *
      * For example: $this->Flash->success('My message') would use the
-     * `success.php` element under `templates/Element/Flash` for rendering the
+     * success.ctp element under `src/Template/Element/Flash` for rendering the
      * flash message.
      *
      * If you make consecutive calls to this method, the messages will stack (if they are
@@ -126,15 +144,15 @@ class FlashComponent extends Component
      * specific element from a plugin, you should set the `plugin` option in $args.
      *
      * For example: `$this->Flash->warning('My message', ['plugin' => 'PluginName'])` would
-     * use the `warning.php` element under `plugins/PluginName/templates/Element/Flash` for
+     * use the warning.ctp element under `plugins/PluginName/src/Template/Element/Flash` for
      * rendering the flash message.
      *
      * @param string $name Element name to use.
      * @param array $args Parameters to pass when calling `FlashComponent::set()`.
      * @return void
-     * @throws \Cake\Http\Exception\InternalErrorException If missing the flash message.
+     * @throws \Cake\Network\Exception\InternalErrorException If missing the flash message.
      */
-    public function __call(string $name, array $args): void
+    public function __call($name, $args)
     {
         $element = Inflector::underscore($name);
 
@@ -153,15 +171,5 @@ class FlashComponent extends Component
         }
 
         $this->set($args[0], $options);
-    }
-
-    /**
-     * Returns current session object from a controller request.
-     *
-     * @return \Cake\Http\Session
-     */
-    protected function getSession(): Session
-    {
-        return $this->getController()->getRequest()->getSession();
     }
 }

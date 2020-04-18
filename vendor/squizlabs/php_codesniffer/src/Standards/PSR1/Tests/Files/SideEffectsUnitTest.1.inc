@@ -10,12 +10,8 @@ use SomethingElse;
 declare(ticks=1);
 
 declare(ticks=1) {
-    echo $i;
+    // Code.
 }
-
-declare(ticks=1) :
-    echo $i;
-enddeclare;
 
 define("MAXSIZE", 100);
 if (defined('MINSIZE') === false) {
@@ -66,7 +62,5 @@ if (!interface_exists('MyInterface')) {
 namespace {
     class A {}
 }
-
-defined('APP_BASE_URL') or define('APP_BASE_URL', '/');
 
 ?>

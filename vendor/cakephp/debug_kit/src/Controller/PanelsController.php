@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -14,43 +12,53 @@ declare(strict_types=1);
  */
 namespace DebugKit\Controller;
 
-use Cake\Event\EventInterface;
-use Cake\Http\Exception\NotFoundException;
+use Cake\Controller\Controller;
+use Cake\Core\Configure;
+use Cake\Event\Event;
+use Cake\Network\Exception\NotFoundException;
 
 /**
  * Provides access to panel data.
  *
  * @property \DebugKit\Model\Table\PanelsTable $Panels
  */
-class PanelsController extends DebugKitController
+class PanelsController extends Controller
 {
+
     /**
-     * Initialize controller
+     * components
      *
-     * @return void
+     * @var array
      */
-    public function initialize(): void
+    public $components = ['RequestHandler', 'Cookie'];
+
+    /**
+     * Before filter handler.
+     *
+     * @param \Cake\Event\Event $event The event.
+     * @return void
+     * @throws \Cake\Network\Exception\NotFoundException
+     */
+    public function beforeFilter(Event $event)
     {
-        $this->loadComponent('RequestHandler');
+        // TODO add config override.
+        if (!Configure::read('debug')) {
+            throw new NotFoundException();
+        }
     }
 
     /**
      * Before render handler.
      *
-     * @param \Cake\Event\EventInterface $event The event.
+     * @param \Cake\Event\Event $event The event.
      * @return void
      */
-    public function beforeRender(EventInterface $event)
+    public function beforeRender(Event $event)
     {
-        $this->viewBuilder()
-            ->setHelpers([
-                'Form', 'Html', 'Number', 'Url', 'DebugKit.Toolbar',
-                'DebugKit.Credentials', 'DebugKit.SimpleGraph',
-            ])
-            ->setLayout('DebugKit.toolbar');
+        $this->viewBuilder()->layout('DebugKit.toolbar');
 
         if (!$this->request->is('json')) {
-            $this->viewBuilder()->setClassName('DebugKit.Ajax');
+            $this->viewBuilder()->className('DebugKit.Ajax');
         }
     }
 
@@ -59,7 +67,7 @@ class PanelsController extends DebugKitController
      *
      * @param string $requestId Request id
      * @return void
-     * @throws \Cake\Http\Exception\NotFoundException
+     * @throws \Cake\Network\Exception\NotFoundException
      */
     public function index($requestId = null)
     {
@@ -69,9 +77,9 @@ class PanelsController extends DebugKitController
             throw new NotFoundException();
         }
         $this->set([
-            'panels' => $panels,
+            '_serialize' => ['panels'],
+            'panels' => $panels
         ]);
-        $this->viewBuilder()->setOption('serialize', ['panels']);
     }
 
     /**
@@ -82,7 +90,8 @@ class PanelsController extends DebugKitController
      */
     public function view($id = null)
     {
-        $this->set('sort', $this->request->getCookie('debugKit_sort'));
+        $this->Cookie->configKey('debugKit_sort', 'encryption', false);
+        $this->set('sort', $this->Cookie->read('debugKit_sort'));
         $panel = $this->Panels->get($id);
 
         $this->set('panel', $panel);

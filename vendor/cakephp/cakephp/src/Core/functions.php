@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -14,12 +12,11 @@ declare(strict_types=1);
  * @since         3.0.0
  * @license       https://opensource.org/licenses/mit-license.php MIT License
  */
-
 use Cake\Core\Configure;
 
 if (!defined('DS')) {
     /**
-     * Defines DS as short form of DIRECTORY_SEPARATOR.
+     * Define DS as short form of DIRECTORY_SEPARATOR.
      */
     define('DS', DIRECTORY_SEPARATOR);
 }
@@ -28,17 +25,16 @@ if (!function_exists('h')) {
     /**
      * Convenience method for htmlspecialchars.
      *
-     * @param mixed $text Text to wrap through htmlspecialchars. Also works with arrays, and objects.
+     * @param string|array|object $text Text to wrap through htmlspecialchars. Also works with arrays, and objects.
      *    Arrays will be mapped and have all their elements escaped. Objects will be string cast if they
      *    implement a `__toString` method. Otherwise the class name will be used.
-     *    Other scalar types will be returned unchanged.
      * @param bool $double Encode existing html entities.
-     * @param string|null $charset Character set to use when escaping.
-     *   Defaults to config value in `mb_internal_encoding()` or 'UTF-8'.
-     * @return mixed Wrapped text.
-     * @link https://book.cakephp.org/4/en/core-libraries/global-constants-and-functions.html#h
+     * @param string|null $charset Character set to use when escaping. Defaults to config value in `mb_internal_encoding()`
+     * or 'UTF-8'.
+     * @return string Wrapped text.
+     * @link https://book.cakephp.org/3.0/en/core-libraries/global-constants-and-functions.html#h
      */
-    function h($text, bool $double = true, ?string $charset = null)
+    function h($text, $double = true, $charset = null)
     {
         if (is_string($text)) {
             //optimize for strings
@@ -51,17 +47,23 @@ if (!function_exists('h')) {
             return $texts;
         } elseif (is_object($text)) {
             if (method_exists($text, '__toString')) {
-                $text = $text->__toString();
+                $text = (string)$text;
             } else {
                 $text = '(object)' . get_class($text);
             }
-        } elseif ($text === null || is_scalar($text)) {
+        } elseif (is_bool($text) || is_null($text) || is_int($text)) {
             return $text;
         }
 
         static $defaultCharset = false;
         if ($defaultCharset === false) {
-            $defaultCharset = mb_internal_encoding() ?: 'UTF-8';
+            $defaultCharset = mb_internal_encoding();
+            if ($defaultCharset === null) {
+                $defaultCharset = 'UTF-8';
+            }
+        }
+        if (is_string($double)) {
+            $charset = $double;
         }
 
         return htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE, $charset ?: $defaultCharset, $double);
@@ -83,10 +85,9 @@ if (!function_exists('pluginSplit')) {
      * @param bool $dotAppend Set to true if you want the plugin to have a '.' appended to it.
      * @param string|null $plugin Optional default plugin to use if no plugin is found. Defaults to null.
      * @return array Array with 2 indexes. 0 => plugin name, 1 => class name.
-     * @link https://book.cakephp.org/4/en/core-libraries/global-constants-and-functions.html#pluginSplit
-     * @psalm-return array{string|null, string}
+     * @link https://book.cakephp.org/3.0/en/core-libraries/global-constants-and-functions.html#pluginSplit
      */
-    function pluginSplit(string $name, bool $dotAppend = false, ?string $plugin = null): array
+    function pluginSplit($name, $dotAppend = false, $plugin = null)
     {
         if (strpos($name, '.') !== false) {
             $parts = explode('.', $name, 2);
@@ -94,7 +95,6 @@ if (!function_exists('pluginSplit')) {
                 $parts[0] .= '.';
             }
 
-            /** @psalm-var array{string, string}*/
             return $parts;
         }
 
@@ -110,9 +110,9 @@ if (!function_exists('namespaceSplit')) {
      * Commonly used like `list($namespace, $className) = namespaceSplit($class);`.
      *
      * @param string $class The full class name, ie `Cake\Core\App`.
-     * @return string[] Array with 2 indexes. 0 => namespace, 1 => classname.
+     * @return array Array with 2 indexes. 0 => namespace, 1 => classname.
      */
-    function namespaceSplit(string $class): array
+    function namespaceSplit($class)
     {
         $pos = strrpos($class, '\\');
         if ($pos === false) {
@@ -135,7 +135,7 @@ if (!function_exists('pr')) {
      *
      * @param mixed $var Variable to print out.
      * @return mixed the same $var that was passed to this function
-     * @link https://book.cakephp.org/4/en/core-libraries/global-constants-and-functions.html#pr
+     * @link https://book.cakephp.org/3.0/en/core-libraries/global-constants-and-functions.html#pr
      * @see debug()
      */
     function pr($var)
@@ -144,7 +144,7 @@ if (!function_exists('pr')) {
             return $var;
         }
 
-        $template = PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' ? '<pre class="pr">%s</pre>' : "\n%s\n\n";
+        $template = (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') ? '<pre class="pr">%s</pre>' : "\n%s\n\n";
         printf($template, trim(print_r($var, true)));
 
         return $var;
@@ -164,7 +164,7 @@ if (!function_exists('pj')) {
      * @param mixed $var Variable to print out.
      * @return mixed the same $var that was passed to this function
      * @see pr()
-     * @link https://book.cakephp.org/4/en/core-libraries/global-constants-and-functions.html#pj
+     * @link https://book.cakephp.org/3.0/en/core-libraries/global-constants-and-functions.html#pj
      */
     function pj($var)
     {
@@ -172,7 +172,7 @@ if (!function_exists('pj')) {
             return $var;
         }
 
-        $template = PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg' ? '<pre class="pj">%s</pre>' : "\n%s\n\n";
+        $template = (PHP_SAPI !== 'cli' && PHP_SAPI !== 'phpdbg') ? '<pre class="pj">%s</pre>' : "\n%s\n\n";
         printf($template, trim(json_encode($var, JSON_PRETTY_PRINT)));
 
         return $var;
@@ -188,22 +188,24 @@ if (!function_exists('env')) {
      * environment information.
      *
      * @param string $key Environment variable name.
-     * @param string|bool|null $default Specify a default value in case the environment variable is not defined.
-     * @return string|bool|null Environment variable setting.
-     * @link https://book.cakephp.org/4/en/core-libraries/global-constants-and-functions.html#env
+     * @param string|null $default Specify a default value in case the environment variable is not defined.
+     * @return string|null Environment variable setting.
+     * @link https://book.cakephp.org/3.0/en/core-libraries/global-constants-and-functions.html#env
      */
-    function env(string $key, $default = null)
+    function env($key, $default = null)
     {
         if ($key === 'HTTPS') {
             if (isset($_SERVER['HTTPS'])) {
-                return !empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off';
+                return (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off');
             }
 
-            return strpos((string)env('SCRIPT_URI'), 'https://') === 0;
+            return (strpos((string)env('SCRIPT_URI'), 'https://') === 0);
         }
 
-        if ($key === 'SCRIPT_NAME' && env('CGI_MODE') && isset($_ENV['SCRIPT_URL'])) {
-            $key = 'SCRIPT_URL';
+        if ($key === 'SCRIPT_NAME') {
+            if (env('CGI_MODE') && isset($_ENV['SCRIPT_URL'])) {
+                $key = 'SCRIPT_URL';
+            }
         }
 
         $val = null;
@@ -228,8 +230,8 @@ if (!function_exists('env')) {
 
         switch ($key) {
             case 'DOCUMENT_ROOT':
-                $name = (string)env('SCRIPT_NAME');
-                $filename = (string)env('SCRIPT_FILENAME');
+                $name = env('SCRIPT_NAME');
+                $filename = env('SCRIPT_FILENAME');
                 $offset = 0;
                 if (!strpos($name, '.php')) {
                     $offset = 4;
@@ -237,84 +239,12 @@ if (!function_exists('env')) {
 
                 return substr($filename, 0, -(strlen($name) + $offset));
             case 'PHP_SELF':
-                return str_replace((string)env('DOCUMENT_ROOT'), '', (string)env('SCRIPT_FILENAME'));
+                return str_replace(env('DOCUMENT_ROOT'), '', env('SCRIPT_FILENAME'));
             case 'CGI_MODE':
-                return PHP_SAPI === 'cgi';
+                return (PHP_SAPI === 'cgi');
         }
 
         return $default;
     }
 
-}
-
-if (!function_exists('triggerWarning')) {
-    /**
-     * Triggers an E_USER_WARNING.
-     *
-     * @param string $message The warning message.
-     * @return void
-     */
-    function triggerWarning(string $message): void
-    {
-        $stackFrame = 1;
-        $trace = debug_backtrace();
-        if (isset($trace[$stackFrame])) {
-            $frame = $trace[$stackFrame];
-            $frame += ['file' => '[internal]', 'line' => '??'];
-            $message = sprintf(
-                '%s - %s, line: %s',
-                $message,
-                $frame['file'],
-                $frame['line']
-            );
-        }
-        trigger_error($message, E_USER_WARNING);
-    }
-}
-
-if (!function_exists('deprecationWarning')) {
-    /**
-     * Helper method for outputting deprecation warnings
-     *
-     * @param string $message The message to output as a deprecation warning.
-     * @param int $stackFrame The stack frame to include in the error. Defaults to 1
-     *   as that should point to application/plugin code.
-     * @return void
-     */
-    function deprecationWarning(string $message, int $stackFrame = 1): void
-    {
-        if (!(error_reporting() & E_USER_DEPRECATED)) {
-            return;
-        }
-
-        $trace = debug_backtrace();
-        if (isset($trace[$stackFrame])) {
-            $frame = $trace[$stackFrame];
-            $frame += ['file' => '[internal]', 'line' => '??'];
-
-            $message = sprintf(
-                '%s - %s, line: %s' . "\n" .
-                ' You can disable deprecation warnings by setting `Error.errorLevel` to' .
-                ' `E_ALL & ~E_USER_DEPRECATED` in your config/app.php.',
-                $message,
-                $frame['file'],
-                $frame['line']
-            );
-        }
-
-        trigger_error($message, E_USER_DEPRECATED);
-    }
-}
-
-if (!function_exists('getTypeName')) {
-    /**
-     * Returns the objects class or var type of it's not an object
-     *
-     * @param mixed $var Variable to check
-     * @return string Returns the class name or variable type
-     */
-    function getTypeName($var): string
-    {
-        return is_object($var) ? get_class($var) : gettype($var);
-    }
 }

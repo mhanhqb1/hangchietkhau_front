@@ -40,7 +40,7 @@ function myFunction(array $arg2=array(), array $arg1)
 {
 }
 
-class myClass
+class myClass()
 {
     // No args.
     function myFunction()
@@ -93,12 +93,7 @@ function foo($baz, Foo $foo = null, $bar = true) {}
 function foo($baz, $bar = true, Foo $foo = null) {}
 
 // Valid closure
-$closure = function ($arg1, $arg2='hello') {};
+function ($arg1, $arg2='hello') {}
 
 // Invalid closure
-$closure = function(array $arg2=array(), array $arg1) {}
-
-$fn = fn($a = [], $b) => $a[] = $b;
-
-// Intentional syntax error. Must be last thing in the file.
-function
+function(array $arg2=array(), array $arg1) {}

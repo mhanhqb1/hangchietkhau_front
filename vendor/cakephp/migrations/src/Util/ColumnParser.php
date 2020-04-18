@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 namespace Migrations\Util;
 
 use Cake\Collection\Collection;
@@ -12,31 +10,20 @@ use ReflectionClass;
  */
 class ColumnParser
 {
+
     /**
      * Regex used to parse the column definition passed through the shell
      *
      * @var string
      */
-    protected $regexpParseColumn = '/
-        ^
-        (\w+)
-        (?::(\w+\??
-            (?:\[
-                (?:[0-9]|[1-9][0-9]+)
-                (?:,(?:[0-9]|[1-9][0-9]+))?
-            \])?
-        ))?
-        (?::(\w+))?
-        (?::(\w+))?
-        $
-        /x';
+    protected $regexpParseColumn = '/^(\w*)(?::(\w*\??\[?\d*\]?))?(?::(\w*))?(?::(\w*))?/';
 
     /**
      * Regex used to parse the field type and length
      *
      * @var string
      */
-    protected $regexpParseField = '/(\w+\??)\[([0-9,]+)\]/';
+    protected $regexpParseField = '/(\w+\??)\[(\d+)\]/';
 
     /**
      * Parses a list of arguments into an array of fields
@@ -44,43 +31,40 @@ class ColumnParser
      * @param array $arguments A list of arguments being parsed
      * @return array
      */
-    public function parseFields(array $arguments)
+    public function parseFields($arguments)
     {
         $fields = [];
         $arguments = $this->validArguments($arguments);
         foreach ($arguments as $field) {
             preg_match($this->regexpParseColumn, $field, $matches);
             $field = $matches[1];
-            $type = Hash::get($matches, 2, '');
+            $type = Hash::get($matches, 2);
             $indexType = Hash::get($matches, 3);
 
-            $typeIsPk = in_array($type, ['primary', 'primary_key'], true);
+            $typeIsPk = in_array($type, ['primary', 'primary_key']);
             $isPrimaryKey = false;
-            if ($typeIsPk || in_array($indexType, ['primary', 'primary_key'], true)) {
+            if ($typeIsPk || in_array($indexType, ['primary', 'primary_key'])) {
                 $isPrimaryKey = true;
 
                 if ($typeIsPk) {
                     $type = 'primary';
                 }
             }
-            $nullable = (bool)strpos($type, '?');
+
+            $nullable = (bool)preg_match('/\w+\?(\[\d+\])?/', $type);
             $type = $nullable ? str_replace('?', '', $type) : $type;
 
-            [$type, $length] = $this->getTypeAndLength($field, $type);
+            list($type, $length) = $this->getTypeAndLength($field, $type);
             $fields[$field] = [
                 'columnType' => $type,
                 'options' => [
                     'null' => $nullable,
                     'default' => null,
-                ],
+                ]
             ];
 
             if ($length !== null) {
-                if (is_array($length)) {
-                    [$fields[$field]['options']['precision'], $fields[$field]['options']['scale']] = $length;
-                } else {
-                    $fields[$field]['options']['limit'] = $length;
-                }
+                $fields[$field]['options']['limit'] = $length;
             }
 
             if ($isPrimaryKey === true && $type === 'integer') {
@@ -97,7 +81,7 @@ class ColumnParser
      * @param array $arguments A list of arguments being parsed
      * @return array
      */
-    public function parseIndexes(array $arguments)
+    public function parseIndexes($arguments)
     {
         $indexes = [];
         $arguments = $this->validArguments($arguments);
@@ -108,11 +92,9 @@ class ColumnParser
             $indexType = Hash::get($matches, 3);
             $indexName = Hash::get($matches, 4);
 
-            if (
-                in_array($type, ['primary', 'primary_key'], true) ||
-                in_array($indexType, ['primary', 'primary_key'], true) ||
-                $indexType === null
-            ) {
+            if (in_array($type, ['primary', 'primary_key']) ||
+                in_array($indexType, ['primary', 'primary_key']) ||
+                $indexType === null) {
                 continue;
             }
 
@@ -146,7 +128,7 @@ class ColumnParser
      * @param array $arguments A list of arguments being parsed
      * @return array
      */
-    public function parsePrimaryKey(array $arguments)
+    public function parsePrimaryKey($arguments)
     {
         $primaryKey = [];
         $arguments = $this->validArguments($arguments);
@@ -156,10 +138,7 @@ class ColumnParser
             $type = Hash::get($matches, 2);
             $indexType = Hash::get($matches, 3);
 
-            if (
-                in_array($type, ['primary', 'primary_key'], true)
-                || in_array($indexType, ['primary', 'primary_key'], true)
-            ) {
+            if (in_array($type, ['primary', 'primary_key']) || in_array($indexType, ['primary', 'primary_key'])) {
                 $primaryKey[] = $field;
             }
         }
@@ -173,12 +152,11 @@ class ColumnParser
      * @param array $arguments A list of arguments
      * @return array
      */
-    public function validArguments(array $arguments)
+    public function validArguments($arguments)
     {
         $collection = new Collection($arguments);
-
         return $collection->filter(function ($value, $field) {
-            return preg_match($this->regexpParseColumn, (string)$field);
+            return preg_match($this->regexpParseColumn, $field);
         })->toArray();
     }
 
@@ -192,11 +170,7 @@ class ColumnParser
      */
     public function getTypeAndLength($field, $type)
     {
-        if ($type && preg_match($this->regexpParseField, $type, $matches)) {
-            if (strpos($matches[2], ',') !== false) {
-                $matches[2] = explode(',', $matches[2]);
-            }
-
+        if (preg_match($this->regexpParseField, $type, $matches)) {
             return [$matches[1], $matches[2]];
         }
 
@@ -210,7 +184,7 @@ class ColumnParser
      * Retrieves a type that should be used for a specific field
      *
      * @param string $field Name of field
-     * @param string|null $type User-specified type
+     * @param string $type User-specified type
      * @return string
      */
     public function getType($field, $type)
@@ -221,16 +195,15 @@ class ColumnParser
         $validTypes = $collection->filter(function ($value, $constant) {
             return substr($constant, 0, strlen('PHINX_TYPE_')) === 'PHINX_TYPE_';
         })->toArray();
+
         $fieldType = $type;
-        if ($type === null || !in_array($type, $validTypes, true)) {
+        if ($type === null || !in_array($type, $validTypes)) {
             if ($type === 'primary') {
                 $fieldType = 'integer';
             } elseif ($field === 'id') {
                 $fieldType = 'integer';
-            } elseif (in_array($field, ['created', 'modified', 'updated'], true) || substr($field, -3) === '_at') {
+            } elseif (in_array($field, ['created', 'modified', 'updated']) || substr($field, -3) === '_at') {
                 $fieldType = 'datetime';
-            } elseif (in_array($field, ['latitude', 'longitude'], true)) {
-                $fieldType = 'decimal';
             } else {
                 $fieldType = 'string';
             }
@@ -254,8 +227,6 @@ class ColumnParser
             $length = 11;
         } elseif ($type === 'biginteger') {
             $length = 20;
-        } elseif ($type === 'decimal') {
-            $length = [10, 6];
         }
 
         return $length;

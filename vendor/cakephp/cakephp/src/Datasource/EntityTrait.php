@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,37 +15,36 @@ declare(strict_types=1);
 namespace Cake\Datasource;
 
 use Cake\Collection\Collection;
-use Cake\ORM\Entity;
-use Cake\Utility\Hash;
 use Cake\Utility\Inflector;
 use InvalidArgumentException;
 use Traversable;
 
 /**
  * An entity represents a single result row from a repository. It exposes the
- * methods for retrieving and storing fields associated in this row.
+ * methods for retrieving and storing properties associated in this row.
  */
 trait EntityTrait
 {
+
     /**
-     * Holds all fields and their values for this entity.
+     * Holds all properties and their values for this entity
      *
      * @var array
      */
-    protected $_fields = [];
+    protected $_properties = [];
 
     /**
-     * Holds all fields that have been changed and their original values for this entity.
+     * Holds all properties that have been changed and their original values for this entity
      *
      * @var array
      */
     protected $_original = [];
 
     /**
-     * List of field names that should **not** be included in JSON or Array
+     * List of property names that should **not** be included in JSON or Array
      * representations of this Entity.
      *
-     * @var string[]
+     * @var array
      */
     protected $_hidden = [];
 
@@ -56,15 +53,24 @@ trait EntityTrait
      * representations of this Entity. If a field is present in both _hidden and _virtual
      * the field will **not** be in the array/json versions of the entity.
      *
-     * @var string[]
+     * @var array
      */
     protected $_virtual = [];
 
     /**
-     * Holds a list of the fields that were modified or added after this object
+     * Holds the name of the class for the instance object
+     *
+     * @var string
+     *
+     * @deprecated 3.2 This field is no longer being used
+     */
+    protected $_className;
+
+    /**
+     * Holds a list of the properties that were modified or added after this object
      * was originally created.
      *
-     * @var bool[]
+     * @var array
      */
     protected $_dirty = [];
 
@@ -85,27 +91,27 @@ trait EntityTrait
     protected $_new = true;
 
     /**
-     * List of errors per field as stored in this object.
+     * List of errors per field as stored in this object
      *
      * @var array
      */
     protected $_errors = [];
 
     /**
-     * List of invalid fields and their data for errors upon validation/patching.
+     * List of invalid fields and their data for errors upon validation/patching
      *
      * @var array
      */
     protected $_invalid = [];
 
     /**
-     * Map of fields in this entity that can be safely assigned, each
-     * field name points to a boolean indicating its status. An empty array
-     * means no fields are accessible
+     * Map of properties in this entity that can be safely assigned, each
+     * property name points to a boolean indicating its status. An empty array
+     * means no properties are accessible
      *
-     * The special field '\*' can also be mapped, meaning that any other field
+     * The special property '\*' can also be mapped, meaning that any other property
      * not defined in the map will take its value. For example, `'\*' => true`
-     * means that any field not defined in the map will be accessible by default
+     * means that any property not defined in the map will be accessible by default
      *
      * @var array
      */
@@ -116,57 +122,57 @@ trait EntityTrait
      *
      * @var string
      */
-    protected $_registryAlias = '';
+    protected $_registryAlias;
 
     /**
-     * Magic getter to access fields that have been set in this entity
+     * Magic getter to access properties that have been set in this entity
      *
-     * @param string $field Name of the field to access
+     * @param string $property Name of the property to access
      * @return mixed
      */
-    public function &__get(string $field)
+    public function &__get($property)
     {
-        return $this->get($field);
+        return $this->get($property);
     }
 
     /**
-     * Magic setter to add or edit a field in this entity
+     * Magic setter to add or edit a property in this entity
      *
-     * @param string $field The name of the field to set
-     * @param mixed $value The value to set to the field
+     * @param string $property The name of the property to set
+     * @param mixed $value The value to set to the property
      * @return void
      */
-    public function __set(string $field, $value): void
+    public function __set($property, $value)
     {
-        $this->set($field, $value);
+        $this->set($property, $value);
     }
 
     /**
-     * Returns whether this entity contains a field named $field
+     * Returns whether this entity contains a property named $property
      * regardless of if it is empty.
      *
-     * @param string $field The field to check.
+     * @param string $property The property to check.
      * @return bool
      * @see \Cake\ORM\Entity::has()
      */
-    public function __isset(string $field): bool
+    public function __isset($property)
     {
-        return $this->has($field);
+        return $this->has($property);
     }
 
     /**
-     * Removes a field from this entity
+     * Removes a property from this entity
      *
-     * @param string $field The field to unset
+     * @param string $property The property to unset
      * @return void
      */
-    public function __unset(string $field): void
+    public function __unset($property)
     {
-        $this->unset($field);
+        $this->unsetProperty($property);
     }
 
     /**
-     * Sets a single field inside this entity.
+     * Sets a single property inside this entity.
      *
      * ### Example:
      *
@@ -174,9 +180,9 @@ trait EntityTrait
      * $entity->set('name', 'Andrew');
      * ```
      *
-     * It is also possible to mass-assign multiple fields to this entity
-     * with one call by passing a hashed array as fields in the form of
-     * field => value pairs
+     * It is also possible to mass-assign multiple properties to this entity
+     * with one call by passing a hashed array as properties in the form of
+     * property => value pairs
      *
      * ### Example:
      *
@@ -187,7 +193,7 @@ trait EntityTrait
      * ```
      *
      * Some times it is handy to bypass setter functions in this entity when assigning
-     * fields. You can achieve this by disabling the `setter` option using the
+     * properties. You can achieve this by disabling the `setter` option using the
      * `$options` parameter:
      *
      * ```
@@ -196,92 +202,91 @@ trait EntityTrait
      * ```
      *
      * Mass assignment should be treated carefully when accepting user input, by default
-     * entities will guard all fields when fields are assigned in bulk. You can disable
+     * entities will guard all fields when properties are assigned in bulk. You can disable
      * the guarding for a single set call with the `guard` option:
      *
      * ```
-     * $entity->set(['name' => 'Andrew', 'id' => 1], ['guard' => false]);
+     * $entity->set(['name' => 'Andrew', 'id' => 1], ['guard' => true]);
      * ```
      *
-     * You do not need to use the guard option when assigning fields individually:
+     * You do not need to use the guard option when assigning properties individually:
      *
      * ```
      * // No need to use the guard option.
      * $entity->set('name', 'Andrew');
      * ```
      *
-     * @param string|array $field the name of field to set or a list of
-     * fields with their respective values
-     * @param mixed $value The value to set to the field or an array if the
+     * @param string|array $property the name of property to set or a list of
+     * properties with their respective values
+     * @param mixed $value The value to set to the property or an array if the
      * first argument is also an array, in which case will be treated as $options
-     * @param array $options options to be used for setting the field. Allowed option
+     * @param array $options options to be used for setting the property. Allowed option
      * keys are `setter` and `guard`
      * @return $this
      * @throws \InvalidArgumentException
      */
-    public function set($field, $value = null, array $options = [])
+    public function set($property, $value = null, array $options = [])
     {
-        if (is_string($field) && $field !== '') {
+        if (is_string($property) && $property !== '') {
             $guard = false;
-            $field = [$field => $value];
+            $property = [$property => $value];
         } else {
             $guard = true;
             $options = (array)$value;
         }
 
-        if (!is_array($field)) {
-            throw new InvalidArgumentException('Cannot set an empty field');
+        if (!is_array($property)) {
+            throw new InvalidArgumentException('Cannot set an empty property');
         }
         $options += ['setter' => true, 'guard' => $guard];
 
-        foreach ($field as $name => $value) {
-            if ($options['guard'] === true && !$this->isAccessible($name)) {
+        foreach ($property as $p => $value) {
+            if ($options['guard'] === true && !$this->isAccessible($p)) {
                 continue;
             }
 
-            $this->setDirty($name, true);
+            $this->setDirty($p, true);
 
-            if (
-                !array_key_exists($name, $this->_original) &&
-                array_key_exists($name, $this->_fields) &&
-                $this->_fields[$name] !== $value
+            if (!array_key_exists($p, $this->_original) &&
+                array_key_exists($p, $this->_properties) &&
+                $this->_properties[$p] !== $value
             ) {
-                $this->_original[$name] = $this->_fields[$name];
+                $this->_original[$p] = $this->_properties[$p];
             }
 
             if (!$options['setter']) {
-                $this->_fields[$name] = $value;
+                $this->_properties[$p] = $value;
                 continue;
             }
 
-            $setter = static::_accessor($name, 'set');
+            $setter = static::_accessor($p, 'set');
             if ($setter) {
                 $value = $this->{$setter}($value);
             }
-            $this->_fields[$name] = $value;
+            $this->_properties[$p] = $value;
         }
 
         return $this;
     }
 
     /**
-     * Returns the value of a field by name
+     * Returns the value of a property by name
      *
-     * @param string $field the name of the field to retrieve
+     * @param string $property the name of the property to retrieve
      * @return mixed
-     * @throws \InvalidArgumentException if an empty field name is passed
+     * @throws \InvalidArgumentException if an empty property name is passed
      */
-    public function &get(string $field)
+    public function &get($property)
     {
-        if ($field === '') {
-            throw new InvalidArgumentException('Cannot get an empty field');
+        if (!strlen((string)$property)) {
+            throw new InvalidArgumentException('Cannot get an empty property');
         }
 
         $value = null;
-        $method = static::_accessor($field, 'get');
+        $method = static::_accessor($property, 'get');
 
-        if (isset($this->_fields[$field])) {
-            $value =& $this->_fields[$field];
+        if (isset($this->_properties[$property])) {
+            $value =& $this->_properties[$property];
         }
 
         if ($method) {
@@ -294,22 +299,22 @@ trait EntityTrait
     }
 
     /**
-     * Returns the value of an original field by name
+     * Returns the value of an original property by name
      *
-     * @param string $field the name of the field for which original value is retrieved.
+     * @param string $property the name of the property for which original value is retrieved.
      * @return mixed
-     * @throws \InvalidArgumentException if an empty field name is passed.
+     * @throws \InvalidArgumentException if an empty property name is passed.
      */
-    public function getOriginal(string $field)
+    public function getOriginal($property)
     {
-        if (!strlen($field)) {
-            throw new InvalidArgumentException('Cannot get an empty field');
+        if (!strlen((string)$property)) {
+            throw new InvalidArgumentException('Cannot get an empty property');
         }
-        if (array_key_exists($field, $this->_original)) {
-            return $this->_original[$field];
+        if (array_key_exists($property, $this->_original)) {
+            return $this->_original[$property];
         }
 
-        return $this->get($field);
+        return $this->get($property);
     }
 
     /**
@@ -317,12 +322,12 @@ trait EntityTrait
      *
      * @return array
      */
-    public function getOriginalValues(): array
+    public function getOriginalValues()
     {
         $originals = $this->_original;
         $originalKeys = array_keys($originals);
-        foreach ($this->_fields as $key => $value) {
-            if (!in_array($key, $originalKeys, true)) {
+        foreach ($this->_properties as $key => $value) {
+            if (!in_array($key, $originalKeys)) {
                 $originals[$key] = $value;
             }
         }
@@ -331,7 +336,7 @@ trait EntityTrait
     }
 
     /**
-     * Returns whether this entity contains a field named $field
+     * Returns whether this entity contains a property named $property
      * that contains a non-null value.
      *
      * ### Example:
@@ -343,23 +348,23 @@ trait EntityTrait
      * $entity->has('last_name'); // false
      * ```
      *
-     * You can check multiple fields by passing an array:
+     * You can check multiple properties by passing an array:
      *
      * ```
      * $entity->has(['name', 'last_name']);
      * ```
      *
-     * All fields must not be null to get a truthy result.
+     * All properties must not be null to get a truthy result.
      *
-     * When checking multiple fields. All fields must not be null
+     * When checking multiple properties. All properties must not be null
      * in order for true to be returned.
      *
-     * @param string|string[] $field The field or fields to check.
+     * @param string|array $property The property or properties to check.
      * @return bool
      */
-    public function has($field): bool
+    public function has($property)
     {
-        foreach ((array)$field as $prop) {
+        foreach ((array)$property as $prop) {
             if ($this->get($prop) === null) {
                 return false;
             }
@@ -369,202 +374,173 @@ trait EntityTrait
     }
 
     /**
-     * Checks that a field is empty
-     *
-     * This is not working like the PHP `empty()` function. The method will
-     * return true for:
-     *
-     * - `''` (empty string)
-     * - `null`
-     * - `[]`
-     *
-     * and false in all other cases.
-     *
-     * @param string $field The field to check.
-     * @return bool
-     */
-    public function isEmpty(string $field): bool
-    {
-        $value = $this->get($field);
-        if (
-            $value === null ||
-            (
-                is_array($value) &&
-                empty($value) ||
-                (
-                    is_string($value) &&
-                    empty($value)
-                )
-            )
-        ) {
-            return true;
-        }
-
-        return false;
-    }
-
-    /**
-     * Checks tha a field has a value.
-     *
-     * This method will return true for
-     *
-     * - Non-empty strings
-     * - Non-empty arrays
-     * - Any object
-     * - Integer, even `0`
-     * - Float, even 0.0
-     *
-     * and false in all other cases.
-     *
-     * @param string $field The field to check.
-     * @return bool
-     */
-    public function hasValue(string $field): bool
-    {
-        return !$this->isEmpty($field);
-    }
-
-    /**
-     * Removes a field or list of fields from this entity
+     * Removes a property or list of properties from this entity
      *
      * ### Examples:
      *
      * ```
-     * $entity->unset('name');
-     * $entity->unset(['name', 'last_name']);
+     * $entity->unsetProperty('name');
+     * $entity->unsetProperty(['name', 'last_name']);
      * ```
      *
-     * @param string|string[] $field The field to unset.
+     * @param string|array $property The property to unset.
      * @return $this
      */
-    public function unset($field)
+    public function unsetProperty($property)
     {
-        $field = (array)$field;
-        foreach ($field as $p) {
-            unset($this->_fields[$p], $this->_original[$p], $this->_dirty[$p]);
+        $property = (array)$property;
+        foreach ($property as $p) {
+            unset($this->_properties[$p], $this->_dirty[$p]);
         }
 
         return $this;
     }
 
     /**
-     * Removes a field or list of fields from this entity
+     * Get/Set the hidden properties on this entity.
      *
-     * @deprecated 4.0.0 Use unset() instead. Will be removed in 5.0.
-     * @param string|string[] $field The field to unset.
-     * @return $this
+     * If the properties argument is null, the currently hidden properties
+     * will be returned. Otherwise the hidden properties will be set.
+     *
+     * @deprecated 3.4.0 Use EntityTrait::setHidden() and EntityTrait::getHidden()
+     * @param null|array $properties Either an array of properties to hide or null to get properties
+     * @return array|$this
      */
-    public function unsetProperty($field)
+    public function hiddenProperties($properties = null)
     {
-        return $this->unset($field);
+        if ($properties === null) {
+            return $this->_hidden;
+        }
+        $this->_hidden = $properties;
+
+        return $this;
     }
 
     /**
-     * Sets hidden fields.
+     * Sets hidden properties.
      *
-     * @param string[] $fields An array of fields to hide from array exports.
-     * @param bool $merge Merge the new fields with the existing. By default false.
+     * @param array $properties An array of properties to hide from array exports.
+     * @param bool $merge Merge the new properties with the existing. By default false.
      * @return $this
      */
-    public function setHidden(array $fields, bool $merge = false)
+    public function setHidden(array $properties, $merge = false)
     {
         if ($merge === false) {
-            $this->_hidden = $fields;
+            $this->_hidden = $properties;
 
             return $this;
         }
 
-        $fields = array_merge($this->_hidden, $fields);
-        $this->_hidden = array_unique($fields);
+        $properties = array_merge($this->_hidden, $properties);
+        $this->_hidden = array_unique($properties);
 
         return $this;
     }
 
     /**
-     * Gets the hidden fields.
+     * Gets the hidden properties.
      *
-     * @return string[]
+     * @return array
      */
-    public function getHidden(): array
+    public function getHidden()
     {
         return $this->_hidden;
     }
 
     /**
-     * Sets the virtual fields on this entity.
+     * Get/Set the virtual properties on this entity.
      *
-     * @param string[] $fields An array of fields to treat as virtual.
-     * @param bool $merge Merge the new fields with the existing. By default false.
+     * If the properties argument is null, the currently virtual properties
+     * will be returned. Otherwise the virtual properties will be set.
+     *
+     * @deprecated 3.4.0 Use EntityTrait::getVirtual() and EntityTrait::setVirtual()
+     * @param null|array $properties Either an array of properties to treat as virtual or null to get properties
+     * @return array|$this
+     */
+    public function virtualProperties($properties = null)
+    {
+        if ($properties === null) {
+            return $this->getVirtual();
+        }
+
+        return $this->setVirtual($properties);
+    }
+
+    /**
+     * Sets the virtual properties on this entity.
+     *
+     * @param array $properties An array of properties to treat as virtual.
+     * @param bool $merge Merge the new properties with the existing. By default false.
      * @return $this
      */
-    public function setVirtual(array $fields, bool $merge = false)
+    public function setVirtual(array $properties, $merge = false)
     {
         if ($merge === false) {
-            $this->_virtual = $fields;
+            $this->_virtual = $properties;
 
             return $this;
         }
 
-        $fields = array_merge($this->_virtual, $fields);
-        $this->_virtual = array_unique($fields);
+        $properties = array_merge($this->_virtual, $properties);
+        $this->_virtual = array_unique($properties);
 
         return $this;
     }
 
     /**
-     * Gets the virtual fields on this entity.
+     * Gets the virtual properties on this entity.
      *
-     * @return string[]
+     * @return array
      */
-    public function getVirtual(): array
+    public function getVirtual()
     {
         return $this->_virtual;
     }
 
     /**
-     * Gets the list of visible fields.
+     * Get the list of visible properties.
      *
-     * The list of visible fields is all standard fields
-     * plus virtual fields minus hidden fields.
+     * The list of visible properties is all standard properties
+     * plus virtual properties minus hidden properties.
      *
-     * @return string[] A list of fields that are 'visible' in all
+     * @return array A list of properties that are 'visible' in all
      *     representations.
      */
-    public function getVisible(): array
+    public function visibleProperties()
     {
-        $fields = array_keys($this->_fields);
-        $fields = array_merge($fields, $this->_virtual);
+        $properties = array_keys($this->_properties);
+        $properties = array_merge($properties, $this->_virtual);
 
-        return array_diff($fields, $this->_hidden);
+        return array_diff($properties, $this->_hidden);
     }
 
     /**
-     * Returns an array with all the fields that have been set
+     * Returns an array with all the properties that have been set
      * to this entity
      *
-     * This method will recursively transform entities assigned to fields
+     * This method will recursively transform entities assigned to properties
      * into arrays as well.
      *
      * @return array
      */
-    public function toArray(): array
+    public function toArray()
     {
         $result = [];
-        foreach ($this->getVisible() as $field) {
-            $value = $this->get($field);
+        foreach ($this->visibleProperties() as $property) {
+            $value = $this->get($property);
             if (is_array($value)) {
-                $result[$field] = [];
+                $result[$property] = [];
                 foreach ($value as $k => $entity) {
                     if ($entity instanceof EntityInterface) {
-                        $result[$field][$k] = $entity->toArray();
+                        $result[$property][$k] = $entity->toArray();
                     } else {
-                        $result[$field][$k] = $entity;
+                        $result[$property][$k] = $entity;
                     }
                 }
             } elseif ($value instanceof EntityInterface) {
-                $result[$field] = $value->toArray();
+                $result[$property] = $value->toArray();
             } else {
-                $result[$field] = $value;
+                $result[$property] = $value;
             }
         }
 
@@ -572,22 +548,22 @@ trait EntityTrait
     }
 
     /**
-     * Returns the fields that will be serialized as JSON
+     * Returns the properties that will be serialized as JSON
      *
      * @return array
      */
-    public function jsonSerialize(): array
+    public function jsonSerialize()
     {
-        return $this->extract($this->getVisible());
+        return $this->extract($this->visibleProperties());
     }
 
     /**
      * Implements isset($entity);
      *
-     * @param string $offset The offset to check.
+     * @param mixed $offset The offset to check.
      * @return bool Success
      */
-    public function offsetExists($offset): bool
+    public function offsetExists($offset)
     {
         return $this->has($offset);
     }
@@ -595,7 +571,7 @@ trait EntityTrait
     /**
      * Implements $entity[$offset];
      *
-     * @param string $offset The offset to get.
+     * @param mixed $offset The offset to get.
      * @return mixed
      */
     public function &offsetGet($offset)
@@ -606,11 +582,11 @@ trait EntityTrait
     /**
      * Implements $entity[$offset] = $value;
      *
-     * @param string $offset The offset to set.
+     * @param mixed $offset The offset to set.
      * @param mixed $value The value to set.
      * @return void
      */
-    public function offsetSet($offset, $value): void
+    public function offsetSet($offset, $value)
     {
         $this->set($offset, $value);
     }
@@ -618,12 +594,12 @@ trait EntityTrait
     /**
      * Implements unset($result[$offset]);
      *
-     * @param string $offset The offset to remove.
+     * @param mixed $offset The offset to remove.
      * @return void
      */
-    public function offsetUnset($offset): void
+    public function offsetUnset($offset)
     {
-        $this->unset($offset);
+        $this->unsetProperty($offset);
     }
 
     /**
@@ -634,7 +610,7 @@ trait EntityTrait
      * @param string $type the accessor type ('get' or 'set')
      * @return string method name or empty string (no method available)
      */
-    protected static function _accessor(string $property, string $type): string
+    protected static function _accessor($property, $type)
     {
         $class = static::class;
 
@@ -646,7 +622,7 @@ trait EntityTrait
             return static::$_accessors[$class][$type][$property] = '';
         }
 
-        if (static::class === Entity::class) {
+        if ($class === 'Cake\ORM\Entity') {
             return '';
         }
 
@@ -671,19 +647,19 @@ trait EntityTrait
     }
 
     /**
-     * Returns an array with the requested fields
-     * stored in this entity, indexed by field name
+     * Returns an array with the requested properties
+     * stored in this entity, indexed by property name
      *
-     * @param string[] $fields list of fields to be returned
-     * @param bool $onlyDirty Return the requested field only if it is dirty
+     * @param array $properties list of properties to be returned
+     * @param bool $onlyDirty Return the requested property only if it is dirty
      * @return array
      */
-    public function extract(array $fields, bool $onlyDirty = false): array
+    public function extract(array $properties, $onlyDirty = false)
     {
         $result = [];
-        foreach ($fields as $field) {
-            if (!$onlyDirty || $this->isDirty($field)) {
-                $result[$field] = $this->get($field);
+        foreach ($properties as $property) {
+            if (!$onlyDirty || $this->isDirty($property)) {
+                $result[$property] = $this->get($property);
             }
         }
 
@@ -691,42 +667,42 @@ trait EntityTrait
     }
 
     /**
-     * Returns an array with the requested original fields
-     * stored in this entity, indexed by field name.
+     * Returns an array with the requested original properties
+     * stored in this entity, indexed by property name.
      *
-     * Fields that are unchanged from their original value will be included in the
+     * Properties that are unchanged from their original value will be included in the
      * return of this method.
      *
-     * @param string[] $fields List of fields to be returned
+     * @param array $properties List of properties to be returned
      * @return array
      */
-    public function extractOriginal(array $fields): array
+    public function extractOriginal(array $properties)
     {
         $result = [];
-        foreach ($fields as $field) {
-            $result[$field] = $this->getOriginal($field);
+        foreach ($properties as $property) {
+            $result[$property] = $this->getOriginal($property);
         }
 
         return $result;
     }
 
     /**
-     * Returns an array with only the original fields
-     * stored in this entity, indexed by field name.
+     * Returns an array with only the original properties
+     * stored in this entity, indexed by property name.
      *
-     * This method will only return fields that have been modified since
-     * the entity was built. Unchanged fields will be omitted.
+     * This method will only return properties that have been modified since
+     * the entity was built. Unchanged properties will be omitted.
      *
-     * @param string[] $fields List of fields to be returned
+     * @param array $properties List of properties to be returned
      * @return array
      */
-    public function extractOriginalChanged(array $fields): array
+    public function extractOriginalChanged(array $properties)
     {
         $result = [];
-        foreach ($fields as $field) {
-            $original = $this->getOriginal($field);
-            if ($original !== $this->get($field)) {
-                $result[$field] = $original;
+        foreach ($properties as $property) {
+            $original = $this->getOriginal($property);
+            if ($original !== $this->get($property)) {
+                $result[$property] = $original;
             }
         }
 
@@ -734,60 +710,90 @@ trait EntityTrait
     }
 
     /**
-     * Sets the dirty status of a single field.
+     * Sets the dirty status of a single property. If called with no second
+     * argument, it will return whether the property was modified or not
+     * after the object creation.
      *
-     * @param string $field the field to set or check status for
-     * @param bool $isDirty true means the field was changed, false means
-     * it was not changed. Defaults to true.
+     * When called with no arguments it will return whether or not there are any
+     * dirty property in the entity
+     *
+     * @deprecated 3.4.0 Use EntityTrait::setDirty() and EntityTrait::isDirty()
+     * @param string|null $property the field to set or check status for
+     * @param null|bool $isDirty true means the property was changed, false means
+     * it was not changed and null will make the function return current state
+     * for that property
+     * @return bool Whether the property was changed or not
+     */
+    public function dirty($property = null, $isDirty = null)
+    {
+        if ($property === null) {
+            return $this->isDirty();
+        }
+
+        if ($isDirty === null) {
+            return $this->isDirty($property);
+        }
+
+        $this->setDirty($property, $isDirty);
+
+        return true;
+    }
+
+    /**
+     * Sets the dirty status of a single property.
+     *
+     * @param string $property the field to set or check status for
+     * @param bool $isDirty true means the property was changed, false means
+     * it was not changed
      * @return $this
      */
-    public function setDirty(string $field, bool $isDirty = true)
+    public function setDirty($property, $isDirty)
     {
         if ($isDirty === false) {
-            unset($this->_dirty[$field]);
+            unset($this->_dirty[$property]);
 
             return $this;
         }
 
-        $this->_dirty[$field] = true;
-        unset($this->_errors[$field], $this->_invalid[$field]);
+        $this->_dirty[$property] = true;
+        unset($this->_errors[$property], $this->_invalid[$property]);
 
         return $this;
     }
 
     /**
-     * Checks if the entity is dirty or if a single field of it is dirty.
+     * Checks if the entity is dirty or if a single property of it is dirty.
      *
-     * @param string|null $field The field to check the status for. Null for the whole entity.
-     * @return bool Whether the field was changed or not
+     * @param string $property the field to check the status for
+     * @return bool Whether the property was changed or not
      */
-    public function isDirty(?string $field = null): bool
+    public function isDirty($property = null)
     {
-        if ($field === null) {
+        if ($property === null) {
             return !empty($this->_dirty);
         }
 
-        return isset($this->_dirty[$field]);
+        return isset($this->_dirty[$property]);
     }
 
     /**
-     * Gets the dirty fields.
+     * Gets the dirty properties.
      *
-     * @return string[]
+     * @return array
      */
-    public function getDirty(): array
+    public function getDirty()
     {
         return array_keys($this->_dirty);
     }
 
     /**
      * Sets the entire entity as clean, which means that it will appear as
-     * no fields being modified or added at all. This is an useful call
+     * no properties being modified or added at all. This is an useful call
      * for an initial object hydration
      *
      * @return void
      */
-    public function clean(): void
+    public function clean()
     {
         $this->_dirty = [];
         $this->_errors = [];
@@ -796,66 +802,32 @@ trait EntityTrait
     }
 
     /**
-     * Set the status of this entity.
+     * Returns whether or not this entity has already been persisted.
+     * This method can return null in the case there is no prior information on
+     * the status of this entity.
      *
-     * Using `true` means that the entity has not been persisted in the database,
-     * `false` that it already is.
+     * If called with a boolean it will set the known status of this instance,
+     * true means that the instance is not yet persisted in the database, false
+     * that it already is.
      *
-     * @param bool $new Indicate whether or not this entity has been persisted.
-     * @return $this
+     * @param bool|null $new true if it is known this instance was not yet persisted
+     * @return bool Whether or not the entity has been persisted.
      */
-    public function setNew(bool $new)
+    public function isNew($new = null)
     {
+        if ($new === null) {
+            return $this->_new;
+        }
+
+        $new = (bool)$new;
+
         if ($new) {
-            foreach ($this->_fields as $k => $p) {
+            foreach ($this->_properties as $k => $p) {
                 $this->_dirty[$k] = true;
             }
         }
 
-        $this->_new = $new;
-
-        return $this;
-    }
-
-    /**
-     * Returns whether or not this entity has already been persisted.
-     *
-     * @return bool Whether or not the entity has been persisted.
-     */
-    public function isNew(): bool
-    {
-        if (func_num_args()) {
-            deprecationWarning('Using isNew() as setter is deprecated. Use setNew() instead.');
-
-            $this->setNew(func_get_arg(0));
-        }
-
-        return $this->_new;
-    }
-
-    /**
-     * Returns whether this entity has errors.
-     *
-     * @param bool $includeNested true will check nested entities for hasErrors()
-     * @return bool
-     */
-    public function hasErrors(bool $includeNested = true): bool
-    {
-        if (Hash::filter($this->_errors)) {
-            return true;
-        }
-
-        if ($includeNested === false) {
-            return false;
-        }
-
-        foreach ($this->_fields as $field) {
-            if ($this->_readHasErrors($field)) {
-                return true;
-            }
-        }
-
-        return false;
+        return $this->_new = $new;
     }
 
     /**
@@ -863,9 +835,9 @@ trait EntityTrait
      *
      * @return array
      */
-    public function getErrors(): array
+    public function getErrors()
     {
-        $diff = array_diff_key($this->_fields, $this->_errors);
+        $diff = array_diff_key($this->_properties, $this->_errors);
 
         return $this->_errors + (new Collection($diff))
             ->filter(function ($value) {
@@ -884,9 +856,9 @@ trait EntityTrait
      * @param string $field Field name to get the errors from
      * @return array
      */
-    public function getError(string $field): array
+    public function getError($field)
     {
-        $errors = $this->_errors[$field] ?? [];
+        $errors = isset($this->_errors[$field]) ? $this->_errors[$field] : [];
         if ($errors) {
             return $errors;
         }
@@ -901,36 +873,20 @@ trait EntityTrait
      *
      * ```
      * // Sets the error messages for multiple fields at once
-     * $entity->setErrors(['salary' => ['message'], 'name' => ['another message']]);
+     * $entity->errors(['salary' => ['message'], 'name' => ['another message']);
      * ```
      *
-     * @param array $errors The array of errors to set.
+     * @param array $fields The array of errors to set.
      * @param bool $overwrite Whether or not to overwrite pre-existing errors for $fields
      * @return $this
      */
-    public function setErrors(array $errors, bool $overwrite = false)
+    public function setErrors(array $fields, $overwrite = false)
     {
-        if ($overwrite) {
-            foreach ($errors as $f => $error) {
-                $this->_errors[$f] = (array)$error;
-            }
-
-            return $this;
-        }
-
-        foreach ($errors as $f => $error) {
+        foreach ($fields as $f => $error) {
             $this->_errors += [$f => []];
-
-            // String messages are appended to the list,
-            // while more complex error structures need their
-            // keys preserved for nested validator.
-            if (is_string($error)) {
-                $this->_errors[$f][] = $error;
-            } else {
-                foreach ($error as $k => $v) {
-                    $this->_errors[$f][$k] = $v;
-                }
-            }
+            $this->_errors[$f] = $overwrite ?
+                (array)$error :
+                array_merge($this->_errors[$f], (array)$error);
         }
 
         return $this;
@@ -943,7 +899,7 @@ trait EntityTrait
      *
      * ```
      * // Sets the error messages for a single field
-     * $entity->setError('salary', ['must be numeric', 'must be a positive number']);
+     * $entity->errors('salary', ['must be numeric', 'must be a positive number']);
      * ```
      *
      * @param string $field The field to get errors for, or the array of errors to set.
@@ -951,7 +907,7 @@ trait EntityTrait
      * @param bool $overwrite Whether or not to overwrite pre-existing errors for $field
      * @return $this
      */
-    public function setError(string $field, $errors, bool $overwrite = false)
+    public function setError($field, $errors, $overwrite = false)
     {
         if (is_string($errors)) {
             $errors = [$errors];
@@ -961,26 +917,69 @@ trait EntityTrait
     }
 
     /**
+     * Sets the error messages for a field or a list of fields. When called
+     * without the second argument it returns the validation
+     * errors for the specified fields. If called with no arguments it returns
+     * all the validation error messages stored in this entity and any other nested
+     * entity.
+     *
+     * ### Example
+     *
+     * ```
+     * // Sets the error messages for a single field
+     * $entity->errors('salary', ['must be numeric', 'must be a positive number']);
+     *
+     * // Returns the error messages for a single field
+     * $entity->errors('salary');
+     *
+     * // Returns all error messages indexed by field name
+     * $entity->errors();
+     *
+     * // Sets the error messages for multiple fields at once
+     * $entity->errors(['salary' => ['message'], 'name' => ['another message']);
+     * ```
+     *
+     * When used as a setter, this method will return this entity instance for method
+     * chaining.
+     *
+     * @deprecated 3.4.0 Use EntityTrait::setError(), EntityTrait::setErrors(), EntityTrait::getError() and EntityTrait::getErrors()
+     * @param string|array|null $field The field to get errors for, or the array of errors to set.
+     * @param string|array|null $errors The errors to be set for $field
+     * @param bool $overwrite Whether or not to overwrite pre-existing errors for $field
+     * @return array|$this
+     */
+    public function errors($field = null, $errors = null, $overwrite = false)
+    {
+        if ($field === null) {
+            return $this->getErrors();
+        }
+
+        if (is_string($field) && $errors === null) {
+            return $this->getError($field);
+        }
+
+        if (!is_array($field)) {
+            $field = [$field => $errors];
+        }
+
+        return $this->setErrors($field, $overwrite);
+    }
+
+    /**
      * Auxiliary method for getting errors in nested entities
      *
      * @param string $field the field in this entity to check for errors
      * @return array errors in nested entity if any
      */
-    protected function _nestedErrors(string $field): array
+    protected function _nestedErrors($field)
     {
-        // Only one path element, check for nested entity with error.
-        if (strpos($field, '.') === false) {
-            return $this->_readError($this->get($field));
-        }
-        // Try reading the errors data with field as a simple path
-        $error = Hash::get($this->_errors, $field);
-        if ($error !== null) {
-            return $error;
-        }
         $path = explode('.', $field);
 
-        // Traverse down the related entities/arrays for
-        // the relevant entity.
+        // Only one path element, check for nested entity with error.
+        if (count($path) === 1) {
+            return $this->_readError($this->get($path[0]));
+        }
+
         $entity = $this;
         $len = count($path);
         while ($len) {
@@ -990,11 +989,10 @@ trait EntityTrait
             if ($entity instanceof EntityInterface) {
                 $val = $entity->get($part);
             } elseif (is_array($entity)) {
-                $val = $entity[$part] ?? false;
+                $val = isset($entity[$part]) ? $entity[$part] : false;
             }
 
-            if (
-                is_array($val) ||
+            if (is_array($val) ||
                 $val instanceof Traversable ||
                 $val instanceof EntityInterface
             ) {
@@ -1012,49 +1010,23 @@ trait EntityTrait
     }
 
     /**
-     * Reads if there are errors for one or many objects.
-     *
-     * @param array|\Cake\Datasource\EntityInterface $object The object to read errors from.
-     * @return bool
-     */
-    protected function _readHasErrors($object): bool
-    {
-        if ($object instanceof EntityInterface && $object->hasErrors()) {
-            return true;
-        }
-
-        if (is_array($object)) {
-            foreach ($object as $value) {
-                if ($this->_readHasErrors($value)) {
-                    return true;
-                }
-            }
-        }
-
-        return false;
-    }
-
-    /**
      * Read the error(s) from one or many objects.
      *
-     * @param iterable|\Cake\Datasource\EntityInterface $object The object to read errors from.
+     * @param array|\Cake\Datasource\EntityTrait $object The object to read errors from.
      * @param string|null $path The field name for errors.
      * @return array
      */
-    protected function _readError($object, $path = null): array
+    protected function _readError($object, $path = null)
     {
-        if ($path !== null && $object instanceof EntityInterface) {
-            return $object->getError($path);
-        }
         if ($object instanceof EntityInterface) {
-            return $object->getErrors();
+            return $object->errors($path);
         }
-        if (is_iterable($object)) {
+        if (is_array($object)) {
             $array = array_map(function ($val) {
                 if ($val instanceof EntityInterface) {
-                    return $val->getErrors();
+                    return $val->errors();
                 }
-            }, (array)$object);
+            }, $object);
 
             return array_filter($array);
         }
@@ -1067,7 +1039,7 @@ trait EntityTrait
      *
      * @return array
      */
-    public function getInvalid(): array
+    public function getInvalid()
     {
         return $this->_invalid;
     }
@@ -1076,25 +1048,27 @@ trait EntityTrait
      * Get a single value of an invalid field. Returns null if not set.
      *
      * @param string $field The name of the field.
-     * @return mixed|null
+     * @return mixed
      */
-    public function getInvalidField(string $field)
+    public function getInvalidField($field)
     {
-        return $this->_invalid[$field] ?? null;
+        $value = isset($this->_invalid[$field]) ? $this->_invalid[$field] : null;
+
+        return $value;
     }
 
     /**
      * Set fields as invalid and not patchable into the entity.
      *
      * This is useful for batch operations when one needs to get the original value for an error message after patching.
-     * This value could not be patched into the entity and is simply copied into the _invalid property for debugging
-     * purposes or to be able to log it away.
+     * This value could not be patched into the entity and is simply copied into the _invalid property for debugging purposes
+     * or to be able to log it away.
      *
      * @param array $fields The values to set.
      * @param bool $overwrite Whether or not to overwrite pre-existing values for $field.
      * @return $this
      */
-    public function setInvalid(array $fields, bool $overwrite = false)
+    public function setInvalid(array $fields, $overwrite = false)
     {
         foreach ($fields as $field => $value) {
             if ($overwrite === true) {
@@ -1114,7 +1088,7 @@ trait EntityTrait
      * @param mixed $value The invalid value to be set for $field.
      * @return $this
      */
-    public function setInvalidField(string $field, $value)
+    public function setInvalidField($field, $value)
     {
         $this->_invalid[$field] = $value;
 
@@ -1122,13 +1096,96 @@ trait EntityTrait
     }
 
     /**
-     * Stores whether or not a field value can be changed or set in this entity.
-     * The special field `*` can also be marked as accessible or protected, meaning
-     * that any other field specified before will take its value. For example
-     * `$entity->setAccess('*', true)` means that any field not specified already
+     * Sets a field as invalid and not patchable into the entity.
+     *
+     * This is useful for batch operations when one needs to get the original value for an error message after patching.
+     * This value could not be patched into the entity and is simply copied into the _invalid property for debugging purposes
+     * or to be able to log it away.
+     *
+     * @deprecated 3.5 Use getInvalid()/getInvalidField()/setInvalid() instead.
+     * @param string|array|null $field The field to get invalid value for, or the value to set.
+     * @param mixed|null $value The invalid value to be set for $field.
+     * @param bool $overwrite Whether or not to overwrite pre-existing values for $field.
+     * @return $this|mixed
+     */
+    public function invalid($field = null, $value = null, $overwrite = false)
+    {
+        if ($field === null) {
+            return $this->_invalid;
+        }
+
+        if (is_string($field) && $value === null) {
+            $value = isset($this->_invalid[$field]) ? $this->_invalid[$field] : null;
+
+            return $value;
+        }
+
+        if (!is_array($field)) {
+            $field = [$field => $value];
+        }
+
+        foreach ($field as $f => $value) {
+            if ($overwrite) {
+                $this->_invalid[$f] = $value;
+                continue;
+            }
+            $this->_invalid += [$f => $value];
+        }
+
+        return $this;
+    }
+
+    /**
+     * Stores whether or not a property value can be changed or set in this entity.
+     * The special property `*` can also be marked as accessible or protected, meaning
+     * that any other property specified before will take its value. For example
+     * `$entity->accessible('*', true)` means that any property not specified already
      * will be accessible by default.
      *
-     * You can also call this method with an array of fields, in which case they
+     * You can also call this method with an array of properties, in which case they
+     * will each take the accessibility value specified in the second argument.
+     *
+     * ### Example:
+     *
+     * ```
+     * $entity->accessible('id', true); // Mark id as not protected
+     * $entity->accessible('author_id', false); // Mark author_id as protected
+     * $entity->accessible(['id', 'user_id'], true); // Mark both properties as accessible
+     * $entity->accessible('*', false); // Mark all properties as protected
+     * ```
+     *
+     * When called without the second param it will return whether or not the property
+     * can be set.
+     *
+     * ### Example:
+     *
+     * ```
+     * $entity->accessible('id'); // Returns whether it can be set or not
+     * ```
+     *
+     * @deprecated 3.4.0 Use EntityTrait::setAccess() and EntityTrait::isAccessible()
+     * @param string|array $property single or list of properties to change its accessibility
+     * @param bool|null $set true marks the property as accessible, false will
+     * mark it as protected.
+     * @return $this|bool
+     */
+    public function accessible($property, $set = null)
+    {
+        if ($set === null) {
+            return $this->isAccessible($property);
+        }
+
+        return $this->setAccess($property, $set);
+    }
+
+    /**
+     * Stores whether or not a property value can be changed or set in this entity.
+     * The special property `*` can also be marked as accessible or protected, meaning
+     * that any other property specified before will take its value. For example
+     * `$entity->setAccess('*', true)` means that any property not specified already
+     * will be accessible by default.
+     *
+     * You can also call this method with an array of properties, in which case they
      * will each take the accessibility value specified in the second argument.
      *
      * ### Example:
@@ -1136,18 +1193,18 @@ trait EntityTrait
      * ```
      * $entity->setAccess('id', true); // Mark id as not protected
      * $entity->setAccess('author_id', false); // Mark author_id as protected
-     * $entity->setAccess(['id', 'user_id'], true); // Mark both fields as accessible
-     * $entity->setAccess('*', false); // Mark all fields as protected
+     * $entity->setAccess(['id', 'user_id'], true); // Mark both properties as accessible
+     * $entity->setAccess('*', false); // Mark all properties as protected
      * ```
      *
-     * @param string|array $field Single or list of fields to change its accessibility
-     * @param bool $set True marks the field as accessible, false will
+     * @param string|array $property single or list of properties to change its accessibility
+     * @param bool $set true marks the property as accessible, false will
      * mark it as protected.
      * @return $this
      */
-    public function setAccess($field, bool $set)
+    public function setAccess($property, $set)
     {
-        if ($field === '*') {
+        if ($property === '*') {
             $this->_accessible = array_map(function ($p) use ($set) {
                 return (bool)$set;
             }, $this->_accessible);
@@ -1156,7 +1213,7 @@ trait EntityTrait
             return $this;
         }
 
-        foreach ((array)$field as $prop) {
+        foreach ((array)$property as $prop) {
             $this->_accessible[$prop] = (bool)$set;
         }
 
@@ -1164,7 +1221,7 @@ trait EntityTrait
     }
 
     /**
-     * Checks if a field is accessible
+     * Checks if a property is accessible
      *
      * ### Example:
      *
@@ -1172,12 +1229,13 @@ trait EntityTrait
      * $entity->isAccessible('id'); // Returns whether it can be set or not
      * ```
      *
-     * @param string $field Field name to check
+     * @param string $property Property name to check
      * @return bool
      */
-    public function isAccessible(string $field): bool
+    public function isAccessible($property)
     {
-        $value = $this->_accessible[$field] ??
+        $value = isset($this->_accessible[$property]) ?
+            $this->_accessible[$property] :
             null;
 
         return ($value === null && !empty($this->_accessible['*'])) || $value;
@@ -1188,7 +1246,7 @@ trait EntityTrait
      *
      * @return string
      */
-    public function getSource(): string
+    public function getSource()
     {
         return $this->_registryAlias;
     }
@@ -1199,9 +1257,30 @@ trait EntityTrait
      * @param string $alias the alias of the repository
      * @return $this
      */
-    public function setSource(string $alias)
+    public function setSource($alias)
     {
         $this->_registryAlias = $alias;
+
+        return $this;
+    }
+
+    /**
+     * Returns the alias of the repository from which this entity came from.
+     *
+     * If called with no arguments, it returns the alias of the repository
+     * this entity came from if it is known.
+     *
+     * @deprecated 3.4.0 Use EntityTrait::getSource() and EntityTrait::setSource()
+     * @param string|null $alias the alias of the repository
+     * @return string|$this
+     */
+    public function source($alias = null)
+    {
+        if (is_null($alias)) {
+            return $this->getSource();
+        }
+
+        $this->setSource($alias);
 
         return $this;
     }
@@ -1211,9 +1290,9 @@ trait EntityTrait
      *
      * @return string
      */
-    public function __toString(): string
+    public function __toString()
     {
-        return (string)json_encode($this, JSON_PRETTY_PRINT);
+        return json_encode($this, JSON_PRETTY_PRINT);
     }
 
     /**
@@ -1222,23 +1301,17 @@ trait EntityTrait
      *
      * @return array
      */
-    public function __debugInfo(): array
+    public function __debugInfo()
     {
-        $fields = $this->_fields;
-        foreach ($this->_virtual as $field) {
-            $fields[$field] = $this->$field;
-        }
-
-        return $fields + [
+        return $this->_properties + [
             '[new]' => $this->isNew(),
             '[accessible]' => $this->_accessible,
             '[dirty]' => $this->_dirty,
             '[original]' => $this->_original,
             '[virtual]' => $this->_virtual,
-            '[hasErrors]' => $this->hasErrors(),
             '[errors]' => $this->_errors,
             '[invalid]' => $this->_invalid,
-            '[repository]' => $this->_registryAlias,
+            '[repository]' => $this->_registryAlias
         ];
     }
 }

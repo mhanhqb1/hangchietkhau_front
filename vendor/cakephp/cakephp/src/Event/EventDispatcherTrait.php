@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -21,11 +19,12 @@ namespace Cake\Event;
  */
 trait EventDispatcherTrait
 {
+
     /**
      * Instance of the Cake\Event\EventManager this object is using
      * to dispatch inner events.
      *
-     * @var \Cake\Event\EventManagerInterface
+     * @var \Cake\Event\EventManager
      */
     protected $_eventManager;
 
@@ -34,7 +33,7 @@ trait EventDispatcherTrait
      *
      * @var string
      */
-    protected $_eventClass = Event::class;
+    protected $_eventClass = '\Cake\Event\Event';
 
     /**
      * Returns the Cake\Event\EventManager manager instance for this object.
@@ -42,9 +41,28 @@ trait EventDispatcherTrait
      * You can use this instance to register any new listeners or callbacks to the
      * object events, or create your own events and trigger them at will.
      *
-     * @return \Cake\Event\EventManagerInterface
+     * @param \Cake\Event\EventManager|null $eventManager the eventManager to set
+     * @return \Cake\Event\EventManager
+     * @deprecated 3.5.0 Use getEventManager()/setEventManager() instead.
      */
-    public function getEventManager(): EventManagerInterface
+    public function eventManager(EventManager $eventManager = null)
+    {
+        if ($eventManager !== null) {
+            $this->setEventManager($eventManager);
+        }
+
+        return $this->getEventManager();
+    }
+
+    /**
+     * Returns the Cake\Event\EventManager manager instance for this object.
+     *
+     * You can use this instance to register any new listeners or callbacks to the
+     * object events, or create your own events and trigger them at will.
+     *
+     * @return \Cake\Event\EventManager
+     */
+    public function getEventManager()
     {
         if ($this->_eventManager === null) {
             $this->_eventManager = new EventManager();
@@ -54,15 +72,15 @@ trait EventDispatcherTrait
     }
 
     /**
-     * Returns the Cake\Event\EventManagerInterface instance for this object.
+     * Returns the Cake\Event\EventManager manager instance for this object.
      *
      * You can use this instance to register any new listeners or callbacks to the
      * object events, or create your own events and trigger them at will.
      *
-     * @param \Cake\Event\EventManagerInterface $eventManager the eventManager to set
+     * @param \Cake\Event\EventManager $eventManager the eventManager to set
      * @return $this
      */
-    public function setEventManager(EventManagerInterface $eventManager)
+    public function setEventManager(EventManager $eventManager)
     {
         $this->_eventManager = $eventManager;
 
@@ -80,15 +98,14 @@ trait EventDispatcherTrait
      * @param object|null $subject The object that this event applies to
      * ($this by default).
      *
-     * @return \Cake\Event\EventInterface
+     * @return \Cake\Event\Event
      */
-    public function dispatchEvent(string $name, ?array $data = null, ?object $subject = null): EventInterface
+    public function dispatchEvent($name, $data = null, $subject = null)
     {
         if ($subject === null) {
             $subject = $this;
         }
 
-        /** @var \Cake\Event\EventInterface $event */
         $event = new $this->_eventClass($name, $subject, $data);
         $this->getEventManager()->dispatch($event);
 

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,33 +14,16 @@ declare(strict_types=1);
  */
 namespace App\Console;
 
-if (!defined('STDIN')) {
-    define('STDIN', fopen('php://stdin', 'r'));
-}
-
 use Cake\Utility\Security;
 use Composer\Script\Event;
 use Exception;
 
 /**
- * Provides installation hooks for when this application is installed through
+ * Provides installation hooks for when this application is installed via
  * composer. Customize this class to suit your needs.
  */
 class Installer
 {
-    /**
-     * An array of directories to be made writable
-     */
-    public const WRITABLE_DIRS = [
-        'logs',
-        'tmp',
-        'tmp/cache',
-        'tmp/cache/models',
-        'tmp/cache/persistent',
-        'tmp/cache/views',
-        'tmp/sessions',
-        'tmp/tests',
-    ];
 
     /**
      * Does some routine installation tasks so people don't have to.
@@ -57,32 +38,52 @@ class Installer
 
         $rootDir = dirname(dirname(__DIR__));
 
-        static::createAppLocalConfig($rootDir, $io);
+        static::createAppConfig($rootDir, $io);
         static::createWritableDirectories($rootDir, $io);
 
-        static::setFolderPermissions($rootDir, $io);
+        // ask if the permissions should be changed
+        if ($io->isInteractive()) {
+            $validator = function ($arg) {
+                if (in_array($arg, ['Y', 'y', 'N', 'n'])) {
+                    return $arg;
+                }
+                throw new Exception('This is not a valid answer. Please choose Y or n.');
+            };
+            $setFolderPermissions = $io->askAndValidate(
+                '<info>Set Folder Permissions ? (Default to Y)</info> [<comment>Y,n</comment>]? ',
+                $validator,
+                10,
+                'Y'
+            );
+
+            if (in_array($setFolderPermissions, ['Y', 'y'])) {
+                static::setFolderPermissions($rootDir, $io);
+            }
+        } else {
+            static::setFolderPermissions($rootDir, $io);
+        }
+
         static::setSecuritySalt($rootDir, $io);
 
-        $class = 'Cake\Codeception\Console\Installer';
-        if (class_exists($class)) {
-            $class::customizeCodeceptionBinary($event);
+        if (class_exists('\Cake\Codeception\Console\Installer')) {
+            \Cake\Codeception\Console\Installer::customizeCodeceptionBinary($event);
         }
     }
 
     /**
-     * Create config/app_local.php file if it does not exist.
+     * Create the config/app.php file if it does not exist.
      *
      * @param string $dir The application's root directory.
      * @param \Composer\IO\IOInterface $io IO interface to write to console.
      * @return void
      */
-    public static function createAppLocalConfig($dir, $io)
+    public static function createAppConfig($dir, $io)
     {
-        $appLocalConfig = $dir . '/config/app_local.php';
-        $appLocalConfigTemplate = $dir . '/config/app_local.example.php';
-        if (!file_exists($appLocalConfig)) {
-            copy($appLocalConfigTemplate, $appLocalConfig);
-            $io->write('Created `config/app_local.php` file');
+        $appConfig = $dir . '/config/app.php';
+        $defaultConfig = $dir . '/config/app.default.php';
+        if (!file_exists($appConfig)) {
+            copy($defaultConfig, $appConfig);
+            $io->write('Created `config/app.php` file');
         }
     }
 
@@ -95,7 +96,18 @@ class Installer
      */
     public static function createWritableDirectories($dir, $io)
     {
-        foreach (static::WRITABLE_DIRS as $path) {
+        $paths = [
+            'logs',
+            'tmp',
+            'tmp/cache',
+            'tmp/cache/models',
+            'tmp/cache/persistent',
+            'tmp/cache/views',
+            'tmp/sessions',
+            'tmp/tests'
+        ];
+
+        foreach ($paths as $path) {
             $path = $dir . '/' . $path;
             if (!file_exists($path)) {
                 mkdir($path);
@@ -115,35 +127,15 @@ class Installer
      */
     public static function setFolderPermissions($dir, $io)
     {
-        // ask if the permissions should be changed
-        if ($io->isInteractive()) {
-            $validator = function ($arg) {
-                if (in_array($arg, ['Y', 'y', 'N', 'n'])) {
-                    return $arg;
-                }
-                throw new Exception('This is not a valid answer. Please choose Y or n.');
-            };
-            $setFolderPermissions = $io->askAndValidate(
-                '<info>Set Folder Permissions ? (Default to Y)</info> [<comment>Y,n</comment>]? ',
-                $validator,
-                10,
-                'Y'
-            );
-
-            if (in_array($setFolderPermissions, ['n', 'N'])) {
-                return;
-            }
-        }
-
         // Change the permissions on a path and output the results.
-        $changePerms = function ($path) use ($io) {
+        $changePerms = function ($path, $perms, $io) {
+            // Get permission bits from stat(2) result.
             $currentPerms = fileperms($path) & 0777;
-            $worldWritable = $currentPerms | 0007;
-            if ($worldWritable == $currentPerms) {
+            if (($currentPerms & $perms) == $perms) {
                 return;
             }
 
-            $res = chmod($path, $worldWritable);
+            $res = chmod($path, $currentPerms | $perms);
             if ($res) {
                 $io->write('Permissions set on ' . $path);
             } else {
@@ -151,7 +143,7 @@ class Installer
             }
         };
 
-        $walker = function ($dir) use (&$walker, $changePerms) {
+        $walker = function ($dir, $perms, $io) use (&$walker, $changePerms) {
             $files = array_diff(scandir($dir), ['.', '..']);
             foreach ($files as $file) {
                 $path = $dir . '/' . $file;
@@ -160,14 +152,15 @@ class Installer
                     continue;
                 }
 
-                $changePerms($path);
-                $walker($path);
+                $changePerms($path, $perms, $io);
+                $walker($path, $perms, $io);
             }
         };
 
-        $walker($dir . '/tmp');
-        $changePerms($dir . '/tmp');
-        $changePerms($dir . '/logs');
+        $worldWritable = bindec('0000000111');
+        $walker($dir . '/tmp', $worldWritable, $io);
+        $changePerms($dir . '/tmp', $worldWritable, $io);
+        $changePerms($dir . '/logs', $worldWritable, $io);
     }
 
     /**
@@ -180,7 +173,7 @@ class Installer
     public static function setSecuritySalt($dir, $io)
     {
         $newKey = hash('sha256', Security::randomBytes(64));
-        static::setSecuritySaltInFile($dir, $io, $newKey, 'app_local.php');
+        static::setSecuritySaltInFile($dir, $io, $newKey, 'app.php');
     }
 
     /**

@@ -1,19 +1,12 @@
 <?php
-declare(strict_types=1);
-
-/**
- * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
- *
- * Licensed under The MIT License
- * For full copyright and license information, please see the LICENSE.txt
- * Redistributions of files must retain the above copyright notice
- *
- * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
- * @since         3.2.0
- * @license       http://www.opensource.org/licenses/mit-license.php MIT License
- */
 namespace Cake\TestSuite\Constraint;
+
+if (class_exists('PHPUnit_Runner_Version') && !class_exists('PHPUnit\Framework\Constraint\Constraint')) {
+    class_alias('PHPUnit_Framework_Constraint', 'PHPUnit\Framework\Constraint\Constraint');
+}
+if (class_exists('PHPUnit_Runner_Version') && !class_exists('PHPUnit\Framework\AssertionFailedError')) {
+    class_alias('PHPUnit_Framework_AssertionFailedError', 'PHPUnit\Framework\AssertionFailedError');
+}
 
 use Cake\Event\EventManager;
 use PHPUnit\Framework\AssertionFailedError;
@@ -21,31 +14,28 @@ use PHPUnit\Framework\Constraint\Constraint;
 
 /**
  * EventFired constraint
- *
- * @internal
  */
 class EventFired extends Constraint
 {
     /**
      * Array of fired events
      *
-     * @var \Cake\Event\EventManager
+     * @var EventManager
      */
     protected $_eventManager;
 
     /**
      * Constructor
      *
-     * @param \Cake\Event\EventManager $eventManager Event manager to check
+     * @param EventManager $eventManager Event manager to check
      */
-    public function __construct(EventManager $eventManager)
+    public function __construct($eventManager)
     {
+        parent::__construct();
         $this->_eventManager = $eventManager;
 
         if ($this->_eventManager->getEventList() === null) {
-            throw new AssertionFailedError(
-                'The event manager you are asserting against is not configured to track events.'
-            );
+            throw new AssertionFailedError('The event manager you are asserting against is not configured to track events.');
         }
     }
 
@@ -55,11 +45,9 @@ class EventFired extends Constraint
      * @param mixed $other Constraint check
      * @return bool
      */
-    public function matches($other): bool
+    public function matches($other)
     {
-        $list = $this->_eventManager->getEventList();
-
-        return $list === null ? false : $list->hasEvent($other);
+        return $this->_eventManager->getEventList()->hasEvent($other);
     }
 
     /**
@@ -67,7 +55,7 @@ class EventFired extends Constraint
      *
      * @return string
      */
-    public function toString(): string
+    public function toString()
     {
         return 'was fired';
     }

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -27,17 +25,18 @@ use Cake\Utility\Security;
  */
 class WeakPasswordHasher extends AbstractPasswordHasher
 {
+
     /**
      * Default config for this object.
      *
      * @var array
      */
     protected $_defaultConfig = [
-        'hashType' => null,
+        'hashType' => null
     ];
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function __construct(array $config = [])
     {
@@ -49,9 +48,12 @@ class WeakPasswordHasher extends AbstractPasswordHasher
     }
 
     /**
-     * @inheritDoc
+     * Generates password hash.
+     *
+     * @param string $password Plain text password to hash.
+     * @return string Password hash
      */
-    public function hash(string $password)
+    public function hash($password)
     {
         return Security::hash($password, $this->_config['hashType'], true);
     }
@@ -63,7 +65,7 @@ class WeakPasswordHasher extends AbstractPasswordHasher
      * @param string $hashedPassword Existing hashed password.
      * @return bool True if hashes match else false.
      */
-    public function check(string $password, string $hashedPassword): bool
+    public function check($password, $hashedPassword)
     {
         return $hashedPassword === $this->hash($password);
     }

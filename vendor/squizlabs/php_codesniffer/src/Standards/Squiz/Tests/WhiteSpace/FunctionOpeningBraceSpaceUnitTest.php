@@ -29,22 +29,22 @@ class FunctionOpeningBraceSpaceUnitTest extends AbstractSniffUnitTest
     {
         switch ($testFile) {
         case 'FunctionOpeningBraceSpaceUnitTest.inc':
-            return [
-                10 => 1,
-                25 => 1,
-                49 => 1,
-            ];
-
+            return array(
+                    10 => 1,
+                    25 => 1,
+                   );
+            break;
         case 'FunctionOpeningBraceSpaceUnitTest.js':
-            return [
-                11 => 1,
-                31 => 1,
-                38 => 1,
-                88 => 1,
-            ];
-
+            return array(
+                    11 => 1,
+                    31 => 1,
+                    38 => 1,
+                    88 => 1,
+                   );
+            break;
         default:
-            return [];
+            return array();
+            break;
         }//end switch
 
     }//end getErrorList()
@@ -60,7 +60,7 @@ class FunctionOpeningBraceSpaceUnitTest extends AbstractSniffUnitTest
      */
     public function getWarningList()
     {
-        return [];
+        return array();
 
     }//end getWarningList()
 

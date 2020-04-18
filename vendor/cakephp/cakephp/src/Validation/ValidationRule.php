@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * ValidationRule.
  *
@@ -28,6 +26,7 @@ use InvalidArgumentException;
  */
 class ValidationRule
 {
+
     /**
      * The method to be called for a given scope
      *
@@ -38,7 +37,7 @@ class ValidationRule
     /**
      * The 'on' key
      *
-     * @var string|callable
+     * @var string
      */
     protected $_on;
 
@@ -87,7 +86,7 @@ class ValidationRule
      *
      * @return bool
      */
-    public function isLast(): bool
+    public function isLast()
     {
         return (bool)$this->_last;
     }
@@ -106,7 +105,7 @@ class ValidationRule
      *   new record
      * - data: The full data that was passed to the validation process
      * - field: The name of the field that is being processed
-     * @return bool|string|array
+     * @return bool|string
      * @throws \InvalidArgumentException when the supplied rule is not a valid
      * callable for the configured scope
      */
@@ -128,14 +127,10 @@ class ValidationRule
         }
 
         if (!$isCallable) {
-            /** @psalm-suppress PossiblyInvalidArgument */
-            $message = sprintf(
-                'Unable to call method "%s" in "%s" provider for field "%s"',
-                $this->_rule,
-                $this->_provider,
-                $context['field']
+            $message = 'Unable to call method "%s" in "%s" provider for field "%s"';
+            throw new InvalidArgumentException(
+                sprintf($message, $this->_rule, $this->_provider, $context['field'])
             );
-            throw new InvalidArgumentException($message);
         }
 
         if ($this->_pass) {
@@ -164,7 +159,7 @@ class ValidationRule
      *   be passed as the last argument for the validation method
      * @return bool True if the ValidationRule should be skipped
      */
-    protected function _skip(array $context): bool
+    protected function _skip($context)
     {
         if (!is_string($this->_on) && is_callable($this->_on)) {
             $function = $this->_on;
@@ -174,8 +169,9 @@ class ValidationRule
 
         $newRecord = $context['newRecord'];
         if (!empty($this->_on)) {
-            return ($this->_on === Validator::WHEN_CREATE && !$newRecord)
-                || ($this->_on === Validator::WHEN_UPDATE && $newRecord);
+            if (($this->_on === 'create' && !$newRecord) || ($this->_on === 'update' && $newRecord)) {
+                return true;
+            }
         }
 
         return false;
@@ -187,7 +183,7 @@ class ValidationRule
      * @param array $validator [optional]
      * @return void
      */
-    protected function _addValidatorProps(array $validator = []): void
+    protected function _addValidatorProps($validator = [])
     {
         foreach ($validator as $key => $value) {
             if (!isset($value) || empty($value)) {
@@ -197,7 +193,7 @@ class ValidationRule
                 $this->_pass = array_slice($value, 1);
                 $value = array_shift($value);
             }
-            if (in_array($key, ['rule', 'on', 'message', 'last', 'provider', 'pass'], true)) {
+            if (in_array($key, ['rule', 'on', 'message', 'last', 'provider', 'pass'])) {
                 $this->{"_$key"} = $value;
             }
         }
@@ -209,7 +205,7 @@ class ValidationRule
      * @param string $property The name of the property to retrieve.
      * @return mixed
      */
-    public function get(string $property)
+    public function get($property)
     {
         $property = '_' . $property;
         if (isset($this->{$property})) {

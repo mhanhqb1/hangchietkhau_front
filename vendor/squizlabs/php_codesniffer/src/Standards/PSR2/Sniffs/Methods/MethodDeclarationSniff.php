@@ -9,9 +9,9 @@
 
 namespace PHP_CodeSniffer\Standards\PSR2\Sniffs\Methods;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\AbstractScopeSniff;
 use PHP_CodeSniffer\Util\Tokens;
+use PHP_CodeSniffer\Files\File;
 
 class MethodDeclarationSniff extends AbstractScopeSniff
 {
@@ -22,7 +22,7 @@ class MethodDeclarationSniff extends AbstractScopeSniff
      */
     public function __construct()
     {
-        parent::__construct(Tokens::$ooScopeTokens, [T_FUNCTION]);
+        parent::__construct(array(T_CLASS, T_INTERFACE), array(T_FUNCTION));
 
     }//end __construct()
 
@@ -40,14 +40,6 @@ class MethodDeclarationSniff extends AbstractScopeSniff
     {
         $tokens = $phpcsFile->getTokens();
 
-        // Determine if this is a function which needs to be examined.
-        $conditions = $tokens[$stackPtr]['conditions'];
-        end($conditions);
-        $deepestScope = key($conditions);
-        if ($deepestScope !== $currScope) {
-            return;
-        }
-
         $methodName = $phpcsFile->getDeclarationName($stackPtr);
         if ($methodName === null) {
             // Ignore closures.
@@ -56,7 +48,7 @@ class MethodDeclarationSniff extends AbstractScopeSniff
 
         if ($methodName[0] === '_' && isset($methodName[1]) === true && $methodName[1] !== '_') {
             $error = 'Method name "%s" should not be prefixed with an underscore to indicate visibility';
-            $data  = [$methodName];
+            $data  = array($methodName);
             $phpcsFile->addWarning($error, $stackPtr, 'Underscore', $data);
         }
 
@@ -65,8 +57,9 @@ class MethodDeclarationSniff extends AbstractScopeSniff
         $abstract   = 0;
         $final      = 0;
 
-        $find = (Tokens::$methodPrefixes + Tokens::$emptyTokens);
-        $prev = $phpcsFile->findPrevious($find, ($stackPtr - 1), null, true);
+        $find   = Tokens::$methodPrefixes;
+        $find[] = T_WHITESPACE;
+        $prev   = $phpcsFile->findPrevious($find, ($stackPtr - 1), null, true);
 
         $prefix = $stackPtr;
         while (($prefix = $phpcsFile->findPrevious(Tokens::$methodPrefixes, ($prefix - 1), $prev)) !== false) {
@@ -86,7 +79,7 @@ class MethodDeclarationSniff extends AbstractScopeSniff
             }
         }
 
-        $fixes = [];
+        $fixes = array();
 
         if ($visibility !== 0 && $final > $visibility) {
             $error = 'The final declaration must precede the visibility declaration';
@@ -123,7 +116,7 @@ class MethodDeclarationSniff extends AbstractScopeSniff
                 $fixes[$static]       = '';
                 $fixes[($static + 1)] = '';
                 if (isset($fixes[$visibility]) === true) {
-                    $fixes[$visibility] .= ' static';
+                    $fixes[$visibility] = $fixes[$visibility].' static';
                 } else {
                     $fixes[$visibility] = $tokens[$visibility]['content'].' static';
                 }

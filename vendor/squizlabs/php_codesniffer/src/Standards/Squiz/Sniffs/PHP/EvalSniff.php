@@ -9,8 +9,8 @@
 
 namespace PHP_CodeSniffer\Standards\Squiz\Sniffs\PHP;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
 
 class EvalSniff implements Sniff
 {
@@ -23,7 +23,7 @@ class EvalSniff implements Sniff
      */
     public function register()
     {
-        return [T_EVAL];
+        return array(T_EVAL);
 
     }//end register()
 

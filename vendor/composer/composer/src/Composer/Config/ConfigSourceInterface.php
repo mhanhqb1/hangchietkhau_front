@@ -39,7 +39,7 @@ interface ConfigSourceInterface
      * Add a config setting
      *
      * @param string $name  Name
-     * @param string|array $value Value
+     * @param string $value Value
      */
     public function addConfigSetting($name, $value);
 

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
@@ -15,10 +13,10 @@ namespace DebugKit;
 
 use Cake\Core\Configure;
 use Cake\Core\InstanceConfigTrait;
-use Cake\Core\Plugin as CorePlugin;
+use Cake\Event\Event;
 use Cake\Event\EventManager;
+use Cake\Http\Response;
 use Cake\Http\ServerRequest;
-use Cake\Log\Log;
 use Cake\ORM\TableRegistry;
 use Cake\Routing\Router;
 use DebugKit\Panel\PanelRegistry;
@@ -61,10 +59,8 @@ class ToolbarService
             'DebugKit.Routes' => true,
             'DebugKit.Packages' => true,
             'DebugKit.Mail' => true,
-            'DebugKit.Deprecations' => true,
         ],
         'forceEnable' => false,
-        'safeTld' => [],
     ];
 
     /**
@@ -75,7 +71,7 @@ class ToolbarService
      */
     public function __construct(EventManager $events, array $config)
     {
-        $this->setConfig($config);
+        $this->config($config);
         $this->registry = new PanelRegistry($events);
     }
 
@@ -97,61 +93,15 @@ class ToolbarService
     public function isEnabled()
     {
         $enabled = (bool)Configure::read('debug');
-
-        if ($enabled && !$this->isSuspiciouslyProduction()) {
+        if ($enabled) {
             return true;
         }
-        $force = $this->getConfig('forceEnable');
+        $force = $this->config('forceEnable');
         if (is_callable($force)) {
             return $force();
         }
 
         return $force;
-    }
-
-    /**
-     * Returns true if this applications is being executed on a domain with a TLD
-     * that is commonly associated with a production environment.
-     *
-     * @return bool
-     */
-    protected function isSuspiciouslyProduction()
-    {
-        $url = parse_url('http://' . env('HTTP_HOST'), PHP_URL_HOST);
-        if ($url === false) {
-            return false;
-        }
-
-        $host = explode('.', $url);
-        $first = current($host);
-        $isIP = is_numeric(implode('', $host));
-
-        if (count($host) === 1) {
-            return false;
-        }
-
-        if ($isIP && in_array($first, ['192', '10', '127'])) {
-            // Accessing the app by private IP, this is safe
-            return false;
-        }
-
-        $tld = end($host);
-        $safeTopLevelDomains = ['localhost', 'invalid', 'test', 'example', 'local'];
-        $safeTopLevelDomains = array_merge($safeTopLevelDomains, (array)$this->getConfig('safeTld'));
-
-        if (!in_array($tld, $safeTopLevelDomains, true) && !$this->getConfig('forceEnable')) {
-            $host = implode('.', $host);
-            $safeList = implode(', ', $safeTopLevelDomains);
-            Log::warning(
-                "DebugKit is disabling itself as your host `{$host}` " .
-                "is not in the known safe list of top-level-domains ({$safeList}). " .
-                "If you would like to force DebugKit on use the `DebugKit.forceEnable` Configure option."
-            );
-
-            return true;
-        }
-
-        return false;
     }
 
     /**
@@ -165,7 +115,7 @@ class ToolbarService
     }
 
     /**
-     * Get the a loaded panel
+     * Get the list of loaded panels
      *
      * @param string $name The name of the panel you want to get.
      * @return \DebugKit\DebugPanel|null The panel or null.
@@ -182,8 +132,8 @@ class ToolbarService
      */
     public function loadPanels()
     {
-        foreach ($this->getConfig('panels') as $panel => $enabled) {
-            [$panel, $enabled] = is_numeric($panel) ? [$enabled, true] : [$panel, $enabled];
+        foreach ($this->config('panels') as $panel => $enabled) {
+            list($panel, $enabled) = (is_numeric($panel)) ? [$enabled, true] : [$panel, $enabled];
             if ($enabled) {
                 $this->registry->load($panel);
             }
@@ -212,10 +162,8 @@ class ToolbarService
     public function saveData(ServerRequest $request, ResponseInterface $response)
     {
         // Skip debugkit requests and requestAction()
-        $path = $request->getUri()->getPath();
-        if (
-            strpos($path, 'debug_kit') !== false ||
-            strpos($path, 'debug-kit') !== false ||
+        if ($request->param('plugin') === 'DebugKit' ||
+            strpos($request->getUri()->getPath(), 'debug_kit') !== false ||
             $request->is('requested')
         ) {
             return null;
@@ -225,15 +173,15 @@ class ToolbarService
             'content_type' => $response->getHeaderLine('Content-Type'),
             'method' => $request->getMethod(),
             'status_code' => $response->getStatusCode(),
-            'requested_at' => $request->getEnv('REQUEST_TIME'),
-            'panels' => [],
+            'requested_at' => $request->env('REQUEST_TIME'),
+            'panels' => []
         ];
-        /** @var \DebugKit\Model\Table\RequestsTable $requests */
-        $requests = TableRegistry::getTableLocator()->get('DebugKit.Requests');
+        /* @var \DebugKit\Model\Table\RequestsTable $requests */
+        $requests = TableRegistry::get('DebugKit.Requests');
         $requests->gc();
 
         $row = $requests->newEntity($data);
-        $row->setNew(true);
+        $row->isNew(true);
 
         foreach ($this->registry->loaded() as $name) {
             $panel = $this->registry->{$name};
@@ -254,28 +202,6 @@ class ToolbarService
         }
 
         return $requests->save($row);
-    }
-
-    /**
-     * Reads the modified date of a file in the webroot, and returns the integer
-     *
-     * @return string
-     */
-    public function getToolbarUrl()
-    {
-        $url = 'js/toolbar.js';
-        $filePaths = [
-            str_replace('/', DIRECTORY_SEPARATOR, WWW_ROOT . 'debug_kit/' . $url),
-            str_replace('/', DIRECTORY_SEPARATOR, CorePlugin::path('DebugKit') . 'webroot/' . $url),
-        ];
-        $url = '/debug_kit/' . $url;
-        foreach ($filePaths as $filePath) {
-            if (file_exists($filePath)) {
-                return $url . '?' . filemtime($filePath);
-            }
-        }
-
-        return $url;
     }
 
     /**
@@ -311,7 +237,7 @@ class ToolbarService
             '<script id="__debug_kit" data-id="%s" data-url="%s" src="%s"></script>',
             $row->id,
             $url,
-            Router::url($this->getToolbarUrl())
+            Router::url('/debug_kit/js/toolbar.js')
         );
         $contents = substr($contents, 0, $pos) . $script . substr($contents, $pos);
         $body->rewind();

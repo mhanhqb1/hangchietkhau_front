@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -25,6 +23,7 @@ use Cake\Http\Client\Request;
  */
 class Basic
 {
+
     /**
      * Add Authorization header to the request.
      *
@@ -33,11 +32,10 @@ class Basic
      * @return \Cake\Http\Client\Request The updated request.
      * @see https://www.ietf.org/rfc/rfc2617.txt
      */
-    public function authentication(Request $request, array $credentials): Request
+    public function authentication(Request $request, array $credentials)
     {
         if (isset($credentials['username'], $credentials['password'])) {
             $value = $this->_generateHeader($credentials['username'], $credentials['password']);
-            /** @var \Cake\Http\Client\Request $request */
             $request = $request->withHeader('Authorization', $value);
         }
 
@@ -52,11 +50,10 @@ class Basic
      * @return \Cake\Http\Client\Request The updated request.
      * @see https://www.ietf.org/rfc/rfc2617.txt
      */
-    public function proxyAuthentication(Request $request, array $credentials): Request
+    public function proxyAuthentication(Request $request, array $credentials)
     {
         if (isset($credentials['username'], $credentials['password'])) {
             $value = $this->_generateHeader($credentials['username'], $credentials['password']);
-            /** @var \Cake\Http\Client\Request $request */
             $request = $request->withHeader('Proxy-Authorization', $value);
         }
 
@@ -70,8 +67,11 @@ class Basic
      * @param string $pass Password.
      * @return string
      */
-    protected function _generateHeader(string $user, string $pass): string
+    protected function _generateHeader($user, $pass)
     {
         return 'Basic ' . base64_encode($user . ':' . $pass);
     }
 }
+
+// @deprecated Add backwards compat alias.
+class_alias('Cake\Http\Client\Auth\Basic', 'Cake\Network\Http\Auth\Basic');

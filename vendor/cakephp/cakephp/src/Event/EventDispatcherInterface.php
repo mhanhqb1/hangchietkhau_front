@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -24,6 +22,9 @@ namespace Cake\Event;
  *
  * The Cake\Event\EventDispatcherTrait lets you easily implement
  * this interface.
+ *
+ * @method \Cake\Event\EventManager getEventManager()
+ * @method $this setEventManager(\Cake\Event\EventManager $eventManager)
  */
 interface EventDispatcherInterface
 {
@@ -38,25 +39,19 @@ interface EventDispatcherInterface
      * @param object|null $subject The object that this event applies to
      * ($this by default).
      *
-     * @return \Cake\Event\EventInterface
+     * @return \Cake\Event\Event
      */
-    public function dispatchEvent(string $name, ?array $data = null, ?object $subject = null): EventInterface;
-
-    /**
-     * Sets the Cake\Event\EventManager manager instance for this object.
-     *
-     * You can use this instance to register any new listeners or callbacks to the
-     * object events, or create your own events and trigger them at will.
-     *
-     * @param \Cake\Event\EventManagerInterface $eventManager the eventManager to set
-     * @return $this
-     */
-    public function setEventManager(EventManagerInterface $eventManager);
+    public function dispatchEvent($name, $data = null, $subject = null);
 
     /**
      * Returns the Cake\Event\EventManager manager instance for this object.
      *
-     * @return \Cake\Event\EventManagerInterface
+     * You can use this instance to register any new listeners or callbacks to the
+     * object events, or create your own events and trigger them at will.
+     *
+     * @deprecated 3.5.0 Use getEventManager()/setEventManager() instead.
+     * @param \Cake\Event\EventManager|null $eventManager the eventManager to set
+     * @return \Cake\Event\EventManager
      */
-    public function getEventManager(): EventManagerInterface;
+    public function eventManager(EventManager $eventManager = null);
 }

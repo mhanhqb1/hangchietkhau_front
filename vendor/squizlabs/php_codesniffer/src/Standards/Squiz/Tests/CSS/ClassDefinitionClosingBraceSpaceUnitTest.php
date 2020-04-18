@@ -25,19 +25,12 @@ class ClassDefinitionClosingBraceSpaceUnitTest extends AbstractSniffUnitTest
      */
     public function getErrorList()
     {
-        return [
-            2  => 1,
-            11 => 1,
-            44 => 1,
-            47 => 1,
-            51 => 1,
-            53 => 1,
-            57 => 1,
-            59 => 1,
-            67 => 1,
-            69 => 1,
-            81 => 2,
-        ];
+        return array(
+                2  => 1,
+                11 => 1,
+                44 => 1,
+                47 => 1,
+               );
 
     }//end getErrorList()
 
@@ -52,7 +45,7 @@ class ClassDefinitionClosingBraceSpaceUnitTest extends AbstractSniffUnitTest
      */
     public function getWarningList()
     {
-        return [];
+        return array();
 
     }//end getWarningList()
 

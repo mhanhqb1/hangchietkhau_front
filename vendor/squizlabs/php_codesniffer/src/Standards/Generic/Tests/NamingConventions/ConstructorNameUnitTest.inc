@@ -8,7 +8,7 @@ class TestClass extends MyClass
     }
 
     function __construct() {
-        parent::MYCLASS();
+        parent::MyClass();
         parent::__construct();
     }
 
@@ -29,7 +29,7 @@ class MyClass
 
 }
 
-class MyOtherClass extends \MyNamespace\SomeClass
+class MyClass extends \MyNamespace\SomeClass
 {
     function __construct() {
         something::MyNamespace();
@@ -64,34 +64,3 @@ foo(new class extends MyClass
     }
 
 });
-
-class OlderClass
-{
-    function OlderClass() {}
-
-    function __CONSTRUCT() {}
-}
-
-
-// Issue #2178.
-class Nested extends Another {
-    public function getAnonymousClass() {
-        return new class() extends Something {
-            public function nested() {
-                echo 'In method nested!';
-                parent::Another(); // OK.
-            }
-
-            public function __construct() {
-                parent::Another(); // OK.
-            }
-        };
-    }
-
-    abstract public function nested();
-}
-
-interface CustomChildCreator
-{
-    public function customChildCreator($elementName, Project $project);
-}

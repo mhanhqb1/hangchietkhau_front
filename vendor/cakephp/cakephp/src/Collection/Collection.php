@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,8 +15,11 @@ declare(strict_types=1);
 namespace Cake\Collection;
 
 use ArrayIterator;
+use InvalidArgumentException;
 use IteratorIterator;
+use LogicException;
 use Serializable;
+use Traversable;
 
 /**
  * A collection is an immutable list of elements with a handful of functions to
@@ -26,18 +27,24 @@ use Serializable;
  */
 class Collection extends IteratorIterator implements CollectionInterface, Serializable
 {
+
     use CollectionTrait;
 
     /**
      * Constructor. You can provide an array or any traversable object
      *
-     * @param iterable $items Items.
+     * @param array|\Traversable $items Items.
      * @throws \InvalidArgumentException If passed incorrect type for items.
      */
-    public function __construct(iterable $items)
+    public function __construct($items)
     {
         if (is_array($items)) {
             $items = new ArrayIterator($items);
+        }
+
+        if (!($items instanceof Traversable)) {
+            $msg = 'Only an array or \Traversable is allowed for Collection';
+            throw new InvalidArgumentException($msg);
         }
 
         parent::__construct($items);
@@ -49,7 +56,7 @@ class Collection extends IteratorIterator implements CollectionInterface, Serial
      *
      * @return string
      */
-    public function serialize(): string
+    public function serialize()
     {
         return serialize($this->buffered());
     }
@@ -60,35 +67,23 @@ class Collection extends IteratorIterator implements CollectionInterface, Serial
      * @param string $collection The serialized collection
      * @return void
      */
-    public function unserialize($collection): void
+    public function unserialize($collection)
     {
         $this->__construct(unserialize($collection));
     }
 
     /**
-     * {@inheritDoc}
+     * Throws an exception.
      *
-     * @return int
-     */
-    public function count(): int
-    {
-        $traversable = $this->optimizeUnwrap();
-
-        if (is_array($traversable)) {
-            return count($traversable);
-        }
-
-        return iterator_count($traversable);
-    }
-
-    /**
-     * {@inheritDoc}
+     * Issuing a count on a Collection can have many side effects, some making the
+     * Collection unusable after the count operation.
      *
-     * @return int
+     * @return void
+     * @throws \LogicException
      */
-    public function countKeys(): int
+    public function count()
     {
-        return count($this->toArray());
+        throw new LogicException('You cannot issue a count on a Collection.');
     }
 
     /**
@@ -97,10 +92,10 @@ class Collection extends IteratorIterator implements CollectionInterface, Serial
      *
      * @return array
      */
-    public function __debugInfo(): array
+    public function __debugInfo()
     {
         return [
-            'count' => $this->count(),
+            'count' => iterator_count($this),
         ];
     }
 }

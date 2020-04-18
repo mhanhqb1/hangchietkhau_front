@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -19,20 +17,21 @@ namespace Cake\I18n\Parser;
 use RuntimeException;
 
 /**
- * Parses file in MO format
+ * Parses file in PO format
  *
  * @copyright Copyright (c) 2010, Union of RAD http://union-of-rad.org (http://lithify.me/)
  * @copyright Copyright (c) 2014, Fabien Potencier https://github.com/symfony/Translation/blob/master/LICENSE
  */
 class MoFileParser
 {
+
     /**
      * Magic used for validating the format of a MO file as well as
      * detecting if the machine used to create that file was little endian.
      *
      * @var float
      */
-    public const MO_LITTLE_ENDIAN_MAGIC = 0x950412de;
+    const MO_LITTLE_ENDIAN_MAGIC = 0x950412de;
 
     /**
      * Magic used for validating the format of a MO file as well as
@@ -40,27 +39,27 @@ class MoFileParser
      *
      * @var float
      */
-    public const MO_BIG_ENDIAN_MAGIC = 0xde120495;
+    const MO_BIG_ENDIAN_MAGIC = 0xde120495;
 
     /**
      * The size of the header of a MO file in bytes.
      *
      * @var int
      */
-    public const MO_HEADER_SIZE = 28;
+    const MO_HEADER_SIZE = 28;
 
     /**
      * Parses machine object (MO) format, independent of the machine's endian it
      * was created on. Both 32bit and 64bit systems are supported.
      *
-     * @param string $file The file to be parsed.
+     * @param resource $resource The file to be parsed.
      *
      * @return array List of messages extracted from the file
      * @throws \RuntimeException If stream content has an invalid format.
      */
-    public function parse($file): array
+    public function parse($resource)
     {
-        $stream = fopen($file, 'rb');
+        $stream = fopen($resource, 'rb');
 
         $stat = fstat($stream);
 
@@ -70,9 +69,9 @@ class MoFileParser
         $magic = unpack('V1', fread($stream, 4));
         $magic = hexdec(substr(dechex(current($magic)), -8));
 
-        if ($magic === self::MO_LITTLE_ENDIAN_MAGIC) {
+        if ($magic == self::MO_LITTLE_ENDIAN_MAGIC) {
             $isBigEndian = false;
-        } elseif ($magic === self::MO_BIG_ENDIAN_MAGIC) {
+        } elseif ($magic == self::MO_BIG_ENDIAN_MAGIC) {
             $isBigEndian = true;
         } else {
             throw new RuntimeException('Invalid format for MO translations file');
@@ -107,11 +106,11 @@ class MoFileParser
             $singularId = fread($stream, $length);
 
             if (strpos($singularId, "\x04") !== false) {
-                [$context, $singularId] = explode("\x04", $singularId);
+                list($context, $singularId) = explode("\x04", $singularId);
             }
 
             if (strpos($singularId, "\000") !== false) {
-                [$singularId, $pluralId] = explode("\000", $singularId);
+                list($singularId, $pluralId) = explode("\000", $singularId);
             }
 
             fseek($stream, $offsetTranslated + $i * 8);
@@ -135,9 +134,9 @@ class MoFileParser
                 continue;
             }
 
-            $messages[$singularId]['_context'][''] = $singular;
+            $messages[$singularId] = $singular;
             if ($pluralId !== null) {
-                $messages[$pluralId]['_context'][''] = $plurals;
+                $messages[$pluralId] = $plurals;
             }
         }
 
@@ -153,11 +152,11 @@ class MoFileParser
      * @param bool $isBigEndian Whether or not the current platform is Big Endian
      * @return int
      */
-    protected function _readLong($stream, $isBigEndian): int
+    protected function _readLong($stream, $isBigEndian)
     {
         $result = unpack($isBigEndian ? 'N1' : 'V1', fread($stream, 4));
         $result = current($result);
 
-        return (int)substr((string)$result, -8);
+        return (int)substr($result, -8);
     }
 }

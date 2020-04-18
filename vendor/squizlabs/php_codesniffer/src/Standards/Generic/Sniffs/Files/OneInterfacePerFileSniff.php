@@ -9,8 +9,8 @@
 
 namespace PHP_CodeSniffer\Standards\Generic\Sniffs\Files;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
 
 class OneInterfacePerFileSniff implements Sniff
 {
@@ -23,7 +23,7 @@ class OneInterfacePerFileSniff implements Sniff
      */
     public function register()
     {
-        return [T_INTERFACE];
+        return array(T_INTERFACE);
 
     }//end register()
 

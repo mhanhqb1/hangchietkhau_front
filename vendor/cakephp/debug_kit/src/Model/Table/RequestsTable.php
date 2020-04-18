@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -15,23 +13,24 @@ declare(strict_types=1);
 namespace DebugKit\Model\Table;
 
 use Cake\Core\Configure;
-use Cake\Database\Driver\Sqlite;
 use Cake\ORM\Query;
 use Cake\ORM\Table;
+use DebugKit\Model\Entity\Request;
 
 /**
  * The requests table tracks basic information about each request.
  *
- * @method \DebugKit\Model\Entity\Request get($primaryKey, $options = [])
- * @method \DebugKit\Model\Entity\Request newEntity($data = null, array $options = [])
- * @method \DebugKit\Model\Entity\Request[] newEntities(array $data, array $options = [])
- * @method \DebugKit\Model\Entity\Request save(\Cake\Datasource\EntityInterface $entity, $options = [])
- * @method \DebugKit\Model\Entity\Request patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
- * @method \DebugKit\Model\Entity\Request[] patchEntities($entities, array $data, array $options = [])
- * @method \DebugKit\Model\Entity\Request findOrCreate($search, callable $callback = null, array $options = [])
+ * @method Request get($primaryKey, $options = [])
+ * @method Request newEntity($data = null, array $options = [])
+ * @method Request[] newEntities(array $data, array $options = [])
+ * @method Request save(\Cake\Datasource\EntityInterface $entity, $options = [])
+ * @method Request patchEntity(\Cake\Datasource\EntityInterface $entity, array $data, array $options = [])
+ * @method Request[] patchEntities($entities, array $data, array $options = [])
+ * @method Request findOrCreate($search, callable $callback = null)
  */
 class RequestsTable extends Table
 {
+
     use LazyTableTrait;
 
     /**
@@ -40,15 +39,15 @@ class RequestsTable extends Table
      * @param array $config Config data.
      * @return void
      */
-    public function initialize(array $config): void
+    public function initialize(array $config)
     {
         $this->hasMany('DebugKit.Panels', [
             'sort' => ['Panels.title' => 'ASC'],
         ]);
         $this->addBehavior('Timestamp', [
             'events' => [
-                'Model.beforeSave' => ['requested_at' => 'new'],
-            ],
+                'Model.beforeSave' => ['requested_at' => 'new']
+            ]
         ]);
         $this->ensureTables(['DebugKit.Requests', 'DebugKit.Panels']);
     }
@@ -58,7 +57,7 @@ class RequestsTable extends Table
      *
      * @return string
      */
-    public static function defaultConnectionName(): string
+    public static function defaultConnectionName()
     {
         return 'debug_kit';
     }
@@ -68,7 +67,7 @@ class RequestsTable extends Table
      *
      * @param \Cake\ORM\Query $query The query
      * @param array $options The options
-     * @return \Cake\ORM\Query The query.
+     * @return Query The query.
      */
     public function findRecent(Query $query, array $options)
     {
@@ -77,32 +76,21 @@ class RequestsTable extends Table
     }
 
     /**
-     * Check if garbage collection should be run
-     *
-     * @return bool
-     */
-    protected function shouldGc()
-    {
-        return time() % 100 === 0;
-    }
-
-    /**
      * Garbage collect old request data.
      *
-     * Delete request data that is older than latest 20 requests.
-     * You can use the `DebugKit.requestCount` config to change this limit.
+     * Delete request data that is older than 2 weeks old.
      * This method will only trigger periodically.
      *
      * @return void
      */
     public function gc()
     {
-        if (!$this->shouldGc()) {
+        if (time() % 100 !== 0) {
             return;
         }
         $noPurge = $this->find()
             ->select(['id'])
-            ->enableHydration(false)
+            ->hydrate(false)
             ->order(['requested_at' => 'desc'])
             ->limit(Configure::read('DebugKit.requestCount') ?: 20)
             ->extract('id')
@@ -120,10 +108,5 @@ class RequestsTable extends Table
 
         $statement = $query->execute();
         $statement->closeCursor();
-
-        $conn = $this->getConnection();
-        if ($conn->getDriver() instanceof Sqlite) {
-            $conn->execute('VACUUM;');
-        }
     }
 }

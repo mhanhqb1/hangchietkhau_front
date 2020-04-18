@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -14,6 +12,8 @@ declare(strict_types=1);
  */
 namespace Cake\I18n;
 
+use Aura\Intl\FormatterInterface;
+use Aura\Intl\Package;
 use Aura\Intl\Translator as BaseTranslator;
 
 /**
@@ -23,7 +23,6 @@ use Aura\Intl\Translator as BaseTranslator;
  */
 class Translator extends BaseTranslator
 {
-    public const PLURAL_PREFIX = 'p:';
 
     /**
      * Translates the message formatting any placeholders
@@ -34,20 +33,9 @@ class Translator extends BaseTranslator
      *   message.
      * @return string The translated message with tokens replaced.
      */
-    public function translate($key, array $tokensValues = []): string
+    public function translate($key, array $tokensValues = [])
     {
-        if (isset($tokensValues['_count'])) {
-            $message = $this->getMessage(static::PLURAL_PREFIX . $key);
-            if (!$message) {
-                $message = $this->getMessage($key);
-            }
-        } else {
-            $message = $this->getMessage($key);
-            if (!$message) {
-                $message = $this->getMessage(static::PLURAL_PREFIX . $key);
-            }
-        }
-
+        $message = $this->getMessage($key);
         if (!$message) {
             // Fallback to the message key
             $message = $key;
@@ -59,7 +47,7 @@ class Translator extends BaseTranslator
             unset($tokensValues['_context']);
         }
 
-        if (empty($tokensValues)) {
+        if (!$tokensValues) {
             // Fallback for plurals that were using the singular key
             if (is_array($message)) {
                 return array_values($message + [''])[0];
@@ -75,9 +63,9 @@ class Translator extends BaseTranslator
 
         // Resolve plural form.
         if (is_array($message)) {
-            $count = $tokensValues['_count'] ?? 0;
+            $count = isset($tokensValues['_count']) ? $tokensValues['_count'] : 0;
             $form = PluralRules::calculate($this->locale, $count);
-            $message = $message[$form] ?? (string)end($message);
+            $message = isset($message[$form]) ? $message[$form] : (string)end($message);
         }
 
         if (strlen($message) === 0) {
@@ -91,13 +79,13 @@ class Translator extends BaseTranslator
      * Resolve a message's context structure.
      *
      * @param string $key The message key being handled.
-     * @param array $message The message content.
+     * @param string|array $message The message content.
      * @param array $vars The variables containing the `_context` key.
-     * @return string|array
+     * @return string
      */
-    protected function resolveContext(string $key, array $message, array $vars)
+    protected function resolveContext($key, $message, array $vars)
     {
-        $context = $vars['_context'] ?? null;
+        $context = isset($vars['_context']) ? $vars['_context'] : null;
 
         // No or missing context, fallback to the key/first message
         if ($context === null) {

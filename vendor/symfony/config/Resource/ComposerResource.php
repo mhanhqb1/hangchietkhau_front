@@ -15,10 +15,8 @@ namespace Symfony\Component\Config\Resource;
  * ComposerResource tracks the PHP version and Composer dependencies.
  *
  * @author Nicolas Grekas <p@tchwork.com>
- *
- * @final
  */
-class ComposerResource implements SelfCheckingResourceInterface
+class ComposerResource implements SelfCheckingResourceInterface, \Serializable
 {
     private $vendors;
 
@@ -30,7 +28,7 @@ class ComposerResource implements SelfCheckingResourceInterface
         $this->vendors = self::$runtimeVendors;
     }
 
-    public function getVendors(): array
+    public function getVendors()
     {
         return array_keys($this->vendors);
     }
@@ -38,7 +36,7 @@ class ComposerResource implements SelfCheckingResourceInterface
     /**
      * {@inheritdoc}
      */
-    public function __toString(): string
+    public function __toString()
     {
         return __CLASS__;
     }
@@ -46,21 +44,31 @@ class ComposerResource implements SelfCheckingResourceInterface
     /**
      * {@inheritdoc}
      */
-    public function isFresh(int $timestamp): bool
+    public function isFresh($timestamp)
     {
         self::refresh();
 
-        return array_values(self::$runtimeVendors) === array_values($this->vendors);
+        return self::$runtimeVendors === $this->vendors;
+    }
+
+    public function serialize()
+    {
+        return serialize($this->vendors);
+    }
+
+    public function unserialize($serialized)
+    {
+        $this->vendors = unserialize($serialized);
     }
 
     private static function refresh()
     {
-        self::$runtimeVendors = [];
+        self::$runtimeVendors = array();
 
         foreach (get_declared_classes() as $class) {
             if ('C' === $class[0] && 0 === strpos($class, 'ComposerAutoloaderInit')) {
                 $r = new \ReflectionClass($class);
-                $v = \dirname($r->getFileName(), 2);
+                $v = dirname(dirname($r->getFileName()));
                 if (file_exists($v.'/composer/installed.json')) {
                     self::$runtimeVendors[$v] = @filemtime($v.'/composer/installed.json');
                 }

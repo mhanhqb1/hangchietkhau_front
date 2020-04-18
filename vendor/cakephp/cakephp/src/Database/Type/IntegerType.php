@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,7 +14,9 @@ declare(strict_types=1);
  */
 namespace Cake\Database\Type;
 
-use Cake\Database\DriverInterface;
+use Cake\Database\Driver;
+use Cake\Database\Type;
+use Cake\Database\TypeInterface;
 use InvalidArgumentException;
 use PDO;
 
@@ -25,39 +25,47 @@ use PDO;
  *
  * Use to convert integer data between PHP and the database types.
  */
-class IntegerType extends BaseType implements BatchCastingInterface
+class IntegerType extends Type implements TypeInterface
 {
     /**
-     * Checks if the value is not a numeric value
+     * Identifier name for this type.
      *
-     * @throws \InvalidArgumentException
-     * @param mixed $value Value to check
-     * @return void
+     * (This property is declared here again so that the inheritance from
+     * Cake\Database\Type can be removed in the future.)
+     *
+     * @var string|null
      */
-    protected function checkNumeric($value): void
+    protected $_name;
+
+    /**
+     * Constructor.
+     *
+     * (This method is declared here again so that the inheritance from
+     * Cake\Database\Type can be removed in the future.)
+     *
+     * @param string|null $name The name identifying this type
+     */
+    public function __construct($name = null)
     {
-        if (!is_numeric($value)) {
-            throw new InvalidArgumentException(sprintf(
-                'Cannot convert value of type `%s` to integer',
-                getTypeName($value)
-            ));
-        }
+        $this->_name = $name;
     }
 
     /**
      * Convert integer data into the database format.
      *
      * @param mixed $value The value to convert.
-     * @param \Cake\Database\DriverInterface $driver The driver instance to convert with.
+     * @param \Cake\Database\Driver $driver The driver instance to convert with.
      * @return int|null
      */
-    public function toDatabase($value, DriverInterface $driver): ?int
+    public function toDatabase($value, Driver $driver)
     {
         if ($value === null || $value === '') {
             return null;
         }
 
-        $this->checkNumeric($value);
+        if (!is_scalar($value)) {
+            throw new InvalidArgumentException('Cannot convert value to integer');
+        }
 
         return (int)$value;
     }
@@ -66,63 +74,46 @@ class IntegerType extends BaseType implements BatchCastingInterface
      * Convert integer values to PHP integers
      *
      * @param mixed $value The value to convert.
-     * @param \Cake\Database\DriverInterface $driver The driver instance to convert with.
+     * @param \Cake\Database\Driver $driver The driver instance to convert with.
      * @return int|null
      */
-    public function toPHP($value, DriverInterface $driver): ?int
+    public function toPHP($value, Driver $driver)
     {
         if ($value === null) {
-            return $value;
+            return null;
         }
 
         return (int)$value;
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * @return array
-     */
-    public function manyToPHP(array $values, array $fields, DriverInterface $driver): array
-    {
-        foreach ($fields as $field) {
-            if (!isset($values[$field])) {
-                continue;
-            }
-
-            $this->checkNumeric($values[$field]);
-
-            $values[$field] = (int)$values[$field];
-        }
-
-        return $values;
-    }
-
-    /**
      * Get the correct PDO binding type for integer data.
      *
      * @param mixed $value The value being bound.
-     * @param \Cake\Database\DriverInterface $driver The driver.
+     * @param \Cake\Database\Driver $driver The driver.
      * @return int
      */
-    public function toStatement($value, DriverInterface $driver): int
+    public function toStatement($value, Driver $driver)
     {
         return PDO::PARAM_INT;
     }
 
     /**
-     * Marshals request data into PHP floats.
+     * Marshalls request data into PHP floats.
      *
      * @param mixed $value The value to convert.
      * @return int|null Converted value.
      */
-    public function marshal($value): ?int
+    public function marshal($value)
     {
         if ($value === null || $value === '') {
             return null;
         }
-        if (is_numeric($value)) {
+        if (is_numeric($value) || ctype_digit($value)) {
             return (int)$value;
+        }
+        if (is_array($value)) {
+            return 1;
         }
 
         return null;

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -23,34 +21,35 @@ use RuntimeException;
  *
  * Provides the encrypt/decrypt logic for the CookieComponent.
  *
- * @link https://book.cakephp.org/4/en/controllers/components/cookie.html
+ * @link https://book.cakephp.org/3.0/en/controllers/components/cookie.html
  */
 trait CookieCryptTrait
 {
+
     /**
      * Valid cipher names for encrypted cookies.
      *
-     * @var string[]
+     * @var array
      */
-    protected $_validCiphers = ['aes'];
+    protected $_validCiphers = ['aes', 'rijndael'];
 
     /**
      * Returns the encryption key to be used.
      *
      * @return string
      */
-    abstract protected function _getCookieEncryptionKey(): string;
+    abstract protected function _getCookieEncryptionKey();
 
     /**
      * Encrypts $value using public $type method in Security class
      *
-     * @param string|array $value Value to encrypt
-     * @param string|false $encrypt Encryption mode to use. False
+     * @param string $value Value to encrypt
+     * @param string|bool $encrypt Encryption mode to use. False
      *   disabled encryption.
      * @param string|null $key Used as the security salt if specified.
      * @return string Encoded values
      */
-    protected function _encrypt($value, $encrypt, ?string $key = null): string
+    protected function _encrypt($value, $encrypt, $key = null)
     {
         if (is_array($value)) {
             $value = $this->_implode($value);
@@ -60,9 +59,12 @@ trait CookieCryptTrait
         }
         $this->_checkCipher($encrypt);
         $prefix = 'Q2FrZQ==.';
-        $cipher = '';
+        $cipher = null;
         if ($key === null) {
             $key = $this->_getCookieEncryptionKey();
+        }
+        if ($encrypt === 'rijndael') {
+            $cipher = Security::rijndael($value, $key, 'encrypt');
         }
         if ($encrypt === 'aes') {
             $cipher = Security::encrypt($value, $key);
@@ -78,11 +80,11 @@ trait CookieCryptTrait
      * @return void
      * @throws \RuntimeException When an invalid cipher is provided.
      */
-    protected function _checkCipher(string $encrypt): void
+    protected function _checkCipher($encrypt)
     {
-        if (!in_array($encrypt, $this->_validCiphers, true)) {
+        if (!in_array($encrypt, $this->_validCiphers)) {
             $msg = sprintf(
-                'Invalid encryption cipher. Must be one of %s or false.',
+                'Invalid encryption cipher. Must be one of %s.',
                 implode(', ', $this->_validCiphers)
             );
             throw new RuntimeException($msg);
@@ -92,12 +94,12 @@ trait CookieCryptTrait
     /**
      * Decrypts $value using public $type method in Security class
      *
-     * @param string[]|string $values Values to decrypt
-     * @param string|false $mode Encryption mode
+     * @param array $values Values to decrypt
+     * @param string|bool $mode Encryption mode
      * @param string|null $key Used as the security salt if specified.
      * @return string|array Decrypted values
      */
-    protected function _decrypt($values, $mode, ?string $key = null)
+    protected function _decrypt($values, $mode, $key = null)
     {
         if (is_string($values)) {
             return $this->_decode($values, $mode, $key);
@@ -119,34 +121,22 @@ trait CookieCryptTrait
      * @param string|null $key Used as the security salt if specified.
      * @return string|array Decoded values.
      */
-    protected function _decode(string $value, $encrypt, ?string $key)
+    protected function _decode($value, $encrypt, $key)
     {
         if (!$encrypt) {
             return $this->_explode($value);
         }
         $this->_checkCipher($encrypt);
         $prefix = 'Q2FrZQ==.';
-        $prefixLength = strlen($prefix);
-
-        if (strncmp($value, $prefix, $prefixLength) !== 0) {
-            return '';
-        }
-
-        $value = base64_decode(substr($value, $prefixLength), true);
-
-        if ($value === false || $value === '') {
-            return '';
-        }
-
+        $value = base64_decode(substr($value, strlen($prefix)));
         if ($key === null) {
             $key = $this->_getCookieEncryptionKey();
         }
+        if ($encrypt === 'rijndael') {
+            $value = Security::rijndael($value, $key, 'decrypt');
+        }
         if ($encrypt === 'aes') {
             $value = Security::decrypt($value, $key);
-        }
-
-        if ($value === null) {
-            return '';
         }
 
         return $this->_explode($value);
@@ -158,7 +148,7 @@ trait CookieCryptTrait
      * @param array $array Map of key and values
      * @return string A json encoded string.
      */
-    protected function _implode(array $array): string
+    protected function _implode(array $array)
     {
         return json_encode($array);
     }
@@ -170,13 +160,13 @@ trait CookieCryptTrait
      * @param string $string A string containing JSON encoded data, or a bare string.
      * @return string|array Map of key and values
      */
-    protected function _explode(string $string)
+    protected function _explode($string)
     {
         $first = substr($string, 0, 1);
         if ($first === '{' || $first === '[') {
             $ret = json_decode($string, true);
 
-            return $ret ?? $string;
+            return ($ret !== null) ? $ret : $string;
         }
         $array = [];
         foreach (explode(',', $string) as $pair) {

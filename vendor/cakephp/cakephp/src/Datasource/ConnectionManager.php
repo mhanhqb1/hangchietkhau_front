@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,11 +15,6 @@ declare(strict_types=1);
 namespace Cake\Datasource;
 
 use Cake\Core\StaticConfigTrait;
-use Cake\Database\Connection;
-use Cake\Database\Driver\Mysql;
-use Cake\Database\Driver\Postgres;
-use Cake\Database\Driver\Sqlite;
-use Cake\Database\Driver\Sqlserver;
 use Cake\Datasource\Exception\MissingDatasourceConfigException;
 
 /**
@@ -35,6 +28,7 @@ use Cake\Datasource\Exception\MissingDatasourceConfigException;
  */
 class ConnectionManager
 {
+
     use StaticConfigTrait {
         setConfig as protected _setConfig;
         parseDsn as protected _parseDsn;
@@ -50,14 +44,13 @@ class ConnectionManager
     /**
      * An array mapping url schemes to fully qualified driver class names
      *
-     * @var string[]
-     * @psalm-var array<string, class-string>
+     * @return array
      */
     protected static $_dsnClassMap = [
-        'mysql' => Mysql::class,
-        'postgres' => Postgres::class,
-        'sqlite' => Sqlite::class,
-        'sqlserver' => Sqlserver::class,
+        'mysql' => 'Cake\Database\Driver\Mysql',
+        'postgres' => 'Cake\Database\Driver\Postgres',
+        'sqlite' => 'Cake\Database\Driver\Sqlite',
+        'sqlserver' => 'Cake\Database\Driver\Sqlserver',
     ];
 
     /**
@@ -78,7 +71,7 @@ class ConnectionManager
      * @throws \Cake\Core\Exception\Exception When trying to modify an existing config.
      * @see \Cake\Core\StaticConfigTrait::config()
      */
-    public static function setConfig($key, $config = null): void
+    public static function setConfig($key, $config = null)
     {
         if (is_array($config)) {
             $config['name'] = $key;
@@ -109,10 +102,10 @@ class ConnectionManager
      *
      * Note that query-string arguments are also parsed and set as values in the returned configuration.
      *
-     * @param string $config The DSN string to convert to a configuration array
+     * @param string|null $config The DSN string to convert to a configuration array
      * @return array The configuration array to be stored after parsing the DSN
      */
-    public static function parseDsn(string $config): array
+    public static function parseDsn($config = null)
     {
         $config = static::_parseDsn($config);
 
@@ -122,7 +115,7 @@ class ConnectionManager
 
         if (empty($config['driver'])) {
             $config['driver'] = $config['className'];
-            $config['className'] = Connection::class;
+            $config['className'] = 'Cake\Database\Connection';
         }
 
         unset($config['path']);
@@ -156,7 +149,7 @@ class ConnectionManager
      * @throws \Cake\Datasource\Exception\MissingDatasourceConfigException When aliasing a
      * connection that does not exist.
      */
-    public static function alias(string $alias, string $source): void
+    public static function alias($alias, $source)
     {
         if (empty(static::$_config[$source]) && empty(static::$_config[$alias])) {
             throw new MissingDatasourceConfigException(
@@ -175,7 +168,7 @@ class ConnectionManager
      * @param string $name The connection name to remove aliases for.
      * @return void
      */
-    public static function dropAlias(string $name): void
+    public static function dropAlias($name)
     {
         unset(static::$_aliasMap[$name]);
     }
@@ -194,7 +187,7 @@ class ConnectionManager
      * @throws \Cake\Datasource\Exception\MissingDatasourceConfigException When config
      * data is missing.
      */
-    public static function get(string $name, bool $useAliases = true)
+    public static function get($name, $useAliases = true)
     {
         if ($useAliases && isset(static::$_aliasMap[$name])) {
             $name = static::$_aliasMap[$name];

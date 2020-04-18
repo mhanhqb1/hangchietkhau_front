@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -18,10 +16,10 @@ namespace Cake\ORM\Association;
 
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\Association;
+use Cake\ORM\Association\DependentDeleteHelper;
 use Cake\ORM\Association\Loader\SelectLoader;
 use Cake\ORM\Table;
 use Cake\Utility\Inflector;
-use Closure;
 
 /**
  * Represents an 1 - 1 relationship where the source side of the relation is
@@ -34,17 +32,17 @@ class HasOne extends Association
     /**
      * Valid strategies for this type of association
      *
-     * @var string[]
+     * @var array
      */
     protected $_validStrategies = [
         self::STRATEGY_JOIN,
-        self::STRATEGY_SELECT,
+        self::STRATEGY_SELECT
     ];
 
     /**
      * Gets the name of the field representing the foreign key to the target table.
      *
-     * @return string|string[]
+     * @return string
      */
     public function getForeignKey()
     {
@@ -60,9 +58,9 @@ class HasOne extends Association
      *
      * @return string
      */
-    protected function _propertyName(): string
+    protected function _propertyName()
     {
-        [, $name] = pluginSplit($this->_name);
+        list(, $name) = pluginSplit($this->_name);
 
         return Inflector::underscore(Inflector::singularize($name));
     }
@@ -75,7 +73,7 @@ class HasOne extends Association
      * @param \Cake\ORM\Table $side The potential Table with ownership
      * @return bool
      */
-    public function isOwningSide(Table $side): bool
+    public function isOwningSide(Table $side)
     {
         return $side === $this->getSource();
     }
@@ -85,7 +83,7 @@ class HasOne extends Association
      *
      * @return string
      */
-    public function type(): string
+    public function type()
     {
         return self::ONE_TO_ONE;
     }
@@ -97,8 +95,9 @@ class HasOne extends Association
      * `$options`
      *
      * @param \Cake\Datasource\EntityInterface $entity an entity from the source table
-     * @param array $options options to be passed to the save method in the target table
-     * @return \Cake\Datasource\EntityInterface|false false if $entity could not be saved, otherwise it returns
+     * @param array|\ArrayObject $options options to be passed to the save method in
+     * the target table
+     * @return bool|\Cake\Datasource\EntityInterface false if $entity could not be saved, otherwise it returns
      * the saved entity
      * @see \Cake\ORM\Table::save()
      */
@@ -116,7 +115,7 @@ class HasOne extends Association
         $targetEntity->set($properties, ['guard' => false]);
 
         if (!$this->getTarget()->save($targetEntity, $options)) {
-            $targetEntity->unset(array_keys($properties));
+            $targetEntity->unsetProperty(array_keys($properties));
 
             return false;
         }
@@ -127,9 +126,9 @@ class HasOne extends Association
     /**
      * {@inheritDoc}
      *
-     * @return \Closure
+     * @return callable
      */
-    public function eagerLoader(array $options): Closure
+    public function eagerLoader(array $options)
     {
         $loader = new SelectLoader([
             'alias' => $this->getAlias(),
@@ -139,16 +138,16 @@ class HasOne extends Association
             'bindingKey' => $this->getBindingKey(),
             'strategy' => $this->getStrategy(),
             'associationType' => $this->type(),
-            'finder' => [$this, 'find'],
+            'finder' => [$this, 'find']
         ]);
 
         return $loader->buildEagerLoader($options);
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function cascadeDelete(EntityInterface $entity, array $options = []): bool
+    public function cascadeDelete(EntityInterface $entity, array $options = [])
     {
         $helper = new DependentDeleteHelper();
 

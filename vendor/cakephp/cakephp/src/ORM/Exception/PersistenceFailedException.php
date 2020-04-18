@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,14 +14,13 @@ namespace Cake\ORM\Exception;
 
 use Cake\Core\Exception\Exception;
 use Cake\Datasource\EntityInterface;
-use Cake\Utility\Hash;
-use Throwable;
 
 /**
  * Used when a strict save or delete fails
  */
 class PersistenceFailedException extends Exception
 {
+
     /**
      * The entity on which the persistence operation failed
      *
@@ -32,7 +29,7 @@ class PersistenceFailedException extends Exception
     protected $_entity;
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     protected $_messageTemplate = 'Entity %s failure.';
 
@@ -43,21 +40,11 @@ class PersistenceFailedException extends Exception
      * @param string|array $message Either the string of the error message, or an array of attributes
      *   that are made available in the view, and sprintf()'d into Exception::$_messageTemplate
      * @param int $code The code of the error, is also the HTTP status code for the error.
-     * @param \Throwable|null $previous the previous exception.
+     * @param \Exception|null $previous the previous exception.
      */
-    public function __construct(EntityInterface $entity, $message, ?int $code = null, ?Throwable $previous = null)
+    public function __construct(EntityInterface $entity, $message, $code = null, $previous = null)
     {
         $this->_entity = $entity;
-        if (is_array($message)) {
-            $errors = [];
-            foreach (Hash::flatten($entity->getErrors()) as $field => $error) {
-                $errors[] = $field . ': "' . $error . '"';
-            }
-            if ($errors) {
-                $message[] = implode(', ', $errors);
-                $this->_messageTemplate = 'Entity %s failure. Found the following errors (%s).';
-            }
-        }
         parent::__construct($message, $code, $previous);
     }
 
@@ -66,7 +53,7 @@ class PersistenceFailedException extends Exception
      *
      * @return \Cake\Datasource\EntityInterface
      */
-    public function getEntity(): EntityInterface
+    public function getEntity()
     {
         return $this->_entity;
     }

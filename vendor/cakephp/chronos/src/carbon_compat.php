@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
@@ -13,9 +11,7 @@ declare(strict_types=1);
  * @license       http://www.opensource.org/licenses/mit-license.php MIT License
  */
 
-if (!\class_exists('Carbon\Carbon') && !\interface_exists('Carbon\CarbonInterface', false)) {
-    // Create class aliases for Carbon so applications
-    // can upgrade more easily.
-    class_alias('Cake\Chronos\Chronos', 'Carbon\MutableDateTime');
-    class_alias('Cake\Chronos\ChronosInterface', 'Carbon\CarbonInterface');
-}
+// Create class aliases for Carbon so applications
+// can upgrade more easily.
+class_alias('Cake\Chronos\Chronos', 'Carbon\MutableDateTime');
+class_alias('Cake\Chronos\ChronosInterface', 'Carbon\CarbonInterface');

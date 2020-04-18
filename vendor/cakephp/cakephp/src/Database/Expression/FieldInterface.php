@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -22,18 +20,19 @@ namespace Cake\Database\Expression;
  */
 interface FieldInterface
 {
+
     /**
      * Sets the field name
      *
-     * @param string|array|\Cake\Database\ExpressionInterface $field The field to compare with.
+     * @param string|\Cake\Database\ExpressionInterface $field The field to compare with.
      * @return void
      */
-    public function setField($field): void;
+    public function setField($field);
 
     /**
      * Returns the field name
      *
-     * @return string|array|\Cake\Database\ExpressionInterface
+     * @return string|\Cake\Database\ExpressionInterface
      */
     public function getField();
 }

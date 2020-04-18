@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
@@ -13,7 +11,7 @@ declare(strict_types=1);
  */
 namespace Migrations;
 
-use Migrations\Command\Phinx;
+use Migrations\Command;
 use Symfony\Component\Console\Application;
 
 /**
@@ -22,17 +20,6 @@ use Symfony\Component\Console\Application;
  */
 class MigrationsDispatcher extends Application
 {
-    public static $phinxCommands = [
-        'Create' => Phinx\Create::class,
-        'Dump' => Phinx\Dump::class,
-        'MarkMigrated' => Phinx\MarkMigrated::class,
-        'Migrate' => Phinx\Migrate::class,
-        'Rollback' => Phinx\Rollback::class,
-        'Seed' => Phinx\Seed::class,
-        'Status' => Phinx\Status::class,
-        'CacheBuild' => Phinx\CacheBuild::class,
-        'CacheClear' => Phinx\CacheClear::class,
-    ];
     /**
      * Class Constructor.
      *
@@ -43,9 +30,15 @@ class MigrationsDispatcher extends Application
     public function __construct($version)
     {
         parent::__construct('Migrations plugin, based on Phinx by Rob Morgan.', $version);
-        foreach (static::$phinxCommands as $key => $value) {
-            $this->add(new $value());
-        }
+        $this->add(new Command\Create());
+        $this->add(new Command\Dump());
+        $this->add(new Command\MarkMigrated());
+        $this->add(new Command\Migrate());
+        $this->add(new Command\Rollback());
+        $this->add(new Command\Seed());
+        $this->add(new Command\Status());
+        $this->add(new Command\CacheBuild());
+        $this->add(new Command\CacheClear());
         $this->setCatchExceptions(false);
     }
 }

@@ -37,11 +37,3 @@ AssetListingEditWidgetType.prototype = {
    {
    },
 };
-
-AssetListingEditWidgetType.prototype = {
-   // phpcs: disable Standard.Cat.SniffName -- testing annotation between closing brace and comma
-   init: function(data, assetid, editables)
-   {
-   },
-   // phpcs:enable
-};

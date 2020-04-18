@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -19,39 +17,37 @@ namespace Cake\Auth\Storage;
 /**
  * Describes the methods that any class representing an Auth data storage should
  * comply with.
- *
- * @mixin \Cake\Core\InstanceConfigTrait
  */
 interface StorageInterface
 {
     /**
      * Read user record.
      *
-     * @return \ArrayAccess|array|null
+     * @return array|null
      */
     public function read();
 
     /**
      * Write user record.
      *
-     * @param mixed $user array or \ArrayAccess User record.
+     * @param array|\ArrayAccess $user User record.
      * @return void
      */
-    public function write($user): void;
+    public function write($user);
 
     /**
      * Delete user record.
      *
      * @return void
      */
-    public function delete(): void;
+    public function delete();
 
     /**
      * Get/set redirect URL.
      *
      * @param mixed $url Redirect URL. If `null` returns current URL. If `false`
      *   deletes currently set URL.
-     * @return string|array|null
+     * @return mixed
      */
     public function redirectUrl($url = null);
 }

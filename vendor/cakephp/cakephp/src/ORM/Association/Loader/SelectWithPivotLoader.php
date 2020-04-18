@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,7 +14,6 @@ declare(strict_types=1);
  */
 namespace Cake\ORM\Association\Loader;
 
-use Cake\ORM\Query;
 use RuntimeException;
 
 /**
@@ -26,6 +23,7 @@ use RuntimeException;
  */
 class SelectWithPivotLoader extends SelectLoader
 {
+
     /**
      * The name of the junction association
      *
@@ -50,7 +48,7 @@ class SelectWithPivotLoader extends SelectLoader
     /**
      * Custom conditions for the junction association
      *
-     * @var string|array|\Cake\Database\ExpressionInterface|\Closure|null
+     * @var mixed
      */
     protected $junctionConditions;
 
@@ -78,7 +76,7 @@ class SelectWithPivotLoader extends SelectLoader
      * @return \Cake\ORM\Query
      * @throws \InvalidArgumentException When a key is required for associations but not selected.
      */
-    protected function _buildQuery(array $options): Query
+    protected function _buildQuery($options)
     {
         $name = $this->junctionAssociationName;
         $assoc = $this->junctionAssoc;
@@ -113,7 +111,7 @@ class SelectWithPivotLoader extends SelectLoader
         }
 
         $query
-            ->where($this->junctionConditions)
+           ->where($this->junctionConditions)
             ->select($joinFields);
 
         $query
@@ -131,21 +129,13 @@ class SelectWithPivotLoader extends SelectLoader
     }
 
     /**
-     * @inheritDoc
-     */
-    protected function _assertFieldsPresent(Query $fetchQuery, array $key): void
-    {
-        // _buildQuery() manually adds in required fields from junction table
-    }
-
-    /**
      * Generates a string used as a table field that contains the values upon
      * which the filter should be applied
      *
      * @param array $options the options to use for getting the link field.
-     * @return string|string[]
+     * @return string
      */
-    protected function _linkField(array $options)
+    protected function _linkField($options)
     {
         $links = [];
         $name = $this->junctionAssociationName;
@@ -170,7 +160,7 @@ class SelectWithPivotLoader extends SelectLoader
      * @return array
      * @throws \RuntimeException when the association property is not part of the results set.
      */
-    protected function _buildResultMap(Query $fetchQuery, array $options): array
+    protected function _buildResultMap($fetchQuery, $options)
     {
         $resultMap = [];
         $key = (array)$options['foreignKey'];

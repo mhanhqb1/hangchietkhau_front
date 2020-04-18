@@ -4,14 +4,14 @@
   </a>
 </p>
 <p align="center">
-    <a href="LICENSE" target="_blank">
+    <a href="LICENSE.txt" target="_blank">
         <img alt="Software License" src="https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square">
     </a>
-    <a href="https://travis-ci.com/cakephp/cakephp" target="_blank">
-        <img alt="Build Status" src="https://img.shields.io/travis/com/cakephp/cakephp/master.svg?style=flat-square">
+    <a href="https://travis-ci.org/cakephp/cakephp" target="_blank">
+        <img alt="Build Status" src="https://img.shields.io/travis/cakephp/cakephp/master.svg?style=flat-square">
     </a>
-    <a href="https://coveralls.io/r/cakephp/cakephp?branch=master" target="_blank">
-        <img alt="Coverage Status" src="https://img.shields.io/coveralls/cakephp/cakephp/master.svg?style=flat-square">
+    <a href="https://codecov.io/github/cakephp/cakephp" target="_blank">
+        <img alt="Coverage Status" src="https://img.shields.io/codecov/c/github/cakephp/cakephp.svg?style=flat-square">
     </a>
     <a href="https://squizlabs.github.io/PHP_CodeSniffer/analysis/cakephp/cakephp/" target="_blank">
         <img alt="Code Consistency" src="https://squizlabs.github.io/PHP_CodeSniffer/analysis/cakephp/cakephp/grade.svg">
@@ -38,7 +38,7 @@ recommend using the [app skeleton](https://github.com/cakephp/app) as
 a starting point. For existing applications you can run the following:
 
 ``` bash
-$ composer require cakephp/cakephp
+$ composer require cakephp/cakephp:"~3.5"
 ```
 
 ## Running Tests
@@ -69,14 +69,14 @@ tests for CakePHP by doing the following:
 
 * [Slack](https://cakesf.herokuapp.com/) - Join us on Slack.
 * [#cakephp](https://webchat.freenode.net/?channels=#cakephp) on irc.freenode.net - Come chat with us, we have cake.
-* [Forum](https://discourse.cakephp.org/) - Official CakePHP forum.
+* [Forum](http://discourse.cakephp.org/) - Official CakePHP forum.
 * [GitHub Issues](https://github.com/cakephp/cakephp/issues) - Got issues? Please tell us!
 * [Roadmaps](https://github.com/cakephp/cakephp/wiki#roadmaps) - Want to contribute? Get involved!
 
 ## Contributing
 
 * [CONTRIBUTING.md](.github/CONTRIBUTING.md) - Quick pointers for contributing to the CakePHP project.
-* [CookBook "Contributing" Section](https://book.cakephp.org/4/en/contributing.html) - Details about contributing to the project.
+* [CookBook "Contributing" Section](https://book.cakephp.org/3.0/en/contributing.html) - Details about contributing to the project.
 
 # Security
 

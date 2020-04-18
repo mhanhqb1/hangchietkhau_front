@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -20,7 +18,6 @@ use ArrayAccess;
 use ArrayIterator;
 use Countable;
 use IteratorAggregate;
-use Traversable;
 
 /**
  * ValidationSet object. Holds all validation rules for a field and exposes
@@ -28,6 +25,7 @@ use Traversable;
  */
 class ValidationSet implements ArrayAccess, IteratorAggregate, Countable
 {
+
     /**
      * Holds the ValidationRule objects
      *
@@ -38,7 +36,7 @@ class ValidationSet implements ArrayAccess, IteratorAggregate, Countable
     /**
      * Denotes whether the fieldname key must be present in data array
      *
-     * @var bool|string|callable
+     * @var bool|string
      */
     protected $_validatePresent = false;
 
@@ -50,65 +48,51 @@ class ValidationSet implements ArrayAccess, IteratorAggregate, Countable
     protected $_allowEmpty = false;
 
     /**
-     * Returns whether or not a field can be left out.
-     *
-     * @return bool|string|callable
-     */
-    public function isPresenceRequired()
-    {
-        return $this->_validatePresent;
-    }
-
-    /**
      * Sets whether a field is required to be present in data array.
      *
-     * @param bool|string|callable $validatePresent Valid values are true, false, 'create', 'update' or a callable.
-     * @return $this
+     * If no argument is passed the currently set `validatePresent` value will be returned.
+     *
+     * @param bool|string|null $validatePresent Valid values are true, false, 'create', 'update'
+     * @return bool|string
      */
-    public function requirePresence($validatePresent)
+    public function isPresenceRequired($validatePresent = null)
     {
-        $this->_validatePresent = $validatePresent;
+        if ($validatePresent === null) {
+            return $this->_validatePresent;
+        }
 
-        return $this;
+        return $this->_validatePresent = $validatePresent;
     }
 
     /**
-     * Returns whether or not a field can be left empty.
+     * Sets whether a field value is allowed to be empty
      *
+     * If no argument is passed the currently set `allowEmpty` value will be returned.
+     *
+     * @param bool|string|callable|null $allowEmpty Valid values are true, false,
+     * 'create', 'update'
      * @return bool|string|callable
      */
-    public function isEmptyAllowed()
+    public function isEmptyAllowed($allowEmpty = null)
     {
-        return $this->_allowEmpty;
-    }
+        if ($allowEmpty === null) {
+            return $this->_allowEmpty;
+        }
 
-    /**
-     * Sets whether a field value is allowed to be empty.
-     *
-     * @param bool|string|callable $allowEmpty Valid values are true, false,
-     * 'create', 'update' or a callable.
-     * @return $this
-     */
-    public function allowEmpty($allowEmpty)
-    {
-        $this->_allowEmpty = $allowEmpty;
-
-        return $this;
+        return $this->_allowEmpty = $allowEmpty;
     }
 
     /**
      * Gets a rule for a given name if exists
      *
      * @param string $name The name under which the rule is set.
-     * @return \Cake\Validation\ValidationRule|null
+     * @return \Cake\Validation\ValidationRule
      */
-    public function rule(string $name): ?ValidationRule
+    public function rule($name)
     {
         if (!empty($this->_rules[$name])) {
             return $this->_rules[$name];
         }
-
-        return null;
     }
 
     /**
@@ -116,7 +100,7 @@ class ValidationSet implements ArrayAccess, IteratorAggregate, Countable
      *
      * @return \Cake\Validation\ValidationRule[]
      */
-    public function rules(): array
+    public function rules()
     {
         return $this->_rules;
     }
@@ -136,7 +120,7 @@ class ValidationSet implements ArrayAccess, IteratorAggregate, Countable
      * @param \Cake\Validation\ValidationRule|array $rule The validation rule to be set
      * @return $this
      */
-    public function add(string $name, $rule)
+    public function add($name, $rule)
     {
         if (!($rule instanceof ValidationRule)) {
             $rule = new ValidationRule($rule);
@@ -160,7 +144,7 @@ class ValidationSet implements ArrayAccess, IteratorAggregate, Countable
      * @param string $name The name under which the rule should be unset
      * @return $this
      */
-    public function remove(string $name)
+    public function remove($name)
     {
         unset($this->_rules[$name]);
 
@@ -173,7 +157,7 @@ class ValidationSet implements ArrayAccess, IteratorAggregate, Countable
      * @param string $index name of the rule
      * @return bool
      */
-    public function offsetExists($index): bool
+    public function offsetExists($index)
     {
         return isset($this->_rules[$index]);
     }
@@ -184,7 +168,7 @@ class ValidationSet implements ArrayAccess, IteratorAggregate, Countable
      * @param string $index name of the rule
      * @return \Cake\Validation\ValidationRule
      */
-    public function offsetGet($index): ValidationRule
+    public function offsetGet($index)
     {
         return $this->_rules[$index];
     }
@@ -196,7 +180,7 @@ class ValidationSet implements ArrayAccess, IteratorAggregate, Countable
      * @param \Cake\Validation\ValidationRule|array $rule Rule to add to $index
      * @return void
      */
-    public function offsetSet($index, $rule): void
+    public function offsetSet($index, $rule)
     {
         $this->add($index, $rule);
     }
@@ -207,7 +191,7 @@ class ValidationSet implements ArrayAccess, IteratorAggregate, Countable
      * @param string $index name of the rule
      * @return void
      */
-    public function offsetUnset($index): void
+    public function offsetUnset($index)
     {
         unset($this->_rules[$index]);
     }
@@ -215,10 +199,9 @@ class ValidationSet implements ArrayAccess, IteratorAggregate, Countable
     /**
      * Returns an iterator for each of the rules to be applied
      *
-     * @return \Cake\Validation\ValidationRule[]
-     * @psalm-return \Traversable<string, \Cake\Validation\ValidationRule>
+     * @return \ArrayIterator
      */
-    public function getIterator(): Traversable
+    public function getIterator()
     {
         return new ArrayIterator($this->_rules);
     }
@@ -228,7 +211,7 @@ class ValidationSet implements ArrayAccess, IteratorAggregate, Countable
      *
      * @return int
      */
-    public function count(): int
+    public function count()
     {
         return count($this->_rules);
     }

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -17,7 +15,7 @@ namespace Migrations\Shell\Task;
 
 use Bake\Shell\Task\SimpleBakeTask;
 use Cake\Console\ConsoleOptionParser;
-use Cake\Core\Plugin as CorePlugin;
+use Cake\Core\Plugin;
 use Cake\Utility\Inflector;
 use Phinx\Util\Util;
 
@@ -34,40 +32,38 @@ abstract class SimpleMigrationTask extends SimpleBakeTask
     public $pathFragment = 'config/Migrations/';
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function name(): string
+    public function name()
     {
         return 'migration';
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function fileName($name): string
+    public function fileName($name)
     {
         $name = $this->getMigrationName($name);
-
         return Util::getCurrentTimestamp() . '_' . Inflector::camelize($name) . '.php';
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function getPath(): string
+    public function getPath()
     {
         $path = ROOT . DS . $this->pathFragment;
         if (isset($this->plugin)) {
             $path = $this->_pluginPath($this->plugin) . $this->pathFragment;
         }
-
         return str_replace('/', DS, $path);
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function bake(string $name): string
+    public function bake($name)
     {
         $migrationWithSameName = glob($this->getPath() . '*_' . $name . '.php');
         if (!empty($migrationWithSameName)) {
@@ -93,7 +89,6 @@ abstract class SimpleMigrationTask extends SimpleBakeTask
         }
 
         $this->params['no-test'] = true;
-
         return parent::bake($name);
     }
 
@@ -126,40 +121,40 @@ abstract class SimpleMigrationTask extends SimpleBakeTask
      *
      * @return \Cake\Console\ConsoleOptionParser
      */
-    public function getOptionParser(): ConsoleOptionParser
+    public function getOptionParser()
     {
         $name = ($this->plugin ? $this->plugin . '.' : '') . $this->name;
         $parser = new ConsoleOptionParser($name);
 
         $bakeThemes = [];
-        foreach (CorePlugin::loaded() as $plugin) {
-            $path = CorePlugin::classPath($plugin);
+        foreach (Plugin::loaded() as $plugin) {
+            $path = Plugin::classPath($plugin);
             if (is_dir($path . 'Template' . DS . 'Bake')) {
                 $bakeThemes[] = $plugin;
             }
         }
 
-        $parser->setDescription(
+        $parser->description(
             'Bake migration class.'
         )
         ->addOption('plugin', [
             'short' => 'p',
-            'help' => 'Plugin to bake into.',
+            'help' => 'Plugin to bake into.'
         ])
         ->addOption('force', [
             'short' => 'f',
             'boolean' => true,
-            'help' => 'Force overwriting existing file if a migration already exists with the same name.',
+            'help' => 'Force overwriting existing file if a migration already exists with the same name.'
         ])
         ->addOption('connection', [
             'short' => 'c',
             'default' => 'default',
-            'help' => 'The datasource connection to get data from.',
+            'help' => 'The datasource connection to get data from.'
         ])
         ->addOption('theme', [
             'short' => 't',
             'help' => 'The theme to use when baking code.',
-            'choices' => $bakeThemes,
+            'choices' => $bakeThemes
         ]);
 
         return $parser;

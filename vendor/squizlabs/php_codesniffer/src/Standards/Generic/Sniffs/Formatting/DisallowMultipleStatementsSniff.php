@@ -9,8 +9,8 @@
 
 namespace PHP_CodeSniffer\Standards\Generic\Sniffs\Formatting;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
 
 class DisallowMultipleStatementsSniff implements Sniff
 {
@@ -23,7 +23,7 @@ class DisallowMultipleStatementsSniff implements Sniff
      */
     public function register()
     {
-        return [T_SEMICOLON];
+        return array(T_SEMICOLON);
 
     }//end register()
 
@@ -39,24 +39,16 @@ class DisallowMultipleStatementsSniff implements Sniff
      */
     public function process(File $phpcsFile, $stackPtr)
     {
-        $tokens  = $phpcsFile->getTokens();
-        $fixable = true;
-        $prev    = $stackPtr;
+        $tokens = $phpcsFile->getTokens();
 
-        do {
-            $prev = $phpcsFile->findPrevious([T_SEMICOLON, T_OPEN_TAG, T_OPEN_TAG_WITH_ECHO, T_PHPCS_IGNORE], ($prev - 1));
-            if ($prev === false
-                || $tokens[$prev]['code'] === T_OPEN_TAG
-                || $tokens[$prev]['code'] === T_OPEN_TAG_WITH_ECHO
-            ) {
-                $phpcsFile->recordMetric($stackPtr, 'Multiple statements on same line', 'no');
-                return;
-            }
-
-            if ($tokens[$prev]['code'] === T_PHPCS_IGNORE) {
-                $fixable = false;
-            }
-        } while ($tokens[$prev]['code'] === T_PHPCS_IGNORE);
+        $prev = $phpcsFile->findPrevious(array(T_SEMICOLON, T_OPEN_TAG, T_OPEN_TAG_WITH_ECHO), ($stackPtr - 1));
+        if ($prev === false
+            || $tokens[$prev]['code'] === T_OPEN_TAG
+            || $tokens[$prev]['code'] === T_OPEN_TAG_WITH_ECHO
+        ) {
+            $phpcsFile->recordMetric($stackPtr, 'Multiple statements on same line', 'no');
+            return;
+        }
 
         // Ignore multiple statements in a FOR condition.
         if (isset($tokens[$stackPtr]['nested_parenthesis']) === true) {
@@ -77,13 +69,7 @@ class DisallowMultipleStatementsSniff implements Sniff
             $phpcsFile->recordMetric($stackPtr, 'Multiple statements on same line', 'yes');
 
             $error = 'Each PHP statement must be on a line by itself';
-            $code  = 'SameLine';
-            if ($fixable === false) {
-                $phpcsFile->addError($error, $stackPtr, $code);
-                return;
-            }
-
-            $fix = $phpcsFile->addFixableError($error, $stackPtr, $code);
+            $fix   = $phpcsFile->addFixableError($error, $stackPtr, 'SameLine');
             if ($fix === true) {
                 $phpcsFile->fixer->beginChangeset();
                 $phpcsFile->fixer->addNewline($prev);
@@ -95,7 +81,7 @@ class DisallowMultipleStatementsSniff implements Sniff
             }
         } else {
             $phpcsFile->recordMetric($stackPtr, 'Multiple statements on same line', 'no');
-        }//end if
+        }
 
     }//end process()
 

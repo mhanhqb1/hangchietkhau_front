@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -24,10 +22,11 @@ use ReflectionClass;
  */
 class RulesProvider
 {
+
     /**
      * The class/object to proxy.
      *
-     * @var string|object
+     * @var mixed
      */
     protected $_class;
 
@@ -41,10 +40,9 @@ class RulesProvider
     /**
      * Constructor, sets the default class to use for calling methods
      *
-     * @param string|object $class the default class to proxy
-     * @throws \ReflectionException
+     * @param string $class the default class to proxy
      */
-    public function __construct($class = Validation::class)
+    public function __construct($class = '\Cake\Validation\Validation')
     {
         $this->_class = $class;
         $this->_reflection = new ReflectionClass($class);
@@ -60,9 +58,9 @@ class RulesProvider
      *
      * @param string $method the validation method to call
      * @param array $arguments the list of arguments to pass to the method
-     * @return bool Whether or not the validation rule passed
+     * @return bool whether or not the validation rule passed
      */
-    public function __call(string $method, array $arguments)
+    public function __call($method, $arguments)
     {
         $method = $this->_reflection->getMethod($method);
         $argumentList = $method->getParameters();

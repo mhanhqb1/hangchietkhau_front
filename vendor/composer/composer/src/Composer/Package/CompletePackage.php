@@ -27,7 +27,6 @@ class CompletePackage extends Package implements CompletePackageInterface
     protected $homepage;
     protected $scripts = array();
     protected $support = array();
-    protected $funding = array();
     protected $abandoned = false;
 
     /**
@@ -170,24 +169,6 @@ class CompletePackage extends Package implements CompletePackageInterface
     public function getSupport()
     {
         return $this->support;
-    }
-
-    /**
-     * Set the funding
-     *
-     * @param array $funding
-     */
-    public function setFunding(array $funding)
-    {
-        $this->funding = $funding;
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function getFunding()
-    {
-        return $this->funding;
     }
 
     /**

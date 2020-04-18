@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,19 +14,19 @@ declare(strict_types=1);
  */
 namespace Cake\TestSuite\Fixture;
 
+loadPHPUnitAliases();
+
 use Cake\TestSuite\TestCase;
-use Cake\TestSuite\TestListenerTrait;
+use PHPUnit\Framework\BaseTestListener;
 use PHPUnit\Framework\Test;
-use PHPUnit\Framework\TestListener;
 use PHPUnit\Framework\TestSuite;
 
 /**
  * Test listener used to inject a fixture manager in all tests that
  * are composed inside a Test Suite
  */
-class FixtureInjector implements TestListener
+class FixtureInjector extends BaseTestListener
 {
-    use TestListenerTrait;
 
     /**
      * The instance of the fixture manager to use
@@ -40,7 +38,7 @@ class FixtureInjector implements TestListener
     /**
      * Holds a reference to the container test suite
      *
-     * @var \PHPUnit\Framework\TestSuite|null
+     * @var \PHPUnit\Framework\TestSuite
      */
     protected $_first;
 
@@ -52,7 +50,7 @@ class FixtureInjector implements TestListener
     public function __construct(FixtureManager $manager)
     {
         if (isset($_SERVER['argv'])) {
-            $manager->setDebug(in_array('--debug', $_SERVER['argv'], true));
+            $manager->setDebug(in_array('--debug', $_SERVER['argv']));
         }
         $this->_fixtureManager = $manager;
         $this->_fixtureManager->shutDown();
@@ -65,7 +63,7 @@ class FixtureInjector implements TestListener
      * @param \PHPUnit\Framework\TestSuite $suite The test suite
      * @return void
      */
-    public function startTestSuite(TestSuite $suite): void
+    public function startTestSuite(TestSuite $suite)
     {
         if (empty($this->_first)) {
             $this->_first = $suite;
@@ -79,7 +77,7 @@ class FixtureInjector implements TestListener
      * @param \PHPUnit\Framework\TestSuite $suite The test suite
      * @return void
      */
-    public function endTestSuite(TestSuite $suite): void
+    public function endTestSuite(TestSuite $suite)
     {
         if ($this->_first === $suite) {
             $this->_fixtureManager->shutDown();
@@ -92,9 +90,8 @@ class FixtureInjector implements TestListener
      * @param \PHPUnit\Framework\Test $test The test case
      * @return void
      */
-    public function startTest(Test $test): void
+    public function startTest(Test $test)
     {
-        /** @psalm-suppress NoInterfaceProperties */
         $test->fixtureManager = $this->_fixtureManager;
         if ($test instanceof TestCase) {
             $this->_fixtureManager->fixturize($test);
@@ -109,7 +106,7 @@ class FixtureInjector implements TestListener
      * @param float $time current time
      * @return void
      */
-    public function endTest(Test $test, float $time): void
+    public function endTest(Test $test, $time)
     {
         if ($test instanceof TestCase) {
             $this->_fixtureManager->unload($test);

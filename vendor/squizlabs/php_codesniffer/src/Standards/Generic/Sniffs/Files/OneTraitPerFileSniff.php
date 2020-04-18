@@ -9,8 +9,8 @@
 
 namespace PHP_CodeSniffer\Standards\Generic\Sniffs\Files;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
 
 class OneTraitPerFileSniff implements Sniff
 {
@@ -23,7 +23,7 @@ class OneTraitPerFileSniff implements Sniff
      */
     public function register()
     {
-        return [T_TRAIT];
+        return array(T_TRAIT);
 
     }//end register()
 

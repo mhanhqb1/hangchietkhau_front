@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -15,8 +13,6 @@ declare(strict_types=1);
  */
 namespace Cake\Http\Client;
 
-use Cake\Utility\Text;
-
 /**
  * Contains the data and behavior for a single
  * part in a Multipart FormData request body.
@@ -28,6 +24,7 @@ use Cake\Utility\Text;
  */
 class FormDataPart
 {
+
     /**
      * Name of the value.
      *
@@ -45,7 +42,7 @@ class FormDataPart
     /**
      * Content type to use
      *
-     * @var string|null
+     * @var string
      */
     protected $_type;
 
@@ -59,30 +56,23 @@ class FormDataPart
     /**
      * Filename to send if using files.
      *
-     * @var string|null
+     * @var string
      */
     protected $_filename;
 
     /**
      * The encoding used in this part.
      *
-     * @var string|null
+     * @var string
      */
     protected $_transferEncoding;
 
     /**
      * The contentId for the part
      *
-     * @var string|null
+     * @var string
      */
     protected $_contentId;
-
-    /**
-     * The charset attribute for the Content-Disposition header fields
-     *
-     * @var string|null
-     */
-    protected $_charset;
 
     /**
      * Constructor
@@ -90,14 +80,12 @@ class FormDataPart
      * @param string $name The name of the data.
      * @param string $value The value of the data.
      * @param string $disposition The type of disposition to use, defaults to form-data.
-     * @param string|null $charset The charset of the data.
      */
-    public function __construct(string $name, string $value, string $disposition = 'form-data', ?string $charset = null)
+    public function __construct($name, $value, $disposition = 'form-data')
     {
         $this->_name = $name;
         $this->_value = $value;
         $this->_disposition = $disposition;
-        $this->_charset = $charset;
     }
 
     /**
@@ -106,31 +94,29 @@ class FormDataPart
      * By passing in `false` you can disable the disposition
      * header from being added.
      *
-     * @param string|null $disposition Use null to get/string to set.
-     * @return string
+     * @param null|string $disposition Use null to get/string to set.
+     * @return string|null
      */
-    public function disposition(?string $disposition = null): string
+    public function disposition($disposition = null)
     {
         if ($disposition === null) {
             return $this->_disposition;
         }
-
-        return $this->_disposition = $disposition;
+        $this->_disposition = $disposition;
     }
 
     /**
      * Get/set the contentId for a part.
      *
-     * @param string|null $id The content id.
+     * @param null|string $id The content id.
      * @return string|null
      */
-    public function contentId(?string $id = null): ?string
+    public function contentId($id = null)
     {
         if ($id === null) {
             return $this->_contentId;
         }
-
-        return $this->_contentId = $id;
+        $this->_contentId = $id;
     }
 
     /**
@@ -139,31 +125,29 @@ class FormDataPart
      * Setting the filename to `false` will exclude it from the
      * generated output.
      *
-     * @param string|null $filename Use null to get/string to set.
+     * @param null|string $filename Use null to get/string to set.
      * @return string|null
      */
-    public function filename(?string $filename = null): ?string
+    public function filename($filename = null)
     {
         if ($filename === null) {
             return $this->_filename;
         }
-
-        return $this->_filename = $filename;
+        $this->_filename = $filename;
     }
 
     /**
      * Get/set the content type.
      *
-     * @param string|null $type Use null to get/string to set.
+     * @param null|string $type Use null to get/string to set.
      * @return string|null
      */
-    public function type(?string $type): ?string
+    public function type($type)
     {
         if ($type === null) {
             return $this->_type;
         }
-
-        return $this->_type = $type;
+        $this->_type = $type;
     }
 
     /**
@@ -171,16 +155,15 @@ class FormDataPart
      *
      * Useful when content bodies are in encodings like base64.
      *
-     * @param string|null $type The type of encoding the value has.
+     * @param null|string $type The type of encoding the value has.
      * @return string|null
      */
-    public function transferEncoding(?string $type): ?string
+    public function transferEncoding($type)
     {
         if ($type === null) {
             return $this->_transferEncoding;
         }
-
-        return $this->_transferEncoding = $type;
+        $this->_transferEncoding = $type;
     }
 
     /**
@@ -188,7 +171,7 @@ class FormDataPart
      *
      * @return string
      */
-    public function name(): string
+    public function name()
     {
         return $this->_name;
     }
@@ -198,7 +181,7 @@ class FormDataPart
      *
      * @return string
      */
-    public function value(): string
+    public function value()
     {
         return $this->_value;
     }
@@ -210,16 +193,16 @@ class FormDataPart
      *
      * @return string
      */
-    public function __toString(): string
+    public function __toString()
     {
         $out = '';
         if ($this->_disposition) {
             $out .= 'Content-Disposition: ' . $this->_disposition;
             if ($this->_name) {
-                $out .= '; ' . $this->_headerParameterToString('name', $this->_name);
+                $out .= '; name="' . $this->_name . '"';
             }
             if ($this->_filename) {
-                $out .= '; ' . $this->_headerParameterToString('filename', $this->_filename);
+                $out .= '; filename="' . $this->_filename . '"';
             }
             $out .= "\r\n";
         }
@@ -233,29 +216,11 @@ class FormDataPart
             $out .= 'Content-ID: <' . $this->_contentId . ">\r\n";
         }
         $out .= "\r\n";
-        $out .= $this->_value;
+        $out .= (string)$this->_value;
 
         return $out;
     }
-
-    /**
-     * Get the string for the header parameter.
-     *
-     * If the value contains non-ASCII letters an additional header indicating
-     * the charset encoding will be set.
-     *
-     * @param string $name The name of the header parameter
-     * @param string $value The value of the header parameter
-     * @return string
-     */
-    protected function _headerParameterToString(string $name, string $value): string
-    {
-        $transliterated = Text::transliterate(str_replace('"', '', $value));
-        $return = sprintf('%s="%s"', $name, $transliterated);
-        if ($this->_charset !== null && $value !== $transliterated) {
-            $return .= sprintf("; %s*=%s''%s", $name, strtolower($this->_charset), rawurlencode($value));
-        }
-
-        return $return;
-    }
 }
+
+// @deprecated Add backwards compat alias.
+class_alias('Cake\Http\Client\FormDataPart', 'Cake\Network\Http\FormData\Part');

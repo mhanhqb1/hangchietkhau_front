@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
@@ -50,7 +48,7 @@ class Translator
      * @param string $key The key to check.
      * @return bool Whether or not the key exists.
      */
-    public function exists(string $key): bool
+    public function exists($key)
     {
         return isset(static::$strings[$key]);
     }
@@ -63,7 +61,7 @@ class Translator
      * @param array $vars Additional context variables.
      * @return string The translated message or ''.
      */
-    public function plural(string $key, int $count, array $vars = []): string
+    public function plural($key, $count, array $vars = [])
     {
         if ($count === 1) {
             return $this->singular($key, $vars);
@@ -79,7 +77,7 @@ class Translator
      * @param array $vars Additional context variables.
      * @return string The translated message or ''.
      */
-    public function singular(string $key, array $vars = []): string
+    public function singular($key, array $vars = [])
     {
         if (isset(static::$strings[$key])) {
             $varKeys = array_keys($vars);

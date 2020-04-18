@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -18,7 +16,6 @@ namespace Cake\Core;
 
 use Cake\Core\Exception\Exception;
 use Cake\Utility\Hash;
-use InvalidArgumentException;
 
 /**
  * A trait for reading and writing instance config
@@ -27,6 +24,7 @@ use InvalidArgumentException;
  */
 trait InstanceConfigTrait
 {
+
     /**
      * Runtime config
      *
@@ -113,9 +111,9 @@ trait InstanceConfigTrait
      *
      * @param string|null $key The key to get or null for the whole config.
      * @param mixed $default The return value when the key does not exist.
-     * @return mixed Configuration data at the named key or null if the key does not exist.
+     * @return mixed Config value being read.
      */
-    public function getConfig(?string $key = null, $default = null)
+    public function getConfig($key = null, $default = null)
     {
         if (!$this->_configInitialized) {
             $this->_config = $this->_defaultConfig;
@@ -124,26 +122,64 @@ trait InstanceConfigTrait
 
         $return = $this->_configRead($key);
 
-        return $return ?? $default;
+        return $return === null ? $default : $return;
     }
 
     /**
-     * Returns the config for this specific key.
+     * Gets/Sets the config.
      *
-     * The config value for this key must exist, it can never be null.
+     * ### Usage
      *
-     * @param string $key The key to get.
-     * @return mixed Configuration data at the named key
-     * @throws \InvalidArgumentException
+     * Reading the whole config:
+     *
+     * ```
+     * $this->config();
+     * ```
+     *
+     * Reading a specific value:
+     *
+     * ```
+     * $this->config('key');
+     * ```
+     *
+     * Reading a nested value:
+     *
+     * ```
+     * $this->config('some.nested.key');
+     * ```
+     *
+     * Setting a specific value:
+     *
+     * ```
+     * $this->config('key', $value);
+     * ```
+     *
+     * Setting a nested value:
+     *
+     * ```
+     * $this->config('some.nested.key', $value);
+     * ```
+     *
+     * Updating multiple config settings at the same time:
+     *
+     * ```
+     * $this->config(['one' => 'value', 'another' => 'value']);
+     * ```
+     *
+     * @deprecated 3.4.0 use setConfig()/getConfig() instead.
+     * @param string|array|null $key The key to get/set, or a complete array of configs.
+     * @param mixed|null $value The value to set.
+     * @param bool $merge Whether to recursively merge or overwrite existing config, defaults to true.
+     * @return mixed Config value being read, or the object itself on write operations.
+     * @throws \Cake\Core\Exception\Exception When trying to set a key that is invalid.
      */
-    public function getConfigOrFail(string $key)
+    public function config($key = null, $value = null, $merge = true)
     {
-        $config = $this->getConfig($key);
-        if ($config === null) {
-            throw new InvalidArgumentException(sprintf('Expected configuration `%s` not found.', $key));
+        if (is_array($key) || func_num_args() >= 2) {
+            return $this->setConfig($key, $value, $merge);
         }
 
-        return $config;
+        return $this->getConfig($key);
     }
 
     /**
@@ -190,14 +226,14 @@ trait InstanceConfigTrait
      * @param string|null $key Key to read.
      * @return mixed
      */
-    protected function _configRead(?string $key)
+    protected function _configRead($key)
     {
         if ($key === null) {
             return $this->_config;
         }
 
         if (strpos($key, '.') === false) {
-            return $this->_config[$key] ?? null;
+            return isset($this->_config[$key]) ? $this->_config[$key] : null;
         }
 
         $return = $this->_config;
@@ -224,7 +260,7 @@ trait InstanceConfigTrait
      * @return void
      * @throws \Cake\Core\Exception\Exception if attempting to clobber existing config
      */
-    protected function _configWrite($key, $value, $merge = false): void
+    protected function _configWrite($key, $value, $merge = false)
     {
         if (is_string($key) && $value === null) {
             $this->_configDelete($key);
@@ -282,7 +318,7 @@ trait InstanceConfigTrait
      * @return void
      * @throws \Cake\Core\Exception\Exception if attempting to clobber existing config
      */
-    protected function _configDelete(string $key): void
+    protected function _configDelete($key)
     {
         if (strpos($key, '.') === false) {
             unset($this->_config[$key]);

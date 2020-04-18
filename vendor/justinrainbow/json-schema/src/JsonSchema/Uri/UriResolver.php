@@ -77,11 +77,7 @@ class UriResolver implements UriResolverInterface
     public function resolve($uri, $baseUri = null)
     {
         // treat non-uri base as local file path
-        if (
-            !is_null($baseUri) &&
-            !filter_var($baseUri, \FILTER_VALIDATE_URL) &&
-            !preg_match('|^[^/]+://|u', $baseUri)
-        ) {
+        if (!is_null($baseUri) && !filter_var($baseUri, \FILTER_VALIDATE_URL)) {
             if (is_file($baseUri)) {
                 $baseUri = 'file://' . realpath($baseUri);
             } elseif (is_dir($baseUri)) {

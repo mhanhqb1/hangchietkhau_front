@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -47,33 +45,34 @@ use InvalidArgumentException;
  */
 class ConsoleOutput
 {
+
     /**
      * Raw output constant - no modification of output text.
      *
      * @var int
      */
-    public const RAW = 0;
+    const RAW = 0;
 
     /**
      * Plain output - tags will be stripped.
      *
      * @var int
      */
-    public const PLAIN = 1;
+    const PLAIN = 1;
 
     /**
      * Color output - Convert known tags in to ANSI color escape codes.
      *
      * @var int
      */
-    public const COLOR = 2;
+    const COLOR = 2;
 
     /**
      * Constant for a newline.
      *
      * @var string
      */
-    public const LF = PHP_EOL;
+    const LF = PHP_EOL;
 
     /**
      * File handle for output.
@@ -83,9 +82,8 @@ class ConsoleOutput
     protected $_output;
 
     /**
-     * The current output type.
+     * The current output type. Manipulated with ConsoleOutput::outputAs();
      *
-     * @see setOutputAs() For manipulation.
      * @var int
      */
     protected $_outputAs = self::COLOR;
@@ -97,13 +95,13 @@ class ConsoleOutput
      */
     protected static $_foregroundColors = [
         'black' => 30,
-        'red' => 31,
+        'red' => 91,
         'green' => 32,
         'yellow' => 33,
         'blue' => 34,
         'magenta' => 35,
         'cyan' => 36,
-        'white' => 37,
+        'white' => 37
     ];
 
     /**
@@ -119,7 +117,7 @@ class ConsoleOutput
         'blue' => 44,
         'magenta' => 45,
         'cyan' => 46,
-        'white' => 47,
+        'white' => 47
     ];
 
     /**
@@ -151,7 +149,7 @@ class ConsoleOutput
         'success' => ['text' => 'green'],
         'comment' => ['text' => 'blue'],
         'question' => ['text' => 'magenta'],
-        'notice' => ['text' => 'cyan'],
+        'notice' => ['text' => 'cyan']
     ];
 
     /**
@@ -162,20 +160,12 @@ class ConsoleOutput
      *
      * @param string $stream The identifier of the stream to write output to.
      */
-    public function __construct(string $stream = 'php://stdout')
+    public function __construct($stream = 'php://stdout')
     {
         $this->_output = fopen($stream, 'wb');
 
-        if (
-            (
-                DIRECTORY_SEPARATOR === '\\' &&
-                !(bool)env('ANSICON') &&
-                env('ConEmuANSI') !== 'ON'
-            ) ||
-            (
-                function_exists('posix_isatty') &&
-                !posix_isatty($this->_output)
-            )
+        if ((DIRECTORY_SEPARATOR === '\\' && !(bool)env('ANSICON') && env('ConEmuANSI') !== 'ON') ||
+            (function_exists('posix_isatty') && !posix_isatty($this->_output))
         ) {
             $this->_outputAs = self::PLAIN;
         }
@@ -185,11 +175,11 @@ class ConsoleOutput
      * Outputs a single or multiple messages to stdout or stderr. If no parameters
      * are passed, outputs just a newline.
      *
-     * @param string|string[] $message A string or an array of strings to output
+     * @param string|array $message A string or an array of strings to output
      * @param int $newlines Number of newlines to append
-     * @return int The number of bytes returned from writing to output.
+     * @return int|bool The number of bytes returned from writing to output.
      */
-    public function write($message, int $newlines = 1): int
+    public function write($message, $newlines = 1)
     {
         if (is_array($message)) {
             $message = implode(static::LF, $message);
@@ -204,12 +194,12 @@ class ConsoleOutput
      * @param string $text Text with styling tags.
      * @return string String with color codes added.
      */
-    public function styleText(string $text): string
+    public function styleText($text)
     {
-        if ($this->_outputAs === static::RAW) {
+        if ($this->_outputAs == static::RAW) {
             return $text;
         }
-        if ($this->_outputAs === static::PLAIN) {
+        if ($this->_outputAs == static::PLAIN) {
             $tags = implode('|', array_keys(static::$_styles));
 
             return preg_replace('#</?(?:' . $tags . ')>#', '', $text);
@@ -228,9 +218,9 @@ class ConsoleOutput
      * @param array $matches An array of matches to replace.
      * @return string
      */
-    protected function _replaceTags(array $matches): string
+    protected function _replaceTags($matches)
     {
-        $style = $this->getStyle($matches['tag']);
+        $style = $this->styles($matches['tag']);
         if (empty($style)) {
             return '<' . $matches['tag'] . '>' . $matches['text'] . '</' . $matches['tag'] . '>';
         }
@@ -249,69 +239,69 @@ class ConsoleOutput
             }
         }
 
-        return "\033[" . implode(';', $styleInfo) . 'm' . $matches['text'] . "\033[0m";
+        return "\033[" . implode($styleInfo, ';') . 'm' . $matches['text'] . "\033[0m";
     }
 
     /**
      * Writes a message to the output stream.
      *
      * @param string $message Message to write.
-     * @return int The number of bytes returned from writing to output.
+     * @return int|bool The number of bytes returned from writing to output.
      */
-    protected function _write(string $message): int
+    protected function _write($message)
     {
-        return (int)fwrite($this->_output, $message);
+        return fwrite($this->_output, $message);
     }
 
     /**
-     * Gets the current styles offered
+     * Get the current styles offered, or append new ones in.
      *
-     * @param string $style The style to get.
-     * @return array The style or empty array.
-     */
-    public function getStyle(string $style): array
-    {
-        return static::$_styles[$style] ?? [];
-    }
-
-    /**
-     * Sets style.
-     *
-     * ### Creates or modifies an existing style.
+     * ### Get a style definition
      *
      * ```
-     * $output->setStyle('annoy', ['text' => 'purple', 'background' => 'yellow', 'blink' => true]);
+     * $output->styles('error');
+     * ```
+     *
+     * ### Get all the style definitions
+     *
+     * ```
+     * $output->styles();
+     * ```
+     *
+     * ### Create or modify an existing style
+     *
+     * ```
+     * $output->styles('annoy', ['text' => 'purple', 'background' => 'yellow', 'blink' => true]);
      * ```
      *
      * ### Remove a style
      *
      * ```
-     * $this->output->setStyle('annoy', []);
+     * $this->output->styles('annoy', false);
      * ```
      *
-     * @param string $style The style to set.
-     * @param array $definition The array definition of the style to change or create..
-     * @return void
+     * @param string|null $style The style to get or create.
+     * @param array|bool|null $definition The array definition of the style to change or create a style
+     *   or false to remove a style.
+     * @return mixed If you are getting styles, the style or null will be returned. If you are creating/modifying
+     *   styles true will be returned.
      */
-    public function setStyle(string $style, array $definition): void
+    public function styles($style = null, $definition = null)
     {
-        if (!$definition) {
+        if ($style === null && $definition === null) {
+            return static::$_styles;
+        }
+        if (is_string($style) && $definition === null) {
+            return isset(static::$_styles[$style]) ? static::$_styles[$style] : null;
+        }
+        if ($definition === false) {
             unset(static::$_styles[$style]);
 
-            return;
+            return true;
         }
-
         static::$_styles[$style] = $definition;
-    }
 
-    /**
-     * Gets all the style definitions.
-     *
-     * @return array
-     */
-    public function styles(): array
-    {
-        return static::$_styles;
+        return true;
     }
 
     /**
@@ -319,7 +309,7 @@ class ConsoleOutput
      *
      * @return int
      */
-    public function getOutputAs(): int
+    public function getOutputAs()
     {
         return $this->_outputAs;
     }
@@ -331,12 +321,27 @@ class ConsoleOutput
      * @return void
      * @throws \InvalidArgumentException in case of a not supported output type.
      */
-    public function setOutputAs(int $type): void
+    public function setOutputAs($type)
     {
         if (!in_array($type, [self::RAW, self::PLAIN, self::COLOR], true)) {
             throw new InvalidArgumentException(sprintf('Invalid output type "%s".', $type));
         }
 
+        $this->_outputAs = $type;
+    }
+
+    /**
+     * Get/Set the output type to use. The output type how formatting tags are treated.
+     *
+     * @deprecated 3.5.0 Use getOutputAs()/setOutputAs() instead.
+     * @param int|null $type The output type to use. Should be one of the class constants.
+     * @return int|null Either null or the value if getting.
+     */
+    public function outputAs($type = null)
+    {
+        if ($type === null) {
+            return $this->_outputAs;
+        }
         $this->_outputAs = $type;
     }
 

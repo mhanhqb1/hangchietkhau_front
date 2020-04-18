@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -24,9 +22,11 @@ use Cake\Http\ServerRequest;
  * Abstract base authorization adapter for AuthComponent.
  *
  * @see \Cake\Controller\Component\AuthComponent::$authenticate
+ * @mixin \Cake\Core\InstanceConfigTrait
  */
 abstract class BaseAuthorize
 {
+
     use InstanceConfigTrait;
 
     /**
@@ -62,5 +62,5 @@ abstract class BaseAuthorize
      * @param \Cake\Http\ServerRequest $request Request instance.
      * @return bool
      */
-    abstract public function authorize($user, ServerRequest $request): bool;
+    abstract public function authorize($user, ServerRequest $request);
 }

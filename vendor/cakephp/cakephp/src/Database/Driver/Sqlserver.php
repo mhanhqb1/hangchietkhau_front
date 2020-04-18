@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -20,8 +18,6 @@ use Cake\Database\Dialect\SqlserverDialectTrait;
 use Cake\Database\Driver;
 use Cake\Database\Query;
 use Cake\Database\Statement\SqlserverStatement;
-use Cake\Database\StatementInterface;
-use InvalidArgumentException;
 use PDO;
 
 /**
@@ -29,12 +25,9 @@ use PDO;
  */
 class Sqlserver extends Driver
 {
-    use SqlserverDialectTrait;
 
-    /**
-     * @var int|null Maximum alias length or null if no limit
-     */
-    protected const MAX_ALIAS_LENGTH = 128;
+    use PDODriverTrait;
+    use SqlserverDialectTrait;
 
     /**
      * Base configuration settings for Sqlserver driver
@@ -46,7 +39,6 @@ class Sqlserver extends Driver
         'username' => '',
         'password' => '',
         'database' => 'cake',
-        'port' => '',
         // PDO::SQLSRV_ENCODING_UTF8
         'encoding' => 65001,
         'flags' => [],
@@ -71,7 +63,7 @@ class Sqlserver extends Driver
      * @throws \InvalidArgumentException if an unsupported setting is in the driver config
      * @return bool true on success
      */
-    public function connect(): bool
+    public function connect()
     {
         if ($this->_connection) {
             return true;
@@ -79,27 +71,19 @@ class Sqlserver extends Driver
         $config = $this->_config;
 
         if (isset($config['persistent']) && $config['persistent']) {
-            throw new InvalidArgumentException(
-                'Config setting "persistent" cannot be set to true, '
-                . 'as the Sqlserver PDO driver does not support PDO::ATTR_PERSISTENT'
-            );
+            throw new \InvalidArgumentException('Config setting "persistent" cannot be set to true, as the Sqlserver PDO driver does not support PDO::ATTR_PERSISTENT');
         }
 
         $config['flags'] += [
             PDO::ATTR_EMULATE_PREPARES => false,
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
         ];
 
         if (!empty($config['encoding'])) {
-            /** @psalm-suppress UndefinedConstant */
             $config['flags'][PDO::SQLSRV_ATTR_ENCODING] = $config['encoding'];
         }
-        $port = '';
-        if ($config['port']) {
-            $port = ',' . $config['port'];
-        }
 
-        $dsn = "sqlsrv:Server={$config['host']}{$port};Database={$config['database']};MultipleActiveResultSets=false";
+        $dsn = "sqlsrv:Server={$config['host']};Database={$config['database']};MultipleActiveResultSets=false";
         if ($config['app'] !== null) {
             $dsn .= ";APP={$config['app']}";
         }
@@ -117,7 +101,7 @@ class Sqlserver extends Driver
         }
         $this->_connect($dsn, $config);
 
-        $connection = $this->getConnection();
+        $connection = $this->connection();
         if (!empty($config['init'])) {
             foreach ((array)$config['init'] as $command) {
                 $connection->exec($command);
@@ -142,9 +126,9 @@ class Sqlserver extends Driver
      *
      * @return bool true if it is valid to use this driver
      */
-    public function enabled(): bool
+    public function enabled()
     {
-        return in_array('sqlsrv', PDO::getAvailableDrivers(), true);
+        return in_array('sqlsrv', PDO::getAvailableDrivers());
     }
 
     /**
@@ -153,28 +137,23 @@ class Sqlserver extends Driver
      * @param string|\Cake\Database\Query $query The query to prepare.
      * @return \Cake\Database\StatementInterface
      */
-    public function prepare($query): StatementInterface
+    public function prepare($query)
     {
         $this->connect();
         $options = [PDO::ATTR_CURSOR => PDO::CURSOR_SCROLL];
         $isObject = $query instanceof Query;
-        /** @psalm-suppress PossiblyInvalidMethodCall */
         if ($isObject && $query->isBufferedResultsEnabled() === false) {
             $options = [];
         }
-        /**
-         * @psalm-suppress PossiblyInvalidMethodCall
-         * @psalm-suppress PossiblyInvalidArgument
-         */
         $statement = $this->_connection->prepare($isObject ? $query->sql() : $query, $options);
 
         return new SqlserverStatement($statement, $this);
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function supportsDynamicConstraints(): bool
+    public function supportsDynamicConstraints()
     {
         return true;
     }

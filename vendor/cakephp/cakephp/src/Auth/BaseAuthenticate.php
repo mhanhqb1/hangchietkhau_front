@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -20,16 +18,17 @@ use Cake\Core\InstanceConfigTrait;
 use Cake\Event\EventListenerInterface;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
-use Cake\ORM\Locator\LocatorAwareTrait;
-use Cake\ORM\Query;
+use Cake\ORM\TableRegistry;
 
 /**
  * Base Authentication class with common methods and properties.
+ *
+ * @mixin \Cake\Core\InstanceConfigTrait
  */
 abstract class BaseAuthenticate implements EventListenerInterface
 {
+
     use InstanceConfigTrait;
-    use LocatorAwareTrait;
 
     /**
      * Default config for this object.
@@ -43,17 +42,21 @@ abstract class BaseAuthenticate implements EventListenerInterface
      * - `passwordHasher` Password hasher class. Can be a string specifying class name
      *    or an array containing `className` key, any other keys will be passed as
      *    config to the class. Defaults to 'Default'.
+     * - Options `scope` and `contain` have been deprecated since 3.1. Use custom
+     *   finder instead to modify the query to fetch user record.
      *
      * @var array
      */
     protected $_defaultConfig = [
         'fields' => [
             'username' => 'username',
-            'password' => 'password',
+            'password' => 'password'
         ],
         'userModel' => 'Users',
+        'scope' => [],
         'finder' => 'all',
-        'passwordHasher' => 'Default',
+        'contain' => null,
+        'passwordHasher' => 'Default'
     ];
 
     /**
@@ -66,7 +69,7 @@ abstract class BaseAuthenticate implements EventListenerInterface
     /**
      * Password hasher instance.
      *
-     * @var \Cake\Auth\AbstractPasswordHasher|null
+     * @var \Cake\Auth\AbstractPasswordHasher
      */
     protected $_passwordHasher;
 
@@ -99,22 +102,15 @@ abstract class BaseAuthenticate implements EventListenerInterface
      * @param string $username The username/identifier.
      * @param string|null $password The password, if not provided password checking is skipped
      *   and result of find is returned.
-     * @return array|false Either false on failure, or an array of user data.
+     * @return bool|array Either false on failure, or an array of user data.
      */
-    protected function _findUser(string $username, ?string $password = null)
+    protected function _findUser($username, $password = null)
     {
         $result = $this->_query($username)->first();
 
-        if ($result === null) {
-            // Waste time hashing the password, to prevent
-            // timing side-channels. However, don't hash
-            // null passwords as authentication systems
-            // like digest auth don't use passwords
-            // and hashing *could* create a timing side-channel.
-            if ($password !== null) {
-                $hasher = $this->passwordHasher();
-                $hasher->hash($password);
-            }
+        if (empty($result)) {
+            $hasher = $this->passwordHasher();
+            $hasher->hash((string)$password);
 
             return false;
         }
@@ -123,26 +119,16 @@ abstract class BaseAuthenticate implements EventListenerInterface
         if ($password !== null) {
             $hasher = $this->passwordHasher();
             $hashedPassword = $result->get($passwordField);
-
-            if ($hashedPassword === null || $hashedPassword === '') {
-                // Waste time hashing the password, to prevent
-                // timing side-channels to distinguish whether
-                // user has password or not.
-                $hasher->hash($password);
-
-                return false;
-            }
-
             if (!$hasher->check($password, $hashedPassword)) {
                 return false;
             }
 
             $this->_needsPasswordRehash = $hasher->needsRehash($hashedPassword);
-            $result->unset($passwordField);
+            $result->unsetProperty($passwordField);
         }
         $hidden = $result->getHidden();
-        if ($password === null && in_array($passwordField, $hidden, true)) {
-            $key = array_search($passwordField, $hidden, true);
+        if ($password === null && in_array($passwordField, $hidden)) {
+            $key = array_search($passwordField, $hidden);
             unset($hidden[$key]);
             $result->setHidden($hidden);
         }
@@ -156,14 +142,21 @@ abstract class BaseAuthenticate implements EventListenerInterface
      * @param string $username The username/identifier.
      * @return \Cake\ORM\Query
      */
-    protected function _query(string $username): Query
+    protected function _query($username)
     {
         $config = $this->_config;
-        $table = $this->getTableLocator()->get($config['userModel']);
+        $table = TableRegistry::get($config['userModel']);
 
         $options = [
-            'conditions' => [$table->aliasField($config['fields']['username']) => $username],
+            'conditions' => [$table->aliasField($config['fields']['username']) => $username]
         ];
+
+        if (!empty($config['scope'])) {
+            $options['conditions'] = array_merge($options['conditions'], $config['scope']);
+        }
+        if (!empty($config['contain'])) {
+            $options['contain'] = $config['contain'];
+        }
 
         $finder = $config['finder'];
         if (is_array($finder)) {
@@ -185,9 +178,9 @@ abstract class BaseAuthenticate implements EventListenerInterface
      * @throws \RuntimeException If password hasher class not found or
      *   it does not extend AbstractPasswordHasher
      */
-    public function passwordHasher(): AbstractPasswordHasher
+    public function passwordHasher()
     {
-        if ($this->_passwordHasher !== null) {
+        if ($this->_passwordHasher) {
             return $this->_passwordHasher;
         }
 
@@ -202,7 +195,7 @@ abstract class BaseAuthenticate implements EventListenerInterface
      *
      * @return bool
      */
-    public function needsPasswordRehash(): bool
+    public function needsPasswordRehash()
     {
         return $this->_needsPasswordRehash;
     }
@@ -212,7 +205,7 @@ abstract class BaseAuthenticate implements EventListenerInterface
      *
      * @param \Cake\Http\ServerRequest $request Request to get authentication information from.
      * @param \Cake\Http\Response $response A response object that can have headers added.
-     * @return array|false Either false on failure, or an array of user data on success.
+     * @return mixed Either false on failure, or an array of user data on success.
      */
     abstract public function authenticate(ServerRequest $request, Response $response);
 
@@ -221,7 +214,7 @@ abstract class BaseAuthenticate implements EventListenerInterface
      * systems like basic and digest auth.
      *
      * @param \Cake\Http\ServerRequest $request Request object.
-     * @return array|false Either false or an array of user information
+     * @return mixed Either false or an array of user information
      */
     public function getUser(ServerRequest $request)
     {
@@ -238,7 +231,7 @@ abstract class BaseAuthenticate implements EventListenerInterface
      *
      * @param \Cake\Http\ServerRequest $request A request object.
      * @param \Cake\Http\Response $response A response object.
-     * @return \Cake\Http\Response|null|void
+     * @return void
      */
     public function unauthenticated(ServerRequest $request, Response $response)
     {
@@ -251,16 +244,16 @@ abstract class BaseAuthenticate implements EventListenerInterface
      *
      * - `Auth.afterIdentify` - Fired after a user has been identified using one of
      *   configured authenticate class. The callback function should have signature
-     *   like `afterIdentify(EventInterface $event, array $user)` when `$user` is the
+     *   like `afterIdentify(Event $event, array $user)` when `$user` is the
      *   identified user record.
      *
      * - `Auth.logout` - Fired when AuthComponent::logout() is called. The callback
-     *   function should have signature like `logout(EventInterface $event, array $user)`
+     *   function should have signature like `logout(Event $event, array $user)`
      *   where `$user` is the user about to be logged out.
      *
      * @return array List of events this class listens to. Defaults to `[]`.
      */
-    public function implementedEvents(): array
+    public function implementedEvents()
     {
         return [];
     }

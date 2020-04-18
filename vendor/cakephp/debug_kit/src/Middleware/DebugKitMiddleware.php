@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
@@ -13,18 +11,13 @@ declare(strict_types=1);
  */
 namespace DebugKit\Middleware;
 
-use Cake\Core\Configure;
 use Cake\Event\EventManager;
 use DebugKit\ToolbarService;
-use Psr\Http\Message\ResponseInterface;
-use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\MiddlewareInterface;
-use Psr\Http\Server\RequestHandlerInterface;
 
 /**
- * Middleware that enables DebugKit for the layers below.
+ * PSR-7 Middleware that enables DebugKit for the layers below.
  */
-class DebugKitMiddleware implements MiddlewareInterface
+class DebugKitMiddleware
 {
     /**
      * @var \DebugKit\ToolbarService
@@ -34,11 +27,11 @@ class DebugKitMiddleware implements MiddlewareInterface
     /**
      * Constructor
      *
-     * @param \DebugKit\ToolbarService $service The configured service, or null.
+     * @param DebugKit\ToolbarService $service The configured service, or null.
      */
-    public function __construct(?ToolbarService $service = null)
+    public function __construct(ToolbarService $service = null)
     {
-        $service = $service ?: new ToolbarService(EventManager::instance(), (array)Configure::read('DebugKit'));
+        $service = $service ?: new ToolbarService(EventManager::instance(), []);
         $this->service = $service;
     }
 
@@ -48,21 +41,15 @@ class DebugKitMiddleware implements MiddlewareInterface
      * DebugKit will augment the response and add the toolbar if possible.
      *
      * @param \Psr\Http\Message\ServerRequestInterface $request The request.
-     * @param \Psr\Http\Server\RequestHandlerInterface $handler The request handler.
-     * @return \Psr\Http\Message\ResponseInterface A response.
+     * @param \Psr\Http\Message\ResponseInterface $response The response.
+     * @param callable $next Callback to invoke the next middleware.
+     * @return \Psr\Http\Message\ResponseInterface A response
      */
-    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    public function __invoke($request, $response, $next)
     {
-        if ($this->service->isEnabled()) {
-            $this->service->loadPanels();
-            $this->service->initializePanels();
-        }
-        $response = $handler->handle($request);
-
-        if (!$this->service->isEnabled()) {
-            return $response;
-        }
-
+        $this->service->loadPanels();
+        $this->service->initializePanels();
+        $response = $next($request, $response);
         $row = $this->service->saveData($request, $response);
         if (!$row) {
             return $response;

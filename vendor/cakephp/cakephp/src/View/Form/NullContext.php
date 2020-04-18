@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -26,6 +24,7 @@ use Cake\Http\ServerRequest;
  */
 class NullContext implements ContextInterface
 {
+
     /**
      * The request object.
      *
@@ -45,108 +44,81 @@ class NullContext implements ContextInterface
     }
 
     /**
-     * Get the fields used in the context as a primary key.
-     *
-     * @return string[]
-     * @deprecated 4.0.0 Renamed to getPrimaryKey()
+     * {@inheritDoc}
      */
-    public function primaryKey(): array
+    public function primaryKey()
     {
         return [];
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function getPrimaryKey(): array
-    {
-        return [];
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function isPrimaryKey(string $field): bool
+    public function isPrimaryKey($field)
     {
         return false;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function isCreate(): bool
+    public function isCreate()
     {
         return true;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function val(string $field, array $options = [])
+    public function val($field)
     {
         return $this->_request->getData($field);
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function isRequired(string $field): ?bool
-    {
-        return null;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getRequiredMessage(string $field): ?string
-    {
-        return null;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getMaxLength(string $field): ?int
-    {
-        return null;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function fieldNames(): array
-    {
-        return [];
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function type(string $field): ?string
-    {
-        return null;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function attributes(string $field): array
-    {
-        return [];
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function hasError(string $field): bool
+    public function isRequired($field)
     {
         return false;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function error(string $field): array
+    public function fieldNames()
+    {
+        return [];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function type($field)
+    {
+        return null;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function attributes($field)
+    {
+        return [];
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function hasError($field)
+    {
+        return false;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function error($field)
     {
         return [];
     }

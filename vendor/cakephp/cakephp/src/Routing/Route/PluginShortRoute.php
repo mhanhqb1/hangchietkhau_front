@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -22,19 +20,20 @@ namespace Cake\Routing\Route;
  */
 class PluginShortRoute extends InflectedRoute
 {
+
     /**
      * Parses a string URL into an array. If a plugin key is found, it will be copied to the
      * controller parameter.
      *
      * @param string $url The URL to parse
      * @param string $method The HTTP method
-     * @return array|null An array of request parameters, or null on failure.
+     * @return array|false An array of request parameters, or boolean false on failure.
      */
-    public function parse(string $url, string $method = ''): ?array
+    public function parse($url, $method = '')
     {
         $params = parent::parse($url, $method);
         if (!$params) {
-            return null;
+            return false;
         }
         $params['controller'] = $params['plugin'];
 
@@ -49,12 +48,12 @@ class PluginShortRoute extends InflectedRoute
      * @param array $context An array of the current request context.
      *   Contains information such as the current host, scheme, port, and base
      *   directory.
-     * @return string|null Either a string URL for the parameters if they match or null.
+     * @return string|false Either a string URL for the parameters if they match or false.
      */
-    public function match(array $url, array $context = []): ?string
+    public function match(array $url, array $context = [])
     {
         if (isset($url['controller'], $url['plugin']) && $url['plugin'] !== $url['controller']) {
-            return null;
+            return false;
         }
         $this->defaults['controller'] = $url['controller'];
         $result = parent::match($url, $context);

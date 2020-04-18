@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,7 +15,6 @@ declare(strict_types=1);
 namespace Cake\View\Widget;
 
 use Cake\View\Form\ContextInterface;
-use Cake\View\StringTemplate;
 
 /**
  * Basic input class.
@@ -28,6 +25,7 @@ use Cake\View\StringTemplate;
  */
 class BasicWidget implements WidgetInterface
 {
+
     /**
      * StringTemplate instance.
      *
@@ -36,24 +34,11 @@ class BasicWidget implements WidgetInterface
     protected $_templates;
 
     /**
-     * Data defaults.
-     *
-     * @var array
-     */
-    protected $defaults = [
-        'name' => '',
-        'val' => null,
-        'type' => 'text',
-        'escape' => true,
-        'templateVars' => [],
-    ];
-
-    /**
      * Constructor.
      *
      * @param \Cake\View\StringTemplate $templates Templates list.
      */
-    public function __construct(StringTemplate $templates)
+    public function __construct($templates)
     {
         $this->_templates = $templates;
     }
@@ -73,30 +58,17 @@ class BasicWidget implements WidgetInterface
      * @param \Cake\View\Form\ContextInterface $context The current form context.
      * @return string
      */
-    public function render(array $data, ContextInterface $context): string
+    public function render(array $data, ContextInterface $context)
     {
-        $data = $this->mergeDefaults($data, $context);
-
+        $data += [
+            'name' => '',
+            'val' => null,
+            'type' => 'text',
+            'escape' => true,
+            'templateVars' => []
+        ];
         $data['value'] = $data['val'];
         unset($data['val']);
-
-        $fieldName = $data['fieldName'] ?? null;
-        if ($fieldName) {
-            if (
-                $data['type'] === 'number'
-                && !isset($data['step'])
-            ) {
-                $data = $this->setStep($data, $context, $fieldName);
-            }
-
-            $typesWithMaxLength = ['text', 'email', 'tel', 'url', 'search'];
-            if (
-                !array_key_exists('maxlength', $data)
-                && in_array($data['type'], $typesWithMaxLength, true)
-            ) {
-                $data = $this->setMaxLength($data, $context, $fieldName);
-            }
-        }
 
         return $this->_templates->format('input', [
             'name' => $data['name'],
@@ -110,94 +82,9 @@ class BasicWidget implements WidgetInterface
     }
 
     /**
-     * Merge default values with supplied data.
-     *
-     * @param array $data Data array
-     * @param \Cake\View\Form\ContextInterface $context Context instance.
-     * @return array Updated data array.
+     * {@inheritDoc}
      */
-    protected function mergeDefaults(array $data, ContextInterface $context): array
-    {
-        $data += $this->defaults;
-
-        if (isset($data['fieldName']) && !array_key_exists('required', $data)) {
-            $data = $this->setRequired($data, $context, $data['fieldName']);
-        }
-
-        return $data;
-    }
-
-    /**
-     * Set value for "required" attribute if applicable.
-     *
-     * @param array $data Data array
-     * @param \Cake\View\Form\ContextInterface $context Context instance.
-     * @param string $fieldName Field name.
-     * @return array Updated data array.
-     */
-    protected function setRequired(array $data, ContextInterface $context, string $fieldName): array
-    {
-        if (
-            empty($data['disabled'])
-            && (
-                (isset($data['type'])
-                    && $data['type'] !== 'hidden'
-                )
-                || !isset($data['type'])
-            )
-            && $context->isRequired($fieldName)
-        ) {
-            $data['required'] = true;
-        }
-
-        return $data;
-    }
-
-    /**
-     * Set value for "maxlength" attribute if applicable.
-     *
-     * @param array $data Data array
-     * @param \Cake\View\Form\ContextInterface $context Context instance.
-     * @param string $fieldName Field name.
-     * @return array Updated data array.
-     */
-    protected function setMaxLength(array $data, ContextInterface $context, string $fieldName): array
-    {
-        $maxLength = $context->getMaxLength($fieldName);
-        if ($maxLength !== null) {
-            $data['maxlength'] = min($maxLength, 100000);
-        }
-
-        return $data;
-    }
-
-    /**
-     * Set value for "step" attribute if applicable.
-     *
-     * @param array $data Data array
-     * @param \Cake\View\Form\ContextInterface $context Context instance.
-     * @param string $fieldName Field name.
-     * @return array Updated data array.
-     */
-    protected function setStep(array $data, ContextInterface $context, string $fieldName): array
-    {
-        $dbType = $context->type($fieldName);
-        $fieldDef = $context->attributes($fieldName);
-
-        if ($dbType === 'decimal' && isset($fieldDef['precision'])) {
-            $decimalPlaces = $fieldDef['precision'];
-            $data['step'] = sprintf('%.' . $decimalPlaces . 'F', pow(10, -1 * $decimalPlaces));
-        } elseif ($dbType === 'float') {
-            $data['step'] = 'any';
-        }
-
-        return $data;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function secureFields(array $data): array
+    public function secureFields(array $data)
     {
         if (!isset($data['name']) || $data['name'] === '') {
             return [];

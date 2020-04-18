@@ -9,81 +9,164 @@
 
 namespace PHP_CodeSniffer\Tests\Core\File;
 
-use PHP_CodeSniffer\Tests\Core\AbstractMethodUnitTest;
+use PHP_CodeSniffer\Config;
+use PHP_CodeSniffer\Ruleset;
+use PHP_CodeSniffer\Files\DummyFile;
+use PHPUnit\Framework\TestCase;
 
-class FindImplementedInterfaceNamesTest extends AbstractMethodUnitTest
+class FindImplementedInterfaceNamesTest extends TestCase
 {
+
+    /**
+     * The \PHP_CodeSniffer\Files\File object containing parsed contents of the test case file.
+     *
+     * @var \PHP_CodeSniffer\Files\File
+     */
+    private $phpcsFile;
 
 
     /**
-     * Test retrieving the name(s) of the interfaces being implemented by a class.
+     * Initialize & tokenize \PHP_CodeSniffer\Files\File with code from the test case file.
      *
-     * @param string $identifier Comment which precedes the test case.
-     * @param bool   $expected   Expected function output.
-     *
-     * @dataProvider dataImplementedInterface
+     * Methods used for these tests can be found in a test case file in the same
+     * directory and with the same name, using the .inc extension.
      *
      * @return void
      */
-    public function testFindImplementedInterfaceNames($identifier, $expected)
+    public function setUp()
     {
-        $OOToken = $this->getTargetToken($identifier, [T_CLASS, T_ANON_CLASS, T_INTERFACE]);
-        $result  = self::$phpcsFile->findImplementedInterfaceNames($OOToken);
-        $this->assertSame($expected, $result);
+        $config            = new Config();
+        $config->standards = array('Generic');
 
-    }//end testFindImplementedInterfaceNames()
+        $ruleset = new Ruleset($config);
+
+        $pathToTestFile  = dirname(__FILE__).'/'.basename(__FILE__, '.php').'.inc';
+        $this->phpcsFile = new DummyFile(file_get_contents($pathToTestFile), $ruleset, $config);
+        $this->phpcsFile->process();
+
+    }//end setUp()
 
 
     /**
-     * Data provider for the FindImplementedInterfaceNames test.
+     * Clean up after finished test.
      *
-     * @see testFindImplementedInterfaceNames()
-     *
-     * @return array
+     * @return void
      */
-    public function dataImplementedInterface()
+    public function tearDown()
     {
-        return [
-            [
-                '/* testImplementedClass */',
-                ['testFIINInterface'],
-            ],
-            [
-                '/* testMultiImplementedClass */',
-                [
-                    'testFIINInterface',
-                    'testFIINInterface2',
-                ],
-            ],
-            [
-                '/* testNamespacedClass */',
-                ['\PHP_CodeSniffer\Tests\Core\File\testFIINInterface'],
-            ],
-            [
-                '/* testNonImplementedClass */',
-                false,
-            ],
-            [
-                '/* testInterface */',
-                false,
-            ],
-            [
-                '/* testClassThatExtendsAndImplements */',
-                [
-                    'InterfaceA',
-                    '\NameSpaced\Cat\InterfaceB',
-                ],
-            ],
-            [
-                '/* testClassThatImplementsAndExtends */',
-                [
-                    '\InterfaceA',
-                    'InterfaceB',
-                ],
-            ],
-        ];
+        unset($this->phpcsFile);
 
-    }//end dataImplementedInterface()
+    }//end tearDown()
+
+
+    /**
+     * Test a class that implements a single interface.
+     *
+     * @return void
+     */
+    public function testImplementedClass()
+    {
+        $start = ($this->phpcsFile->numTokens - 1);
+        $class = $this->phpcsFile->findPrevious(
+            T_COMMENT,
+            $start,
+            null,
+            false,
+            '/* testImplementedClass */'
+        );
+
+        $found = $this->phpcsFile->findImplementedInterfaceNames(($class + 2));
+        $this->assertSame(array('testFIINInterface'), $found);
+
+    }//end testImplementedClass()
+
+
+    /**
+     * Test a class that implements multiple interfaces.
+     *
+     * @return void
+     */
+    public function testMultiImplementedClass()
+    {
+        $start = ($this->phpcsFile->numTokens - 1);
+        $class = $this->phpcsFile->findPrevious(
+            T_COMMENT,
+            $start,
+            null,
+            false,
+            '/* testMultiImplementedClass */'
+        );
+
+        $found = $this->phpcsFile->findImplementedInterfaceNames(($class + 2));
+        $this->assertSame(array('testFIINInterface', 'testFIINInterface2'), $found);
+
+    }//end testMultiImplementedClass()
+
+
+    /**
+     * Test a class that implements an interface, using namespaces.
+     *
+     * @return void
+     */
+    public function testNamespacedClass()
+    {
+        $start = ($this->phpcsFile->numTokens - 1);
+        $class = $this->phpcsFile->findPrevious(
+            T_COMMENT,
+            $start,
+            null,
+            false,
+            '/* testNamespacedClass */'
+        );
+
+        $found = $this->phpcsFile->findImplementedInterfaceNames(($class + 2));
+        $this->assertSame(array('\PHP_CodeSniffer\Tests\Core\File\testFIINInterface'), $found);
+
+    }//end testNamespacedClass()
+
+
+    /**
+     * Test a class that doesn't implement an interface.
+     *
+     * @return void
+     */
+    public function testNonImplementedClass()
+    {
+        $start = ($this->phpcsFile->numTokens - 1);
+        $class = $this->phpcsFile->findPrevious(
+            T_COMMENT,
+            $start,
+            null,
+            false,
+            '/* testNonImplementedClass */'
+        );
+
+        $found = $this->phpcsFile->findImplementedInterfaceNames(($class + 2));
+        $this->assertFalse($found);
+
+    }//end testNonImplementedClass()
+
+
+    /**
+     * Test an interface.
+     *
+     * @return void
+     */
+    public function testInterface()
+    {
+        $start = ($this->phpcsFile->numTokens - 1);
+        $class = $this->phpcsFile->findPrevious(
+            T_COMMENT,
+            $start,
+            null,
+            false,
+            '/* testInterface */'
+        );
+
+        $found = $this->phpcsFile->findImplementedInterfaceNames(($class + 2));
+        $this->assertFalse($found);
+
+    }//end testInterface()
 
 
 }//end class

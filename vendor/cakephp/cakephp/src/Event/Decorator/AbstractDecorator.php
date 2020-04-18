@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -21,6 +19,7 @@ namespace Cake\Event\Decorator;
  */
 abstract class AbstractDecorator
 {
+
     /**
      * Callable
      *
@@ -64,7 +63,7 @@ abstract class AbstractDecorator
      * @param array $args Arguments for the callable.
      * @return mixed
      */
-    protected function _call(array $args)
+    protected function _call($args)
     {
         $callable = $this->_callable;
 

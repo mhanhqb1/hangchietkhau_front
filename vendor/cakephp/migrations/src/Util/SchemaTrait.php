@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
@@ -13,7 +11,6 @@ declare(strict_types=1);
  */
 namespace Migrations\Util;
 
-use Cake\Database\Schema\CachedCollection;
 use Cake\Datasource\ConnectionManager;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
@@ -23,23 +20,21 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 trait SchemaTrait
 {
+
     /**
      * Helper method to get the schema collection.
      *
-     * @param \Symfony\Component\Console\Input\InputInterface $input Input object.
-     * @param \Symfony\Component\Console\Output\OutputInterface $output Output object.
-     * @return \Cake\Database\Schema\CachedCollection|null
+     * @return null|\Cake\Database\Schema\Collection
      */
-    protected function _getSchema(InputInterface $input, OutputInterface $output): ?CachedCollection
+    protected function _getSchema(InputInterface $input, OutputInterface $output)
     {
         $connectionName = $input->getOption('connection');
-        /** @var \Cake\Database\Connection $connection */
         $connection = ConnectionManager::get($connectionName);
 
-        if (!method_exists($connection, 'getSchemaCollection')) {
+        if (!method_exists($connection, 'schemaCollection')) {
             $msg = sprintf(
                 'The "%s" connection is not compatible with orm caching, ' .
-                'as it does not implement a "getSchemaCollection()" method.',
+                'as it does not implement a "schemaCollection()" method.',
                 $connectionName
             );
             $output->writeln('<error>' . $msg . '</error>');
@@ -57,9 +52,6 @@ trait SchemaTrait
 
         $connection->cacheMetadata(true);
 
-        /**
-         * @var \Cake\Database\Schema\CachedCollection
-         */
-        return $connection->getSchemaCollection();
+        return $connection->schemaCollection();
     }
 }

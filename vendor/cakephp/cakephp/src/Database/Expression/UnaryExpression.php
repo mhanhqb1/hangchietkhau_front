@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -18,24 +16,24 @@ namespace Cake\Database\Expression;
 
 use Cake\Database\ExpressionInterface;
 use Cake\Database\ValueBinder;
-use Closure;
 
 /**
  * An expression object that represents an expression with only a single operand.
  */
 class UnaryExpression implements ExpressionInterface
 {
+
     /**
      * Indicates that the operation is in pre-order
      *
      */
-    public const PREFIX = 0;
+    const PREFIX = 0;
 
     /**
      * Indicates that the operation is in post-order
      *
      */
-    public const POSTFIX = 1;
+    const POSTFIX = 1;
 
     /**
      * The operator this unary expression represents
@@ -65,7 +63,7 @@ class UnaryExpression implements ExpressionInterface
      * @param mixed $value the value to use as the operand for the expression
      * @param int $mode either UnaryExpression::PREFIX or UnaryExpression::POSTFIX
      */
-    public function __construct(string $operator, $value, $mode = self::PREFIX)
+    public function __construct($operator, $value, $mode = self::PREFIX)
     {
         $this->_operator = $operator;
         $this->_value = $value;
@@ -78,7 +76,7 @@ class UnaryExpression implements ExpressionInterface
      * @param \Cake\Database\ValueBinder $generator Placeholder generator object
      * @return string
      */
-    public function sql(ValueBinder $generator): string
+    public function sql(ValueBinder $generator)
     {
         $operand = $this->_value;
         if ($operand instanceof ExpressionInterface) {
@@ -93,16 +91,15 @@ class UnaryExpression implements ExpressionInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     *
      */
-    public function traverse(Closure $callable)
+    public function traverse(callable $callable)
     {
         if ($this->_value instanceof ExpressionInterface) {
             $callable($this->_value);
             $this->_value->traverse($callable);
         }
-
-        return $this;
     }
 
     /**

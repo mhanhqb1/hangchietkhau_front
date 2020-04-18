@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,7 +15,7 @@ declare(strict_types=1);
 namespace Cake\Console;
 
 use Cake\Console\Exception\ConsoleException;
-use SimpleXMLElement;
+use SimpleXmlElement;
 
 /**
  * An object to represent a single argument used in the command line.
@@ -27,6 +25,7 @@ use SimpleXMLElement;
  */
 class ConsoleInputArgument
 {
+
     /**
      * Name of the argument.
      *
@@ -51,7 +50,7 @@ class ConsoleInputArgument
     /**
      * An array of valid choices for this argument.
      *
-     * @var string[]
+     * @var array
      */
     protected $_choices;
 
@@ -61,7 +60,7 @@ class ConsoleInputArgument
      * @param string|array $name The long name of the option, or an array with all the properties.
      * @param string $help The help text for this option
      * @param bool $required Whether this argument is required. Missing required args will trigger exceptions
-     * @param string[] $choices Valid choices for this option.
+     * @param array $choices Valid choices for this option.
      */
     public function __construct($name, $help = '', $required = false, $choices = [])
     {
@@ -70,7 +69,6 @@ class ConsoleInputArgument
                 $this->{'_' . $key} = $value;
             }
         } else {
-            /** @psalm-suppress PossiblyInvalidPropertyAssignmentValue */
             $this->_name = $name;
             $this->_help = $help;
             $this->_required = $required;
@@ -83,7 +81,7 @@ class ConsoleInputArgument
      *
      * @return string Value of this->_name.
      */
-    public function name(): string
+    public function name()
     {
         return $this->_name;
     }
@@ -94,7 +92,7 @@ class ConsoleInputArgument
      * @param \Cake\Console\ConsoleInputArgument $argument ConsoleInputArgument to compare to.
      * @return bool
      */
-    public function isEqualTo(ConsoleInputArgument $argument): bool
+    public function isEqualTo(ConsoleInputArgument $argument)
     {
         return $this->usage() === $argument->usage();
     }
@@ -105,7 +103,7 @@ class ConsoleInputArgument
      * @param int $width The width to make the name of the option.
      * @return string
      */
-    public function help(int $width = 0): string
+    public function help($width = 0)
     {
         $name = $this->_name;
         if (strlen($name) < $width) {
@@ -127,7 +125,7 @@ class ConsoleInputArgument
      *
      * @return string
      */
-    public function usage(): string
+    public function usage()
     {
         $name = $this->_name;
         if ($this->_choices) {
@@ -146,7 +144,7 @@ class ConsoleInputArgument
      *
      * @return bool
      */
-    public function isRequired(): bool
+    public function isRequired()
     {
         return (bool)$this->_required;
     }
@@ -155,15 +153,15 @@ class ConsoleInputArgument
      * Check that $value is a valid choice for this argument.
      *
      * @param string $value The choice to validate.
-     * @return true
+     * @return bool
      * @throws \Cake\Console\Exception\ConsoleException
      */
-    public function validChoice(string $value): bool
+    public function validChoice($value)
     {
         if (empty($this->_choices)) {
             return true;
         }
-        if (!in_array($value, $this->_choices, true)) {
+        if (!in_array($value, $this->_choices)) {
             throw new ConsoleException(
                 sprintf(
                     '"%s" is not a valid value for %s. Please use one of "%s"',
@@ -180,15 +178,15 @@ class ConsoleInputArgument
     /**
      * Append this arguments XML representation to the passed in SimpleXml object.
      *
-     * @param \SimpleXMLElement $parent The parent element.
-     * @return \SimpleXMLElement The parent with this argument appended.
+     * @param \SimpleXmlElement $parent The parent element.
+     * @return \SimpleXmlElement The parent with this argument appended.
      */
-    public function xml(SimpleXMLElement $parent): SimpleXMLElement
+    public function xml(SimpleXmlElement $parent)
     {
         $option = $parent->addChild('argument');
         $option->addAttribute('name', $this->_name);
         $option->addAttribute('help', $this->_help);
-        $option->addAttribute('required', (string)(int)$this->isRequired());
+        $option->addAttribute('required', (int)$this->isRequired());
         $choices = $option->addChild('choices');
         foreach ($this->_choices as $valid) {
             $choices->addChild('choice', $valid);

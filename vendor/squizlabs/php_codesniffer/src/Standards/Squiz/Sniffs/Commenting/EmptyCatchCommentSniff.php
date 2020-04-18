@@ -9,8 +9,8 @@
 
 namespace PHP_CodeSniffer\Standards\Squiz\Sniffs\Commenting;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
 
 class EmptyCatchCommentSniff implements Sniff
 {
@@ -23,7 +23,7 @@ class EmptyCatchCommentSniff implements Sniff
      */
     public function register()
     {
-        return [T_CATCH];
+        return array(T_CATCH);
 
     }//end register()
 

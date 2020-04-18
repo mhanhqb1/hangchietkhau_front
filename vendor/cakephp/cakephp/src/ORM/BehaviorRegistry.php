@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -29,11 +27,10 @@ use LogicException;
  * and constructing behavior objects.
  *
  * This class also provides method for checking and dispatching behavior methods.
- *
- * @extends \Cake\Core\ObjectRegistry<\Cake\ORM\Behavior>
  */
 class BehaviorRegistry extends ObjectRegistry implements EventDispatcherInterface
 {
+
     use EventDispatcherTrait;
 
     /**
@@ -62,7 +59,7 @@ class BehaviorRegistry extends ObjectRegistry implements EventDispatcherInterfac
      *
      * @param \Cake\ORM\Table|null $table The table this registry is attached to.
      */
-    public function __construct(?Table $table = null)
+    public function __construct($table = null)
     {
         if ($table !== null) {
             $this->setTable($table);
@@ -75,23 +72,13 @@ class BehaviorRegistry extends ObjectRegistry implements EventDispatcherInterfac
      * @param \Cake\ORM\Table $table The table this registry is attached to.
      * @return void
      */
-    public function setTable(Table $table): void
+    public function setTable(Table $table)
     {
         $this->_table = $table;
-        $this->setEventManager($table->getEventManager());
-    }
-
-    /**
-     * Resolve a behavior classname.
-     *
-     * @param string $class Partial classname to resolve.
-     * @return string|null Either the correct classname or null.
-     * @psalm-return class-string|null
-     */
-    public static function className(string $class): ?string
-    {
-        return App::className($class, 'Model/Behavior', 'Behavior')
-            ?: App::className($class, 'ORM/Behavior', 'Behavior');
+        $eventManager = $table->getEventManager();
+        if ($eventManager !== null) {
+            $this->setEventManager($eventManager);
+        }
     }
 
     /**
@@ -100,12 +87,16 @@ class BehaviorRegistry extends ObjectRegistry implements EventDispatcherInterfac
      * Part of the template method for Cake\Core\ObjectRegistry::load()
      *
      * @param string $class Partial classname to resolve.
-     * @return string|null Either the correct class name or null.
-     * @psalm-return class-string|null
+     * @return string|false Either the correct classname or false.
      */
-    protected function _resolveClassName(string $class): ?string
+    protected function _resolveClassName($class)
     {
-        return static::className($class);
+        $result = App::className($class, 'Model/Behavior', 'Behavior');
+        if (!$result) {
+            $result = App::className($class, 'ORM/Behavior', 'Behavior');
+        }
+
+        return $result;
     }
 
     /**
@@ -115,15 +106,15 @@ class BehaviorRegistry extends ObjectRegistry implements EventDispatcherInterfac
      * and Cake\Core\ObjectRegistry::unload()
      *
      * @param string $class The classname that is missing.
-     * @param string|null $plugin The plugin the behavior is missing in.
+     * @param string $plugin The plugin the behavior is missing in.
      * @return void
      * @throws \Cake\ORM\Exception\MissingBehaviorException
      */
-    protected function _throwMissingClassError(string $class, ?string $plugin): void
+    protected function _throwMissingClassError($class, $plugin)
     {
         throw new MissingBehaviorException([
             'class' => $class . 'Behavior',
-            'plugin' => $plugin,
+            'plugin' => $plugin
         ]);
     }
 
@@ -137,13 +128,11 @@ class BehaviorRegistry extends ObjectRegistry implements EventDispatcherInterfac
      * @param string $alias The alias of the object.
      * @param array $config An array of config to use for the behavior.
      * @return \Cake\ORM\Behavior The constructed behavior class.
-     * @psalm-suppress MoreSpecificImplementedParamType
      */
-    protected function _create($class, string $alias, array $config): Behavior
+    protected function _create($class, $alias, $config)
     {
-        /** @var \Cake\ORM\Behavior $instance */
         $instance = new $class($this->_table, $config);
-        $enable = $config['enabled'] ?? true;
+        $enable = isset($config['enabled']) ? $config['enabled'] : true;
         if ($enable) {
             $this->getEventManager()->on($instance);
         }
@@ -167,7 +156,7 @@ class BehaviorRegistry extends ObjectRegistry implements EventDispatcherInterfac
      * @return array A list of implemented finders and methods.
      * @throws \LogicException when duplicate methods are connected.
      */
-    protected function _getMethods(Behavior $instance, string $class, string $alias): array
+    protected function _getMethods(Behavior $instance, $class, $alias)
     {
         $finders = array_change_key_case($instance->implementedFinders());
         $methods = array_change_key_case($instance->implementedMethods());
@@ -212,7 +201,7 @@ class BehaviorRegistry extends ObjectRegistry implements EventDispatcherInterfac
      * @param string $method The method to check for.
      * @return bool
      */
-    public function hasMethod(string $method): bool
+    public function hasMethod($method)
     {
         $method = strtolower($method);
 
@@ -228,7 +217,7 @@ class BehaviorRegistry extends ObjectRegistry implements EventDispatcherInterfac
      * @param string $method The method to check for.
      * @return bool
      */
-    public function hasFinder(string $method): bool
+    public function hasFinder($method)
     {
         $method = strtolower($method);
 
@@ -243,11 +232,11 @@ class BehaviorRegistry extends ObjectRegistry implements EventDispatcherInterfac
      * @return mixed The return value depends on the underlying behavior method.
      * @throws \BadMethodCallException When the method is unknown.
      */
-    public function call(string $method, array $args = [])
+    public function call($method, array $args = [])
     {
         $method = strtolower($method);
         if ($this->hasMethod($method) && $this->has($this->_methodMap[$method][0])) {
-            [$behavior, $callMethod] = $this->_methodMap[$method];
+            list($behavior, $callMethod) = $this->_methodMap[$method];
 
             return call_user_func_array([$this->_loaded[$behavior], $callMethod], $args);
         }
@@ -262,15 +251,15 @@ class BehaviorRegistry extends ObjectRegistry implements EventDispatcherInterfac
      *
      * @param string $type The finder type to invoke.
      * @param array $args The arguments you want to invoke the method with.
-     * @return \Cake\ORM\Query The return value depends on the underlying behavior method.
+     * @return mixed The return value depends on the underlying behavior method.
      * @throws \BadMethodCallException When the method is unknown.
      */
-    public function callFinder(string $type, array $args = []): Query
+    public function callFinder($type, array $args = [])
     {
         $type = strtolower($type);
 
         if ($this->hasFinder($type) && $this->has($this->_finderMap[$type][0])) {
-            [$behavior, $callMethod] = $this->_finderMap[$type];
+            list($behavior, $callMethod) = $this->_finderMap[$type];
 
             return call_user_func_array([$this->_loaded[$behavior], $callMethod], $args);
         }

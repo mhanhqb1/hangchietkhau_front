@@ -11,7 +11,6 @@
 
 namespace PHP_CodeSniffer\Files;
 
-use PHP_CodeSniffer\Autoload;
 use PHP_CodeSniffer\Util;
 use PHP_CodeSniffer\Ruleset;
 use PHP_CodeSniffer\Config;
@@ -25,7 +24,7 @@ class FileList implements \Iterator, \Countable
      *
      * @var array
      */
-    private $files = [];
+    private $files = array();
 
     /**
      * The number of files in the list.
@@ -53,7 +52,7 @@ class FileList implements \Iterator, \Countable
      *
      * @var array
      */
-    protected $ignorePatterns = [];
+    protected $ignorePatterns = array();
 
 
     /**
@@ -120,7 +119,7 @@ class FileList implements \Iterator, \Countable
 
         $filterClass = $this->getFilterClass();
 
-        $di       = new \RecursiveArrayIterator([$path]);
+        $di       = new \RecursiveArrayIterator(array($path));
         $filter   = new $filterClass($di, $path, $this->config, $this->ruleset);
         $iterator = new \RecursiveIteratorIterator($filter);
 
@@ -136,7 +135,6 @@ class FileList implements \Iterator, \Countable
      * Get the class name of the filter being used for the run.
      *
      * @return string
-     * @throws \PHP_CodeSniffer\Exceptions\DeepExitException If the specified filter could not be found.
      */
     private function getFilterClass()
     {
@@ -153,7 +151,7 @@ class FileList implements \Iterator, \Countable
                     throw new DeepExitException($error, 3);
                 }
 
-                $filterClass = Autoload::loadFile($filename);
+                $filterClass = \PHP_CodeSniffer\Autoload::loadFile($filename);
             } else {
                 $filterClass = '\PHP_CodeSniffer\Filters\\'.$filterType;
             }
@@ -169,7 +167,7 @@ class FileList implements \Iterator, \Countable
      *
      * @return void
      */
-    public function rewind()
+    function rewind()
     {
         reset($this->files);
 
@@ -181,7 +179,7 @@ class FileList implements \Iterator, \Countable
      *
      * @return \PHP_CodeSniffer\Files\File
      */
-    public function current()
+    function current()
     {
         $path = key($this->files);
         if ($this->files[$path] === null) {
@@ -198,7 +196,7 @@ class FileList implements \Iterator, \Countable
      *
      * @return void
      */
-    public function key()
+    function key()
     {
         return key($this->files);
 
@@ -210,7 +208,7 @@ class FileList implements \Iterator, \Countable
      *
      * @return void
      */
-    public function next()
+    function next()
     {
         next($this->files);
 
@@ -222,7 +220,7 @@ class FileList implements \Iterator, \Countable
      *
      * @return boolean
      */
-    public function valid()
+    function valid()
     {
         if (current($this->files) === false) {
             return false;
@@ -238,7 +236,7 @@ class FileList implements \Iterator, \Countable
      *
      * @return integer
      */
-    public function count()
+    function count()
     {
         return $this->numFiles;
 

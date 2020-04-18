@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -27,10 +25,11 @@ use UnexpectedValueException;
  */
 class FlashHelper extends Helper
 {
+
     /**
      * Used to render the message set in FlashComponent::set()
      *
-     * In your template file: $this->Flash->render('somekey');
+     * In your view: $this->Flash->render('somekey');
      * Will default to flash if no param is passed
      *
      * You can pass additional information into the flash message generation. This allows you
@@ -69,22 +68,20 @@ class FlashHelper extends Helper
      *   in session.
      * @throws \UnexpectedValueException If value for flash settings key is not an array.
      */
-    public function render(string $key = 'flash', array $options = []): ?string
+    public function render($key = 'flash', array $options = [])
     {
-        $session = $this->_View->getRequest()->getSession();
-
-        if (!$session->check("Flash.$key")) {
+        if (!$this->request->getSession()->check("Flash.$key")) {
             return null;
         }
 
-        $flash = $session->read("Flash.$key");
+        $flash = $this->request->session()->read("Flash.$key");
         if (!is_array($flash)) {
             throw new UnexpectedValueException(sprintf(
                 'Value for flash setting key "%s" must be an array.',
                 $key
             ));
         }
-        $session->delete("Flash.$key");
+        $this->request->getSession()->delete("Flash.$key");
 
         $out = '';
         foreach ($flash as $message) {
@@ -100,7 +97,7 @@ class FlashHelper extends Helper
      *
      * @return array
      */
-    public function implementedEvents(): array
+    public function implementedEvents()
     {
         return [];
     }

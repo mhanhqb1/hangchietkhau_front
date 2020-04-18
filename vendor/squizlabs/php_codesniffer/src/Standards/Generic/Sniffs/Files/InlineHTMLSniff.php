@@ -9,24 +9,11 @@
 
 namespace PHP_CodeSniffer\Standards\Generic\Sniffs\Files;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
 
 class InlineHTMLSniff implements Sniff
 {
-
-    /**
-     * List of supported BOM definitions.
-     *
-     * Use encoding names as keys and hex BOM representations as values.
-     *
-     * @var array
-     */
-    protected $bomDefinitions = [
-        'UTF-8'       => 'efbbbf',
-        'UTF-16 (BE)' => 'feff',
-        'UTF-16 (LE)' => 'fffe',
-    ];
 
 
     /**
@@ -36,7 +23,7 @@ class InlineHTMLSniff implements Sniff
      */
     public function register()
     {
-        return [T_INLINE_HTML];
+        return array(T_INLINE_HTML);
 
     }//end register()
 
@@ -48,20 +35,10 @@ class InlineHTMLSniff implements Sniff
      * @param int                         $stackPtr  The position of the current token in
      *                                               the stack passed in $tokens.
      *
-     * @return int|null
+     * @return void
      */
     public function process(File $phpcsFile, $stackPtr)
     {
-        // Allow a byte-order mark.
-        $tokens = $phpcsFile->getTokens();
-        foreach ($this->bomDefinitions as $bomName => $expectedBomHex) {
-            $bomByteLength = (strlen($expectedBomHex) / 2);
-            $htmlBomHex    = bin2hex(substr($tokens[0]['content'], 0, $bomByteLength));
-            if ($htmlBomHex === $expectedBomHex && strlen($tokens[0]['content']) === $bomByteLength) {
-                return;
-            }
-        }
-
         // Ignore shebang lines.
         $tokens = $phpcsFile->getTokens();
         if (substr($tokens[$stackPtr]['content'], 0, 2) === '#!') {

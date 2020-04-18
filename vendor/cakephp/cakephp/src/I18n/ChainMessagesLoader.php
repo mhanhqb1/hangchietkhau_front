@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -25,6 +23,7 @@ use RuntimeException;
  */
 class ChainMessagesLoader
 {
+
     /**
      * The list of callables to execute one after another for loading messages
      *
@@ -50,7 +49,7 @@ class ChainMessagesLoader
      * @return \Aura\Intl\Package
      * @throws \RuntimeException if any of the loaders in the chain is not a valid callable
      */
-    public function __invoke(): Package
+    public function __invoke()
     {
         foreach ($this->_loaders as $k => $loader) {
             if (!is_callable($loader)) {

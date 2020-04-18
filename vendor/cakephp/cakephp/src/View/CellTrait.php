@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -25,6 +23,7 @@ use Cake\View\Exception\MissingCellException;
  */
 trait CellTrait
 {
+
     /**
      * Renders the given cell.
      *
@@ -47,8 +46,8 @@ trait CellTrait
      *
      * Cells are not rendered until they are echoed.
      *
-     * @param string $cell You must indicate cell name, and optionally a cell action. e.g.: `TagCloud::smallList` will
-     *  invoke `View\Cell\TagCloudCell::smallList()`, `display` action will be invoked by default when none is provided.
+     * @param string $cell You must indicate cell name, and optionally a cell action. e.g.: `TagCloud::smallList`
+     * will invoke `View\Cell\TagCloudCell::smallList()`, `display` action will be invoked by default when none is provided.
      * @param array $data Additional arguments for cell method. e.g.:
      *    `cell('TagCloud::smallList', ['a1' => 'v1', 'a2' => 'v2'])` maps to `View\Cell\TagCloud::smallList(v1, v2)`
      * @param array $options Options for Cell's constructor
@@ -56,17 +55,17 @@ trait CellTrait
      * @throws \Cake\View\Exception\MissingCellException If Cell class was not found.
      * @throws \BadMethodCallException If Cell class does not specified cell action.
      */
-    protected function cell(string $cell, array $data = [], array $options = []): Cell
+    protected function cell($cell, array $data = [], array $options = [])
     {
         $parts = explode('::', $cell);
 
         if (count($parts) === 2) {
-            [$pluginAndCell, $action] = [$parts[0], $parts[1]];
+            list($pluginAndCell, $action) = [$parts[0], $parts[1]];
         } else {
-            [$pluginAndCell, $action] = [$parts[0], 'display'];
+            list($pluginAndCell, $action) = [$parts[0], 'display'];
         }
 
-        [$plugin] = pluginSplit($pluginAndCell);
+        list($plugin) = pluginSplit($pluginAndCell);
         $className = App::className($pluginAndCell, 'View/Cell', 'Cell');
 
         if (!$className) {
@@ -87,23 +86,23 @@ trait CellTrait
      *
      * @param string $className The cell classname.
      * @param string $action The action name.
-     * @param string|null $plugin The plugin name.
+     * @param string $plugin The plugin name.
      * @param array $options The constructor options for the cell.
      * @return \Cake\View\Cell
      */
-    protected function _createCell(string $className, string $action, ?string $plugin, array $options): Cell
+    protected function _createCell($className, $action, $plugin, $options)
     {
-        /** @var \Cake\View\Cell $instance */
+        /* @var \Cake\View\Cell $instance */
         $instance = new $className($this->request, $this->response, $this->getEventManager(), $options);
+        $instance->template = Inflector::underscore($action);
 
         $builder = $instance->viewBuilder();
-        $builder->setTemplate(Inflector::underscore($action));
-
         if (!empty($plugin)) {
             $builder->setPlugin($plugin);
         }
         if (!empty($this->helpers)) {
             $builder->setHelpers($this->helpers);
+            $instance->helpers = $this->helpers;
         }
 
         if ($this instanceof View) {
@@ -111,19 +110,20 @@ trait CellTrait
                 $builder->setTheme($this->theme);
             }
 
-            $class = static::class;
+            $class = get_class($this);
             $builder->setClassName($class);
-            $instance->viewBuilder()->setClassName($class);
+            $instance->viewClass = $class;
 
             return $instance;
         }
 
         if (method_exists($this, 'viewBuilder')) {
             $builder->setTheme($this->viewBuilder()->getTheme());
+        }
 
-            if ($this->viewBuilder()->getClassName() !== null) {
-                $builder->setClassName($this->viewBuilder()->getClassName());
-            }
+        if (isset($this->viewClass)) {
+            $builder->setClassName($this->viewClass);
+            $instance->viewClass = $this->viewClass;
         }
 
         return $instance;

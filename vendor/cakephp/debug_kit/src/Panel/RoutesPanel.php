@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -11,10 +9,11 @@ declare(strict_types=1);
  * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  * @link          http://cakephp.org CakePHP(tm) Project
  * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ *
  */
 namespace DebugKit\Panel;
 
-use Cake\Event\EventInterface;
+use Cake\Event\Event;
 use Cake\Routing\Router;
 use DebugKit\DebugPanel;
 
@@ -23,33 +22,30 @@ use DebugKit\DebugPanel;
  */
 class RoutesPanel extends DebugPanel
 {
+
     /**
      * Get summary data for the routes panel.
      *
-     * @return string
+     * @return int
      */
     public function summary()
     {
-        $routes = array_filter(Router::routes(), function ($route) {
-            return !isset($route->defaults['plugin']) || $route->defaults['plugin'] !== 'DebugKit';
-        });
-
-        return (string)count($routes);
+        return count(Router::routes());
     }
 
     /**
      * Data collection callback.
      *
-     * @param \Cake\Event\EventInterface $event The shutdown event.
+     * @param \Cake\Event\Event $event The shutdown event.
      * @return void
      */
-    public function shutdown(EventInterface $event)
+    public function shutdown(Event $event)
     {
-        /** @var \Cake\Controller\Controller|null $controller */
-        $controller = $event->getSubject();
-        $request = $controller ? $controller->getRequest() : null;
+        $controller = $event->subject();
+        /* @var \Cake\Network\Request $request */
+        $request = $controller ? $controller->request : null;
         $this->_data = [
-            'matchedRoute' => $request ? $request->getParam('_matchedRoute') : null,
+            'matchedRoute' => $request ? $request->param('_matchedRoute') : null,
         ];
     }
 }

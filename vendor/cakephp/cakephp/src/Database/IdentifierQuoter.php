@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -27,6 +25,7 @@ use Cake\Database\Expression\OrderByExpression;
  */
 class IdentifierQuoter
 {
+
     /**
      * The driver instance used to do the identifier quoting
      *
@@ -51,10 +50,10 @@ class IdentifierQuoter
      * @param \Cake\Database\Query $query The query to have its identifiers quoted
      * @return \Cake\Database\Query
      */
-    public function quote(Query $query): Query
+    public function quote(Query $query)
     {
         $binder = $query->getValueBinder();
-        $query->setValueBinder(null);
+        $query->valueBinder(false);
 
         if ($query->type() === 'insert') {
             $this->_quoteInsert($query);
@@ -65,7 +64,7 @@ class IdentifierQuoter
         }
 
         $query->traverseExpressions([$this, 'quoteExpression']);
-        $query->setValueBinder($binder);
+        $query->valueBinder($binder);
 
         return $query;
     }
@@ -76,7 +75,7 @@ class IdentifierQuoter
      * @param \Cake\Database\ExpressionInterface $expression The expression object to walk and quote.
      * @return void
      */
-    public function quoteExpression(ExpressionInterface $expression): void
+    public function quoteExpression($expression)
     {
         if ($expression instanceof FieldInterface) {
             $this->_quoteComparison($expression);
@@ -103,7 +102,7 @@ class IdentifierQuoter
      * @param \Cake\Database\Query $query The query to quote.
      * @return void
      */
-    protected function _quoteParts(Query $query): void
+    protected function _quoteParts($query)
     {
         foreach (['distinct', 'select', 'from', 'group'] as $part) {
             $contents = $query->clause($part);
@@ -131,7 +130,7 @@ class IdentifierQuoter
      * @param array $part the part of the query to quote
      * @return array
      */
-    protected function _basicQuoter(array $part): array
+    protected function _basicQuoter($part)
     {
         $result = [];
         foreach ((array)$part as $alias => $value) {
@@ -150,11 +149,11 @@ class IdentifierQuoter
      * @param array $joins The joins to quote.
      * @return array
      */
-    protected function _quoteJoins(array $joins): array
+    protected function _quoteJoins($joins)
     {
         $result = [];
         foreach ($joins as $value) {
-            $alias = '';
+            $alias = null;
             if (!empty($value['alias'])) {
                 $alias = $this->_driver->quoteIdentifier($value['alias']);
                 $value['alias'] = $alias;
@@ -176,13 +175,13 @@ class IdentifierQuoter
      * @param \Cake\Database\Query $query The insert query to quote.
      * @return void
      */
-    protected function _quoteInsert(Query $query): void
+    protected function _quoteInsert($query)
     {
-        [$table, $columns] = $query->clause('insert');
+        list($table, $columns) = $query->clause('insert');
         $table = $this->_driver->quoteIdentifier($table);
         foreach ($columns as &$column) {
             if (is_scalar($column)) {
-                $column = $this->_driver->quoteIdentifier((string)$column);
+                $column = $this->_driver->quoteIdentifier($column);
             }
         }
         $query->insert($columns)->into($table);
@@ -194,7 +193,7 @@ class IdentifierQuoter
      * @param \Cake\Database\Query $query The update query to quote.
      * @return void
      */
-    protected function _quoteUpdate(Query $query): void
+    protected function _quoteUpdate($query)
     {
         $table = $query->clause('update')[0];
 
@@ -209,7 +208,7 @@ class IdentifierQuoter
      * @param \Cake\Database\Expression\FieldInterface $expression The expression to quote.
      * @return void
      */
-    protected function _quoteComparison(FieldInterface $expression): void
+    protected function _quoteComparison(FieldInterface $expression)
     {
         $field = $expression->getField();
         if (is_string($field)) {
@@ -234,7 +233,7 @@ class IdentifierQuoter
      * @param \Cake\Database\Expression\OrderByExpression $expression The expression to quote.
      * @return void
      */
-    protected function _quoteOrderBy(OrderByExpression $expression): void
+    protected function _quoteOrderBy(OrderByExpression $expression)
     {
         $expression->iterateParts(function ($part, &$field) {
             if (is_string($field)) {
@@ -256,7 +255,7 @@ class IdentifierQuoter
      * @param \Cake\Database\Expression\IdentifierExpression $expression The identifiers to quote.
      * @return void
      */
-    protected function _quoteIdentifierExpression(IdentifierExpression $expression): void
+    protected function _quoteIdentifierExpression(IdentifierExpression $expression)
     {
         $expression->setIdentifier(
             $this->_driver->quoteIdentifier($expression->getIdentifier())

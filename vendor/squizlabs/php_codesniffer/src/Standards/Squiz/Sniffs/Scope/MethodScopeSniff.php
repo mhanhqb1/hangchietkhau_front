@@ -9,8 +9,8 @@
 
 namespace PHP_CodeSniffer\Standards\Squiz\Sniffs\Scope;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\AbstractScopeSniff;
+use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Util\Tokens;
 
 class MethodScopeSniff extends AbstractScopeSniff
@@ -22,7 +22,7 @@ class MethodScopeSniff extends AbstractScopeSniff
      */
     public function __construct()
     {
-        parent::__construct(Tokens::$ooScopeTokens, [T_FUNCTION]);
+        parent::__construct(array(T_CLASS, T_INTERFACE, T_TRAIT), array(T_FUNCTION));
 
     }//end __construct()
 
@@ -40,17 +40,14 @@ class MethodScopeSniff extends AbstractScopeSniff
     {
         $tokens = $phpcsFile->getTokens();
 
-        // Determine if this is a function which needs to be examined.
-        $conditions = $tokens[$stackPtr]['conditions'];
-        end($conditions);
-        $deepestScope = key($conditions);
-        if ($deepestScope !== $currScope) {
-            return;
-        }
-
         $methodName = $phpcsFile->getDeclarationName($stackPtr);
         if ($methodName === null) {
             // Ignore closures.
+            return;
+        }
+
+        if ($phpcsFile->hasCondition($stackPtr, T_FUNCTION) === true) {
+            // Ignore nested functions.
             return;
         }
 
@@ -66,7 +63,7 @@ class MethodScopeSniff extends AbstractScopeSniff
 
         if ($modifier === null) {
             $error = 'Visibility must be declared on method "%s"';
-            $data  = [$methodName];
+            $data  = array($methodName);
             $phpcsFile->addError($error, $stackPtr, 'Missing', $data);
         }
 

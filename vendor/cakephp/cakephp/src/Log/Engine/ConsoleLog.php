@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) :  Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -24,6 +22,7 @@ use InvalidArgumentException;
  */
 class ConsoleLog extends BaseLog
 {
+
     /**
      * Default config for this class
      *
@@ -33,7 +32,7 @@ class ConsoleLog extends BaseLog
         'stream' => 'php://stderr',
         'levels' => null,
         'scopes' => [],
-        'outputAs' => null,
+        'outputAs' => 'see constructor'
     ];
 
     /**
@@ -58,6 +57,14 @@ class ConsoleLog extends BaseLog
      */
     public function __construct(array $config = [])
     {
+        if ((DIRECTORY_SEPARATOR === '\\' && !(bool)env('ANSICON') && env('ConEmuANSI') !== 'ON') ||
+            (function_exists('posix_isatty') && !posix_isatty($this->_output))
+        ) {
+            $this->_defaultConfig['outputAs'] = ConsoleOutput::PLAIN;
+        } else {
+            $this->_defaultConfig['outputAs'] = ConsoleOutput::COLOR;
+        }
+
         parent::__construct($config);
 
         $config = $this->_config;
@@ -68,26 +75,22 @@ class ConsoleLog extends BaseLog
         } else {
             throw new InvalidArgumentException('`stream` not a ConsoleOutput nor string');
         }
-
-        if (isset($config['outputAs'])) {
-            $this->_output->setOutputAs($config['outputAs']);
-        }
+        $this->_output->setOutputAs($config['outputAs']);
     }
 
     /**
      * Implements writing to console.
      *
-     * @param mixed $level The severity level of log you are making.
+     * @param string $level The severity level of log you are making.
      * @param string $message The message you want to log.
      * @param array $context Additional information about the logged message
-     * @return void success of write.
-     * @see Cake\Log\Log::$_levels
+     * @return bool success of write.
      */
     public function log($level, $message, array $context = [])
     {
         $message = $this->_format($message, $context);
         $output = date('Y-m-d H:i:s') . ' ' . ucfirst($level) . ': ' . $message;
 
-        $this->_output->write(sprintf('<%s>%s</%s>', $level, $output, $level));
+        return $this->_output->write(sprintf('<%s>%s</%s>', $level, $output, $level));
     }
 }

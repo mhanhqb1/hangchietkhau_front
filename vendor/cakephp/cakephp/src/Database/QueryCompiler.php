@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,8 +15,6 @@ declare(strict_types=1);
 namespace Cake\Database;
 
 use Cake\Database\Expression\QueryExpression;
-use Closure;
-use Countable;
 
 /**
  * Responsible for compiling a Query object into its SQL representation
@@ -27,6 +23,7 @@ use Countable;
  */
 class QueryCompiler
 {
+
     /**
      * List of sprintf templates that will be used for compiling the SQL for
      * this query. There are some clauses that can be built as just as the
@@ -42,7 +39,7 @@ class QueryCompiler
         'order' => ' %s',
         'limit' => ' LIMIT %s',
         'offset' => ' OFFSET %s',
-        'epilog' => ' %s',
+        'epilog' => ' %s'
     ];
 
     /**
@@ -52,7 +49,7 @@ class QueryCompiler
      */
     protected $_selectParts = [
         'select', 'from', 'join', 'where', 'group', 'having', 'order', 'limit',
-        'offset', 'union', 'epilog',
+        'offset', 'union', 'epilog'
     ];
 
     /**
@@ -86,27 +83,20 @@ class QueryCompiler
     protected $_orderedUnion = true;
 
     /**
-     * Indicate whether aliases in SELECT clause need to be always quoted.
-     *
-     * @var bool
-     */
-    protected $_quotedSelectAliases = false;
-
-    /**
      * Returns the SQL representation of the provided query after generating
      * the placeholders for the bound values using the provided generator
      *
      * @param \Cake\Database\Query $query The query that is being compiled
      * @param \Cake\Database\ValueBinder $generator the placeholder generator to be used in expressions
-     * @return string
+     * @return \Closure
      */
-    public function compile(Query $query, ValueBinder $generator): string
+    public function compile(Query $query, ValueBinder $generator)
     {
         $sql = '';
         $type = $query->type();
-        $query->traverseParts(
+        $query->traverse(
             $this->_sqlCompiler($sql, $query, $generator),
-            $this->{"_{$type}Parts"}
+            $this->{'_' . $type . 'Parts'}
         );
 
         // Propagate bound parameters from sub-queries if the
@@ -132,28 +122,24 @@ class QueryCompiler
      * @param \Cake\Database\ValueBinder $generator The placeholder and value binder object
      * @return \Closure
      */
-    protected function _sqlCompiler(string &$sql, Query $query, ValueBinder $generator): Closure
+    protected function _sqlCompiler(&$sql, $query, $generator)
     {
-        return function ($part, $partName) use (&$sql, $query, $generator) {
-            if (
-                $part === null ||
-                (is_array($part) && empty($part)) ||
-                ($part instanceof Countable && count($part) === 0)
+        return function ($parts, $name) use (&$sql, $query, $generator) {
+            if (!isset($parts) ||
+                ((is_array($parts) || $parts instanceof \Countable) && !count($parts))
             ) {
                 return;
             }
-
-            if ($part instanceof ExpressionInterface) {
-                $part = [$part->sql($generator)];
+            if ($parts instanceof ExpressionInterface) {
+                $parts = [$parts->sql($generator)];
             }
-            if (isset($this->_templates[$partName])) {
-                $part = $this->_stringifyExpressions((array)$part, $generator);
-                $sql .= sprintf($this->_templates[$partName], implode(', ', $part));
+            if (isset($this->_templates[$name])) {
+                $parts = $this->_stringifyExpressions((array)$parts, $generator);
 
-                return;
+                return $sql .= sprintf($this->_templates[$name], implode(', ', $parts));
             }
 
-            $sql .= $this->{'_build' . $partName . 'Part'}($part, $query, $generator);
+            return $sql .= $this->{'_build' . ucfirst($name) . 'Part'}($parts, $query, $generator);
         };
     }
 
@@ -168,8 +154,9 @@ class QueryCompiler
      * @param \Cake\Database\ValueBinder $generator the placeholder generator to be used in expressions
      * @return string
      */
-    protected function _buildSelectPart(array $parts, Query $query, ValueBinder $generator): string
+    protected function _buildSelectPart($parts, $query, $generator)
     {
+        $driver = $query->getConnection()->getDriver();
         $select = 'SELECT%s %s%s';
         if ($this->_orderedUnion && $query->clause('union')) {
             $select = '(SELECT%s %s%s';
@@ -177,18 +164,11 @@ class QueryCompiler
         $distinct = $query->clause('distinct');
         $modifiers = $this->_buildModifierPart($query->clause('modifier'), $query, $generator);
 
-        $driver = $query->getConnection()->getDriver();
-        $quoteIdentifiers = $driver->isAutoQuotingEnabled() || $this->_quotedSelectAliases;
         $normalized = [];
         $parts = $this->_stringifyExpressions($parts, $generator);
         foreach ($parts as $k => $p) {
             if (!is_numeric($k)) {
-                $p = $p . ' AS ';
-                if ($quoteIdentifiers) {
-                    $p .= $driver->quoteIdentifier($k);
-                } else {
-                    $p .= $k;
-                }
+                $p = $p . ' AS ' . $driver->quoteIdentifier($k);
             }
             $normalized[] = $p;
         }
@@ -215,7 +195,7 @@ class QueryCompiler
      * @param \Cake\Database\ValueBinder $generator the placeholder generator to be used in expressions
      * @return string
      */
-    protected function _buildFromPart(array $parts, Query $query, ValueBinder $generator): string
+    protected function _buildFromPart($parts, $query, $generator)
     {
         $select = ' FROM %s';
         $normalized = [];
@@ -241,7 +221,7 @@ class QueryCompiler
      * @param \Cake\Database\ValueBinder $generator the placeholder generator to be used in expressions
      * @return string
      */
-    protected function _buildJoinPart(array $parts, Query $query, ValueBinder $generator): string
+    protected function _buildJoinPart($parts, $query, $generator)
     {
         $joins = '';
         foreach ($parts as $join) {
@@ -278,7 +258,7 @@ class QueryCompiler
      * @param \Cake\Database\ValueBinder $generator the placeholder generator to be used in expressions
      * @return string
      */
-    protected function _buildSetPart(array $parts, Query $query, ValueBinder $generator): string
+    protected function _buildSetPart($parts, $query, $generator)
     {
         $set = [];
         foreach ($parts as $part) {
@@ -304,7 +284,7 @@ class QueryCompiler
      * @param \Cake\Database\ValueBinder $generator the placeholder generator to be used in expressions
      * @return string
      */
-    protected function _buildUnionPart(array $parts, Query $query, ValueBinder $generator): string
+    protected function _buildUnionPart($parts, $query, $generator)
     {
         $parts = array_map(function ($p) use ($generator) {
             $p['query'] = $p['query']->sql($generator);
@@ -332,7 +312,7 @@ class QueryCompiler
      * @param \Cake\Database\ValueBinder $generator the placeholder generator to be used in expressions
      * @return string SQL fragment.
      */
-    protected function _buildInsertPart(array $parts, Query $query, ValueBinder $generator): string
+    protected function _buildInsertPart($parts, $query, $generator)
     {
         $table = $parts[0];
         $columns = $this->_stringifyExpressions($parts[1], $generator);
@@ -349,7 +329,7 @@ class QueryCompiler
      * @param \Cake\Database\ValueBinder $generator the placeholder generator to be used in expressions
      * @return string SQL fragment.
      */
-    protected function _buildValuesPart(array $parts, Query $query, ValueBinder $generator): string
+    protected function _buildValuesPart($parts, $query, $generator)
     {
         return implode('', $this->_stringifyExpressions($parts, $generator));
     }
@@ -362,7 +342,7 @@ class QueryCompiler
      * @param \Cake\Database\ValueBinder $generator the placeholder generator to be used in expressions
      * @return string SQL fragment.
      */
-    protected function _buildUpdatePart(array $parts, Query $query, ValueBinder $generator): string
+    protected function _buildUpdatePart($parts, $query, $generator)
     {
         $table = $this->_stringifyExpressions($parts, $generator);
         $modifiers = $this->_buildModifierPart($query->clause('modifier'), $query, $generator);
@@ -378,7 +358,7 @@ class QueryCompiler
      * @param \Cake\Database\ValueBinder $generator the placeholder generator to be used in expressions
      * @return string SQL fragment.
      */
-    protected function _buildModifierPart(array $parts, Query $query, ValueBinder $generator): string
+    protected function _buildModifierPart($parts, $query, $generator)
     {
         if ($parts === []) {
             return '';
@@ -396,7 +376,7 @@ class QueryCompiler
      * @param bool $wrap Whether to wrap each expression object with parenthesis
      * @return array
      */
-    protected function _stringifyExpressions(array $expressions, ValueBinder $generator, bool $wrap = true): array
+    protected function _stringifyExpressions($expressions, $generator, $wrap = true)
     {
         $result = [];
         foreach ($expressions as $k => $expression) {

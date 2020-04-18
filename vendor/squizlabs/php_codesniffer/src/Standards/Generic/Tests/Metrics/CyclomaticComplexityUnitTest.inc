@@ -2,7 +2,7 @@
 
 function complexityOne() { }
 
-function complexityFive()
+function comlexityFive()
 {
     if ($condition) {
     }
@@ -17,7 +17,7 @@ function complexityFive()
     }
 }
 
-function complexityTen()
+function comlexityTen()
 {
     while ($condition === true) {
         if ($condition) {
@@ -42,7 +42,7 @@ function complexityTen()
     }
 }
 
-function complexityEleven()
+function comlexityEleven()
 {
     while ($condition === true) {
         if ($condition) {
@@ -69,7 +69,7 @@ function complexityEleven()
 }
 
 
-function complexityTwenty()
+function comlexityTwenty()
 {
     while ($condition === true) {
         if ($condition) {
@@ -113,7 +113,7 @@ function complexityTwenty()
 }
 
 
-function complexityTwentyOne()
+function comlexityTwentyOne()
 {
     while ($condition === true) {
         if ($condition) {

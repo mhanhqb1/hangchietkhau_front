@@ -31,7 +31,7 @@ class Svnblame extends VersionControl
      */
     protected function getAuthor($line)
     {
-        $blameParts = [];
+        $blameParts = array();
         preg_match('|\s*([^\s]+)\s+([^\s]+)|', $line, $blameParts);
 
         if (isset($blameParts[2]) === false) {
@@ -49,7 +49,6 @@ class Svnblame extends VersionControl
      * @param string $filename File to blame.
      *
      * @return array
-     * @throws \PHP_CodeSniffer\Exceptions\DeepExitException
      */
     protected function getBlameContent($filename)
     {

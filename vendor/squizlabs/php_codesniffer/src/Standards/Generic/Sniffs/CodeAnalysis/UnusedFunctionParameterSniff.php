@@ -1,6 +1,6 @@
 <?php
 /**
- * Checks for unused function parameters.
+ * Checks the for unused function parameters.
  *
  * This sniff checks that all function parameters are used in the function body.
  * One exception is made for empty function bodies or function bodies that only
@@ -16,8 +16,8 @@
 
 namespace PHP_CodeSniffer\Standards\Generic\Sniffs\CodeAnalysis;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Util\Tokens;
 
 class UnusedFunctionParameterSniff implements Sniff
@@ -31,11 +31,10 @@ class UnusedFunctionParameterSniff implements Sniff
      */
     public function register()
     {
-        return [
-            T_FUNCTION,
-            T_CLOSURE,
-            T_FN,
-        ];
+        return array(
+                T_FUNCTION,
+                T_CLOSURE,
+               );
 
     }//end register()
 
@@ -59,30 +58,8 @@ class UnusedFunctionParameterSniff implements Sniff
             return;
         }
 
-        $errorCode  = 'Found';
-        $implements = false;
-        $extends    = false;
-        $classPtr   = $phpcsFile->getCondition($stackPtr, T_CLASS);
-        if ($classPtr !== false) {
-            $implements = $phpcsFile->findImplementedInterfaceNames($classPtr);
-            $extends    = $phpcsFile->findExtendedClassName($classPtr);
-            if ($extends !== false) {
-                $errorCode .= 'InExtendedClass';
-            } else if ($implements !== false) {
-                $errorCode .= 'InImplementedInterface';
-            }
-        }
-
-        $params       = [];
-        $methodParams = $phpcsFile->getMethodParameters($stackPtr);
-
-        // Skip when no parameters found.
-        $methodParamsCount = count($methodParams);
-        if ($methodParamsCount === 0) {
-            return;
-        }
-
-        foreach ($methodParams as $param) {
+        $params = array();
+        foreach ($phpcsFile->getMethodParameters($stackPtr) as $param) {
             $params[$param['name']] = $stackPtr;
         }
 
@@ -90,13 +67,13 @@ class UnusedFunctionParameterSniff implements Sniff
         $end  = --$token['scope_closer'];
 
         $foundContent = false;
-        $validTokens  = [
-            T_HEREDOC              => T_HEREDOC,
-            T_NOWDOC               => T_NOWDOC,
-            T_END_HEREDOC          => T_END_HEREDOC,
-            T_END_NOWDOC           => T_END_NOWDOC,
-            T_DOUBLE_QUOTED_STRING => T_DOUBLE_QUOTED_STRING,
-        ];
+        $validTokens  = array(
+                         T_HEREDOC              => T_HEREDOC,
+                         T_NOWDOC               => T_NOWDOC,
+                         T_END_HEREDOC          => T_END_HEREDOC,
+                         T_END_NOWDOC           => T_END_NOWDOC,
+                         T_DOUBLE_QUOTED_STRING => T_DOUBLE_QUOTED_STRING,
+                        );
         $validTokens += Tokens::$emptyTokens;
 
         for (; $next <= $end; ++$next) {
@@ -110,24 +87,24 @@ class UnusedFunctionParameterSniff implements Sniff
 
             if ($foundContent === false) {
                 // A throw statement as the first content indicates an interface method.
-                if ($code === T_THROW && $implements !== false) {
+                if ($code === T_THROW) {
                     return;
                 }
 
                 // A return statement as the first content indicates an interface method.
                 if ($code === T_RETURN) {
                     $tmp = $phpcsFile->findNext(Tokens::$emptyTokens, ($next + 1), null, true);
-                    if ($tmp === false && $implements !== false) {
+                    if ($tmp === false) {
                         return;
                     }
 
                     // There is a return.
-                    if ($tokens[$tmp]['code'] === T_SEMICOLON && $implements !== false) {
+                    if ($tokens[$tmp]['code'] === T_SEMICOLON) {
                         return;
                     }
 
                     $tmp = $phpcsFile->findNext(Tokens::$emptyTokens, ($tmp + 1), null, true);
-                    if ($tmp !== false && $tokens[$tmp]['code'] === T_SEMICOLON && $implements !== false) {
+                    if ($tmp !== false && $tokens[$tmp]['code'] === T_SEMICOLON) {
                         // There is a return <token>.
                         return;
                     }
@@ -186,49 +163,12 @@ class UnusedFunctionParameterSniff implements Sniff
         }//end for
 
         if ($foundContent === true && count($params) > 0) {
-            $error = 'The method parameter %s is never used';
-
-            // If there is only one parameter and it is unused, no need for additional errorcode toggling logic.
-            if ($methodParamsCount === 1) {
-                foreach ($params as $paramName => $position) {
-                    $data = [$paramName];
-                    $phpcsFile->addWarning($error, $position, $errorCode, $data);
-                }
-
-                return;
+            foreach ($params as $paramName => $position) {
+                $error = 'The method parameter %s is never used';
+                $data  = array($paramName);
+                $phpcsFile->addWarning($error, $position, 'Found', $data);
             }
-
-            $foundLastUsed = false;
-            $lastIndex     = ($methodParamsCount - 1);
-            $errorInfo     = [];
-            for ($i = $lastIndex; $i >= 0; --$i) {
-                if ($foundLastUsed !== false) {
-                    if (isset($params[$methodParams[$i]['name']]) === true) {
-                        $errorInfo[$methodParams[$i]['name']] = [
-                            'position'  => $params[$methodParams[$i]['name']],
-                            'errorcode' => $errorCode.'BeforeLastUsed',
-                        ];
-                    }
-                } else {
-                    if (isset($params[$methodParams[$i]['name']]) === false) {
-                        $foundLastUsed = true;
-                    } else {
-                        $errorInfo[$methodParams[$i]['name']] = [
-                            'position'  => $params[$methodParams[$i]['name']],
-                            'errorcode' => $errorCode.'AfterLastUsed',
-                        ];
-                    }
-                }
-            }
-
-            if (count($errorInfo) > 0) {
-                $errorInfo = array_reverse($errorInfo);
-                foreach ($errorInfo as $paramName => $info) {
-                    $data = [$paramName];
-                    $phpcsFile->addWarning($error, $info['position'], $info['errorcode'], $data);
-                }
-            }
-        }//end if
+        }
 
     }//end process()
 

@@ -78,13 +78,12 @@ class ValueParser extends AbstractParser
      * {@inheritdoc}
      *
      * @param \M1\Env\Parser $parser The parent parser
-     * @param array $context Variables context
      */
-    public function __construct($parser, array $context = array())
+    public function __construct($parser)
     {
         parent::__construct($parser);
 
-        $this->variable_parser = new VariableParser($parser, $context);
+        $this->variable_parser = new VariableParser($parser);
     }
 
     /**
@@ -174,10 +173,7 @@ class ValueParser extends AbstractParser
 
         $matches = $this->fetchStringMatches($value, $regex, $symbol);
 
-        $value = $matches[0];
-        if ($value !== '') {
-            $value = substr($value, 1, strlen($value) - 2);
-        }
+        $value = trim($matches[0], $symbol);
         $value = strtr($value, self::$character_map);
 
         return ($single) ? $value : $this->variable_parser->parse($value, true);

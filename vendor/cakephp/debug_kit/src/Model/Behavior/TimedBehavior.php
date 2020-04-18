@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -24,6 +22,7 @@ use DebugKit\DebugTimer;
  */
 class TimedBehavior extends Behavior
 {
+
     /**
      * beforeFind, starts a timer for a find operation.
      *
@@ -33,7 +32,7 @@ class TimedBehavior extends Behavior
      */
     public function beforeFind(Event $event, $query)
     {
-        $alias = $event->getSubject()->getAlias();
+        $alias = $event->subject()->alias();
         DebugTimer::start($alias . '_find', $alias . '->find()');
 
         return $query->formatResults(function ($results) use ($alias) {
@@ -51,7 +50,7 @@ class TimedBehavior extends Behavior
      */
     public function beforeSave(Event $event)
     {
-        $alias = $event->getSubject()->getAlias();
+        $alias = $event->subject()->alias();
         DebugTimer::start($alias . '_save', $alias . '->save()');
     }
 
@@ -63,7 +62,7 @@ class TimedBehavior extends Behavior
      */
     public function afterSave(Event $event)
     {
-        $alias = $event->getSubject()->getAlias();
+        $alias = $event->subject()->alias();
         DebugTimer::stop($alias . '_save');
     }
 }

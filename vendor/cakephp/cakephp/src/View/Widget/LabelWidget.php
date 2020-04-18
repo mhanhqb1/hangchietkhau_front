@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,7 +15,6 @@ declare(strict_types=1);
 namespace Cake\View\Widget;
 
 use Cake\View\Form\ContextInterface;
-use Cake\View\StringTemplate;
 
 /**
  * Form 'widget' for creating labels.
@@ -27,6 +24,7 @@ use Cake\View\StringTemplate;
  */
 class LabelWidget implements WidgetInterface
 {
+
     /**
      * Templates
      *
@@ -51,7 +49,7 @@ class LabelWidget implements WidgetInterface
      *
      * @param \Cake\View\StringTemplate $templates Templates list.
      */
-    public function __construct(StringTemplate $templates)
+    public function __construct($templates)
     {
         $this->_templates = $templates;
     }
@@ -71,14 +69,14 @@ class LabelWidget implements WidgetInterface
      * @param \Cake\View\Form\ContextInterface $context The current form context.
      * @return string
      */
-    public function render(array $data, ContextInterface $context): string
+    public function render(array $data, ContextInterface $context)
     {
         $data += [
             'text' => '',
             'input' => '',
             'hidden' => '',
             'escape' => true,
-            'templateVars' => [],
+            'templateVars' => []
         ];
 
         return $this->_templates->format($this->_labelTemplate, [
@@ -91,9 +89,9 @@ class LabelWidget implements WidgetInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function secureFields(array $data): array
+    public function secureFields(array $data)
     {
         return [];
     }

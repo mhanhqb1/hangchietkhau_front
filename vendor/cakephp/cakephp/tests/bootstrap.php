@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -15,10 +13,12 @@ declare(strict_types=1);
 
 use Cake\Cache\Cache;
 use Cake\Chronos\Chronos;
+use Cake\Chronos\Date;
+use Cake\Chronos\MutableDate;
+use Cake\Chronos\MutableDateTime;
 use Cake\Core\Configure;
 use Cake\Datasource\ConnectionManager;
 use Cake\Log\Log;
-use Cake\Utility\Security;
 
 if (is_file('vendor/autoload.php')) {
     require_once 'vendor/autoload.php';
@@ -49,13 +49,13 @@ define('APP', TEST_APP . 'TestApp' . DS);
 define('WWW_ROOT', TEST_APP . 'webroot' . DS);
 define('CONFIG', TEST_APP . 'config' . DS);
 
-// phpcs:disable
+//@codingStandardsIgnoreStart
 @mkdir(LOGS);
 @mkdir(SESSIONS);
 @mkdir(CACHE);
 @mkdir(CACHE . 'views');
 @mkdir(CACHE . 'models');
-// phpcs:enable
+//@codingStandardsIgnoreEnd
 
 require_once CORE_PATH . 'config/bootstrap.php';
 
@@ -77,37 +77,37 @@ Configure::write('App', [
     'cssBaseUrl' => 'css/',
     'paths' => [
         'plugins' => [TEST_APP . 'Plugin' . DS],
-        'templates' => [TEST_APP . 'templates' . DS],
-        'locales' => [TEST_APP . 'resources' . DS . 'locales' . DS],
-    ],
+        'templates' => [APP . 'Template' . DS],
+        'locales' => [APP . 'Locale' . DS],
+    ]
 ]);
 
-Cache::setConfig([
+Cache::config([
     '_cake_core_' => [
         'engine' => 'File',
         'prefix' => 'cake_core_',
-        'serialize' => true,
+        'serialize' => true
     ],
     '_cake_model_' => [
         'engine' => 'File',
         'prefix' => 'cake_model_',
-        'serialize' => true,
-    ],
+        'serialize' => true
+    ]
 ]);
 
 // Ensure default test connection is defined
-if (!getenv('DB_DSN')) {
-    putenv('DB_DSN=sqlite:///:memory:');
+if (!getenv('db_dsn')) {
+    putenv('db_dsn=sqlite:///:memory:');
 }
 
-ConnectionManager::setConfig('test', ['url' => getenv('DB_DSN')]);
-ConnectionManager::setConfig('test_custom_i18n_datasource', ['url' => getenv('DB_DSN')]);
+ConnectionManager::config('test', ['url' => getenv('db_dsn')]);
+ConnectionManager::config('test_custom_i18n_datasource', ['url' => getenv('db_dsn')]);
 
 Configure::write('Session', [
-    'defaults' => 'php',
+    'defaults' => 'php'
 ]);
 
-Log::setConfig([
+Log::config([
     // 'queries' => [
     //     'className' => 'Console',
     //     'stream' => 'php://stderr',
@@ -117,23 +117,25 @@ Log::setConfig([
         'engine' => 'Cake\Log\Engine\FileLog',
         'levels' => ['notice', 'info', 'debug'],
         'file' => 'debug',
-        'path' => LOGS,
     ],
     'error' => [
         'engine' => 'Cake\Log\Engine\FileLog',
         'levels' => ['warning', 'error', 'critical', 'alert', 'emergency'],
         'file' => 'error',
-        'path' => LOGS,
-    ],
+    ]
 ]);
 
 Chronos::setTestNow(Chronos::now());
-Security::setSalt('a-long-but-not-random-value');
+MutableDateTime::setTestNow(MutableDateTime::now());
+Date::setTestNow(Date::now());
+MutableDate::setTestNow(MutableDate::now());
 
 ini_set('intl.default_locale', 'en_US');
 ini_set('session.gc_divisor', '1');
 
-// Fixate sessionid early on, as php7.2+
-// does not allow the sessionid to be set after stdout
-// has been written to.
-session_id('cli');
+if (class_exists('PHPUnit_Runner_Version')) {
+    class_alias('PHPUnit_Framework_TestResult', 'PHPUnit\Framework\TestResult');
+    class_alias('PHPUnit_Framework_Error', 'PHPUnit\Framework\Error\Error');
+    class_alias('PHPUnit_Framework_Error_Warning', 'PHPUnit\Framework\Error\Warning');
+    class_alias('PHPUnit_Framework_ExpectationFailedException', 'PHPUnit\Framework\ExpectationFailedException');
+}

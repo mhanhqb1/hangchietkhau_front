@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -18,13 +16,13 @@ namespace Cake\Database\Expression;
 
 use Cake\Database\ExpressionInterface;
 use Cake\Database\ValueBinder;
-use RuntimeException;
 
 /**
  * An expression object for ORDER BY clauses
  */
 class OrderByExpression extends QueryExpression
 {
+
     /**
      * Constructor
      *
@@ -43,7 +41,7 @@ class OrderByExpression extends QueryExpression
      * @param \Cake\Database\ValueBinder $generator Placeholder generator object
      * @return string
      */
-    public function sql(ValueBinder $generator): string
+    public function sql(ValueBinder $generator)
     {
         $order = [];
         foreach ($this->_conditions as $k => $direction) {
@@ -66,22 +64,8 @@ class OrderByExpression extends QueryExpression
      * @param array $types list of types associated on fields referenced in $conditions
      * @return void
      */
-    protected function _addConditions(array $orders, array $types): void
+    protected function _addConditions(array $orders, array $types)
     {
-        foreach ($orders as $key => $val) {
-            if (
-                is_string($key) &&
-                is_string($val) &&
-                !in_array(strtoupper($val), ['ASC', 'DESC'], true)
-            ) {
-                throw new RuntimeException(
-                    'Passing extra expressions by associative array is not ' .
-                    'allowed to avoid potential SQL injection. ' .
-                    'Use QueryExpression or numeric array instead.'
-                );
-            }
-        }
-
         $this->_conditions = array_merge($this->_conditions, $orders);
     }
 }

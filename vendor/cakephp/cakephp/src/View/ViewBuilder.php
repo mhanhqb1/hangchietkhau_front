@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,15 +15,11 @@ declare(strict_types=1);
 namespace Cake\View;
 
 use Cake\Core\App;
-use Cake\Event\EventManagerInterface;
+use Cake\Event\EventManager;
 use Cake\Http\Response;
 use Cake\Http\ServerRequest;
 use Cake\View\Exception\MissingViewException;
-use Closure;
-use Exception;
 use JsonSerializable;
-use PDO;
-use RuntimeException;
 use Serializable;
 
 /**
@@ -36,38 +30,39 @@ use Serializable;
  */
 class ViewBuilder implements JsonSerializable, Serializable
 {
+
     /**
      * The subdirectory to the template.
      *
-     * @var string|null
+     * @var string
      */
     protected $_templatePath;
 
     /**
      * The template file to render.
      *
-     * @var string|null
+     * @var string
      */
     protected $_template;
 
     /**
      * The plugin name to use.
      *
-     * @var string|null
+     * @var string
      */
     protected $_plugin;
 
     /**
      * The theme name to use.
      *
-     * @var string|null
+     * @var string
      */
     protected $_theme;
 
     /**
      * The layout name to render.
      *
-     * @var string|null
+     * @var string
      */
     protected $_layout;
 
@@ -76,19 +71,19 @@ class ViewBuilder implements JsonSerializable, Serializable
      *
      * @var bool
      */
-    protected $_autoLayout = true;
+    protected $_autoLayout;
 
     /**
      * The layout path to build the view with.
      *
-     * @var string|null
+     * @var string
      */
     protected $_layoutPath;
 
     /**
      * The view variables to use
      *
-     * @var string|null
+     * @var string
      */
     protected $_name;
 
@@ -97,8 +92,7 @@ class ViewBuilder implements JsonSerializable, Serializable
      * Can either use plugin notation, a short name
      * or a fully namespaced classname.
      *
-     * @var string|null
-     * @psalm-var class-string<\Cake\View\View>|string|null
+     * @var string
      */
     protected $_className;
 
@@ -120,83 +114,12 @@ class ViewBuilder implements JsonSerializable, Serializable
     protected $_helpers = [];
 
     /**
-     * View vars
-     *
-     * @var array
-     */
-    protected $_vars = [];
-
-    /**
-     * Saves a variable for use inside a template.
-     *
-     * @param string $name A string or an array of data.
-     * @param mixed $value Value.
-     * @return $this
-     */
-    public function setVar(string $name, $value = null)
-    {
-        $this->_vars[$name] = $value;
-
-        return $this;
-    }
-
-    /**
-     * Saves view vars for use inside templates.
-     *
-     * @param array $data Array of data.
-     * @param bool $merge Whether to merge with existing vars, default true.
-     * @return $this
-     */
-    public function setVars(array $data, bool $merge = true)
-    {
-        if ($merge) {
-            $this->_vars = $data + $this->_vars;
-        } else {
-            $this->_vars = $data;
-        }
-
-        return $this;
-    }
-
-    /**
-     * Check if view var is set.
-     *
-     * @param string $name Var name
-     * @return bool
-     */
-    public function hasVar(string $name): bool
-    {
-        return array_key_exists($name, $this->_vars);
-    }
-
-    /**
-     * Get view var
-     *
-     * @param string $name Var name
-     * @return mixed The var value or null if unset.
-     */
-    public function getVar(string $name)
-    {
-        return $this->_vars[$name] ?? null;
-    }
-
-    /**
-     * Get all view vars.
-     *
-     * @return array
-     */
-    public function getVars(): array
-    {
-        return $this->_vars;
-    }
-
-    /**
      * Sets path for template files.
      *
-     * @param string|null $path Path for view files.
+     * @param string $path Path for view files.
      * @return $this
      */
-    public function setTemplatePath(?string $path)
+    public function setTemplatePath($path)
     {
         $this->_templatePath = $path;
 
@@ -206,20 +129,36 @@ class ViewBuilder implements JsonSerializable, Serializable
     /**
      * Gets path for template files.
      *
-     * @return string|null
+     * @return string
      */
-    public function getTemplatePath(): ?string
+    public function getTemplatePath()
     {
         return $this->_templatePath;
     }
 
     /**
+     * Get/set path for template files.
+     *
+     * @deprecated 3.4.0 Use setTemplatePath()/getTemplatePath() instead.
+     * @param string|null $path Path for view files. If null returns current path.
+     * @return string|$this
+     */
+    public function templatePath($path = null)
+    {
+        if ($path !== null) {
+            return $this->setTemplatePath($path);
+        }
+
+        return $this->getTemplatePath();
+    }
+
+    /**
      * Sets path for layout files.
      *
-     * @param string|null $path Path for layout files.
+     * @param string $path Path for layout files.
      * @return $this
      */
-    public function setLayoutPath(?string $path)
+    public function setLayoutPath($path)
     {
         $this->_layoutPath = $path;
 
@@ -229,11 +168,27 @@ class ViewBuilder implements JsonSerializable, Serializable
     /**
      * Gets path for layout files.
      *
-     * @return string|null
+     * @return string
      */
-    public function getLayoutPath(): ?string
+    public function getLayoutPath()
     {
         return $this->_layoutPath;
+    }
+
+    /**
+     * Get/set path for layout files.
+     *
+     * @deprecated 3.4.0 Use setLayoutPath()/getLayoutPath() instead.
+     * @param string|null $path Path for layout files. If null returns current path.
+     * @return string|$this
+     */
+    public function layoutPath($path = null)
+    {
+        if ($path !== null) {
+            return $this->setLayoutPath($path);
+        }
+
+        return $this->getLayoutPath();
     }
 
     /**
@@ -244,24 +199,9 @@ class ViewBuilder implements JsonSerializable, Serializable
      * @param bool $enable Boolean to turn on/off.
      * @return $this
      */
-    public function enableAutoLayout(bool $enable = true)
+    public function enableAutoLayout($enable = true)
     {
-        $this->_autoLayout = $enable;
-
-        return $this;
-    }
-
-    /**
-     * Turns off CakePHP's conventional mode of applying layout files.
-     *
-     * Setting to off means that layouts will not be automatically applied to
-     * rendered views.
-     *
-     * @return $this
-     */
-    public function disableAutoLayout()
-    {
-        $this->_autoLayout = false;
+        $this->_autoLayout = (bool)$enable;
 
         return $this;
     }
@@ -272,19 +212,39 @@ class ViewBuilder implements JsonSerializable, Serializable
      *
      * @return bool
      */
-    public function isAutoLayoutEnabled(): bool
+    public function isAutoLayoutEnabled()
     {
         return $this->_autoLayout;
     }
 
     /**
+     * Turns on or off CakePHP's conventional mode of applying layout files.
+     * On by default. Setting to off means that layouts will not be
+     * automatically applied to rendered views.
+     *
+     * @deprecated 3.4.0 Use enableAutoLayout()/isAutoLayoutEnabled() instead.
+     * @param bool|null $enable Boolean to turn on/off. If null returns current value.
+     * @return bool|$this
+     */
+    public function autoLayout($enable = null)
+    {
+        if ($enable !== null) {
+            return $this->enableAutoLayout($enable);
+        }
+
+        return $this->isAutoLayoutEnabled();
+    }
+
+    /**
      * Sets the plugin name to use.
      *
-     * @param string|null $name Plugin name.
-     *   Use null to remove the current plugin name.
+     * `False` to remove current plugin name is deprecated as of 3.4.0. Use directly `null` instead.
+     *
+     * @param string|null|false $name Plugin name.
+     *   Use null or false to remove the current plugin name.
      * @return $this
      */
-    public function setPlugin(?string $name)
+    public function setPlugin($name)
     {
         $this->_plugin = $name;
 
@@ -294,11 +254,28 @@ class ViewBuilder implements JsonSerializable, Serializable
     /**
      * Gets the plugin name to use.
      *
-     * @return string|null
+     * @return string
      */
-    public function getPlugin(): ?string
+    public function getPlugin()
     {
         return $this->_plugin;
+    }
+
+    /**
+     * The plugin name to use
+     *
+     * @deprecated 3.4.0 Use setPlugin()/getPlugin() instead.
+     * @param string|null|false $name Plugin name. If null returns current plugin.
+     *   Use false to remove the current plugin name.
+     * @return string|$this
+     */
+    public function plugin($name = null)
+    {
+        if ($name !== null) {
+            return $this->setPlugin($name);
+        }
+
+        return $this->getPlugin();
     }
 
     /**
@@ -308,7 +285,7 @@ class ViewBuilder implements JsonSerializable, Serializable
      * @param bool $merge Whether or not to merge existing data with the new data.
      * @return $this
      */
-    public function setHelpers(array $helpers, bool $merge = true)
+    public function setHelpers(array $helpers, $merge = true)
     {
         if ($merge) {
             $helpers = array_merge($this->_helpers, $helpers);
@@ -323,19 +300,38 @@ class ViewBuilder implements JsonSerializable, Serializable
      *
      * @return array
      */
-    public function getHelpers(): array
+    public function getHelpers()
     {
         return $this->_helpers;
     }
 
     /**
+     * The helpers to use
+     *
+     * @deprecated 3.4.0 Use setHelpers()/getHelpers() instead.
+     * @param array|null $helpers Helpers to use.
+     * @param bool $merge Whether or not to merge existing data with the new data.
+     * @return array|$this
+     */
+    public function helpers(array $helpers = null, $merge = true)
+    {
+        if ($helpers !== null) {
+            return $this->setHelpers($helpers, $merge);
+        }
+
+        return $this->getHelpers();
+    }
+
+    /**
      * Sets the view theme to use.
      *
-     * @param string|null $theme Theme name.
-     *   Use null to remove the current theme.
+     * `False` to remove current theme is deprecated as of 3.4.0. Use directly `null` instead.
+     *
+     * @param string|null|false $theme Theme name.
+     *   Use null or false to remove the current theme.
      * @return $this
      */
-    public function setTheme(?string $theme)
+    public function setTheme($theme)
     {
         $this->_theme = $theme;
 
@@ -345,21 +341,38 @@ class ViewBuilder implements JsonSerializable, Serializable
     /**
      * Gets the view theme to use.
      *
-     * @return string|null
+     * @return string
      */
-    public function getTheme(): ?string
+    public function getTheme()
     {
         return $this->_theme;
     }
 
     /**
-     * Sets the name of the view file to render. The name specified is the
-     * filename in /templates/<SubFolder> without the .php extension.
+     * The view theme to use.
      *
-     * @param string|null $name View file name to set, or null to remove the template name.
+     * @deprecated 3.4.0 Use setTheme()/getTheme() instead.
+     * @param string|null|false $theme Theme name. If null returns current theme.
+     *   Use false to remove the current theme.
+     * @return string|$this
+     */
+    public function theme($theme = null)
+    {
+        if ($theme !== null) {
+            return $this->setTheme($theme);
+        }
+
+        return $this->getTheme();
+    }
+
+    /**
+     * Sets the name of the view file to render. The name specified is the
+     * filename in /src/Template/<SubFolder> without the .ctp extension.
+     *
+     * @param string $name View file name to set.
      * @return $this
      */
-    public function setTemplate(?string $name)
+    public function setTemplate($name)
     {
         $this->_template = $name;
 
@@ -368,24 +381,41 @@ class ViewBuilder implements JsonSerializable, Serializable
 
     /**
      * Gets the name of the view file to render. The name specified is the
-     * filename in /templates/<SubFolder> without the .php extension.
+     * filename in /src/Template/<SubFolder> without the .ctp extension.
      *
-     * @return string|null
+     * @return string
      */
-    public function getTemplate(): ?string
+    public function getTemplate()
     {
         return $this->_template;
     }
 
     /**
-     * Sets the name of the layout file to render the view inside of.
-     * The name specified is the filename of the layout in /templates/Layout
-     * without the .php extension.
+     * Get/set the name of the view file to render. The name specified is the
+     * filename in /src/Template/<SubFolder> without the .ctp extension.
      *
-     * @param string|null $name Layout file name to set.
+     * @deprecated 3.4.0 Use setTemplate()/getTemplate()
+     * @param string|null $name View file name to set. If null returns current name.
+     * @return string|$this
+     */
+    public function template($name = null)
+    {
+        if ($name !== null) {
+            return $this->setTemplate($name);
+        }
+
+        return $this->getTemplate();
+    }
+
+    /**
+     * Sets the name of the layout file to render the view inside of.
+     * The name specified is the filename of the layout in /src/Template/Layout
+     * without the .ctp extension.
+     *
+     * @param string $name Layout file name to set.
      * @return $this
      */
-    public function setLayout(?string $name)
+    public function setLayout($name)
     {
         $this->_layout = $name;
 
@@ -395,36 +425,29 @@ class ViewBuilder implements JsonSerializable, Serializable
     /**
      * Gets the name of the layout file to render the view inside of.
      *
-     * @return string|null
+     * @return string
      */
-    public function getLayout(): ?string
+    public function getLayout()
     {
         return $this->_layout;
     }
 
     /**
-     * Get view option.
+     * Get/set the name of the layout file to render the view inside of.
+     * The name specified is the filename of the layout in /src/Template/Layout
+     * without the .ctp extension.
      *
-     * @param string $name The name of the option.
-     * @return mixed
+     * @deprecated 3.4.0 Use setLayout()/getLayout() instead.
+     * @param string|null $name Layout file name to set. If null returns current name.
+     * @return string|$this
      */
-    public function getOption(string $name)
+    public function layout($name = null)
     {
-        return $this->_options[$name] ?? null;
-    }
+        if ($name !== null) {
+            return $this->setLayout($name);
+        }
 
-    /**
-     * Set view option.
-     *
-     * @param string $name The name of the option.
-     * @param mixed $value Value to set.
-     * @return $this
-     */
-    public function setOption(string $name, $value)
-    {
-        $this->_options[$name] = $value;
-
-        return $this;
+        return $this->getLayout();
     }
 
     /**
@@ -436,7 +459,7 @@ class ViewBuilder implements JsonSerializable, Serializable
      * @param bool $merge Whether or not to merge existing data with the new data.
      * @return $this
      */
-    public function setOptions(array $options, bool $merge = true)
+    public function setOptions(array $options, $merge = true)
     {
         if ($merge) {
             $options = array_merge($this->_options, $options);
@@ -451,18 +474,37 @@ class ViewBuilder implements JsonSerializable, Serializable
      *
      * @return array
      */
-    public function getOptions(): array
+    public function getOptions()
     {
         return $this->_options;
     }
 
     /**
+     * Set additional options for the view.
+     *
+     * This lets you provide custom constructor arguments to application/plugin view classes.
+     *
+     * @deprecated 3.4.0 Use setOptions()/getOptions() instead.
+     * @param array|null $options Either an array of options or null to get current options.
+     * @param bool $merge Whether or not to merge existing data with the new data.
+     * @return array|$this
+     */
+    public function options(array $options = null, $merge = true)
+    {
+        if ($options !== null) {
+            return $this->setOptions($options, $merge);
+        }
+
+        return $this->getOptions();
+    }
+
+    /**
      * Sets the view name.
      *
-     * @param string|null $name The name of the view, or null to remove the current name.
+     * @param string $name The name of the view.
      * @return $this
      */
-    public function setName(?string $name)
+    public function setName($name)
     {
         $this->_name = $name;
 
@@ -472,24 +514,39 @@ class ViewBuilder implements JsonSerializable, Serializable
     /**
      * Gets the view name.
      *
-     * @return string|null
+     * @return string
      */
-    public function getName(): ?string
+    public function getName()
     {
         return $this->_name;
+    }
+
+    /**
+     * Get/set the view name
+     *
+     * @deprecated 3.4.0 Use setName()/getName() instead.
+     * @param string|null $name The name of the view
+     * @return string|$this
+     */
+    public function name($name = null)
+    {
+        if ($name !== null) {
+            return $this->setName($name);
+        }
+
+        return $this->getName();
     }
 
     /**
      * Sets the view classname.
      *
      * Accepts either a short name (Ajax) a plugin name (MyPlugin.Ajax)
-     * or a fully namespaced name (App\View\AppView) or null to use the
-     * View class provided by CakePHP.
+     * or a fully namespaced name (App\View\AppView).
      *
-     * @param string|null $name The class name for the view.
+     * @param string $name The class name for the view.
      * @return $this
      */
-    public function setClassName(?string $name)
+    public function setClassName($name)
     {
         $this->_className = $name;
 
@@ -499,11 +556,32 @@ class ViewBuilder implements JsonSerializable, Serializable
     /**
      * Gets the view classname.
      *
-     * @return string|null
+     * @return string
      */
-    public function getClassName(): ?string
+    public function getClassName()
     {
         return $this->_className;
+    }
+
+    /**
+     * Get/set the view classname.
+     *
+     * Accepts either a short name (Ajax) a plugin name (MyPlugin.Ajax)
+     * or a fully namespaced name (App\View\AppView).
+     *
+     * @deprecated 3.4.0 Use setClassName()/getClassName() instead.
+     * @param string|null $name The class name for the view. Can
+     *   be a plugin.class name reference, a short alias, or a fully
+     *   namespaced name.
+     * @return string|$this
+     */
+    public function className($name = null)
+    {
+        if ($name !== null) {
+            return $this->setClassName($name);
+        }
+
+        return $this->getClassName();
     }
 
     /**
@@ -515,25 +593,22 @@ class ViewBuilder implements JsonSerializable, Serializable
      * @param array $vars The view variables/context to use.
      * @param \Cake\Http\ServerRequest|null $request The request to use.
      * @param \Cake\Http\Response|null $response The response to use.
-     * @param \Cake\Event\EventManagerInterface|null $events The event manager to use.
+     * @param \Cake\Event\EventManager|null $events The event manager to use.
      * @return \Cake\View\View
      * @throws \Cake\View\Exception\MissingViewException
      */
-    public function build(
-        array $vars = [],
-        ?ServerRequest $request = null,
-        ?Response $response = null,
-        ?EventManagerInterface $events = null
-    ): View {
+    public function build($vars = [], ServerRequest $request = null, Response $response = null, EventManager $events = null)
+    {
         $className = $this->_className;
         if ($className === null) {
-            $className = App::className('App', 'View', 'View') ?? View::class;
-        } elseif ($className === 'View') {
+            $className = App::className('App', 'View', 'View') ?: 'Cake\View\View';
+        }
+        if ($className === 'View') {
             $className = App::className($className, 'View');
         } else {
             $className = App::className($className, 'View', 'View');
         }
-        if ($className === null) {
+        if (!$className) {
             throw new MissingViewException(['class' => $this->_className]);
         }
 
@@ -547,12 +622,10 @@ class ViewBuilder implements JsonSerializable, Serializable
             'autoLayout' => $this->_autoLayout,
             'layoutPath' => $this->_layoutPath,
             'helpers' => $this->_helpers,
-            'viewVars' => $vars + $this->_vars,
+            'viewVars' => $vars,
         ];
         $data += $this->_options;
 
-        // phpcs:ignore SlevomatCodingStandard.Commenting.InlineDocCommentDeclaration.InvalidFormat
-        /** @var \Cake\View\View */
         return new $className($request, $response, $events, $data);
     }
 
@@ -560,20 +633,13 @@ class ViewBuilder implements JsonSerializable, Serializable
      * Serializes the view builder object to a value that can be natively
      * serialized and re-used to clone this builder instance.
      *
-     * There are  limitations for viewVars that are good to know:
-     *
-     * - ORM\Query executed and stored as resultset
-     * - SimpleXMLElements stored as associative array
-     * - Exceptions stored as strings
-     * - Resources, \Closure and \PDO are not supported.
-     *
      * @return array Serializable array of configuration properties.
      */
-    public function jsonSerialize(): array
+    public function jsonSerialize()
     {
         $properties = [
             '_templatePath', '_template', '_plugin', '_theme', '_layout', '_autoLayout',
-            '_layoutPath', '_name', '_className', '_options', '_helpers', '_vars',
+            '_layoutPath', '_name', '_className', '_options', '_helpers'
         ];
 
         $array = [];
@@ -582,39 +648,9 @@ class ViewBuilder implements JsonSerializable, Serializable
             $array[$property] = $this->{$property};
         }
 
-        array_walk_recursive($array['_vars'], [$this, '_checkViewVars']);
-
         return array_filter($array, function ($i) {
-            return !is_array($i) && strlen((string)$i) || !empty($i);
+            return !is_array($i) && strlen($i) || !empty($i);
         });
-    }
-
-    /**
-     * Iterates through hash to clean up and normalize.
-     *
-     * @param mixed $item Reference to the view var value.
-     * @param string $key View var key.
-     * @return void
-     * @throws \RuntimeException
-     */
-    protected function _checkViewVars(&$item, string $key): void
-    {
-        if ($item instanceof Exception) {
-            $item = (string)$item;
-        }
-
-        if (
-            is_resource($item) ||
-            $item instanceof Closure ||
-            $item instanceof PDO
-        ) {
-            throw new RuntimeException(sprintf(
-                'Failed serializing the `%s` %s in the `%s` view var',
-                is_resource($item) ? get_resource_type($item) : get_class($item),
-                is_resource($item) ? 'resource' : 'object',
-                $key
-            ));
-        }
     }
 
     /**
@@ -623,7 +659,7 @@ class ViewBuilder implements JsonSerializable, Serializable
      * @param array $config View builder configuration array.
      * @return $this Configured view builder instance.
      */
-    public function createFromArray(array $config)
+    public function createFromArray($config)
     {
         foreach ($config as $property => $value) {
             $this->{$property} = $value;
@@ -637,7 +673,7 @@ class ViewBuilder implements JsonSerializable, Serializable
      *
      * @return string
      */
-    public function serialize(): string
+    public function serialize()
     {
         $array = $this->jsonSerialize();
 
@@ -648,10 +684,10 @@ class ViewBuilder implements JsonSerializable, Serializable
      * Unserializes the view builder object.
      *
      * @param string $data Serialized string.
-     * @return void
+     * @return $this Configured view builder instance.
      */
-    public function unserialize($data): void
+    public function unserialize($data)
     {
-        $this->createFromArray(unserialize($data));
+        return $this->createFromArray(unserialize($data));
     }
 }

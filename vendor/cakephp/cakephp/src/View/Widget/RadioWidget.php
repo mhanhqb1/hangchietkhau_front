@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -18,35 +16,25 @@ namespace Cake\View\Widget;
 
 use Cake\View\Form\ContextInterface;
 use Cake\View\Helper\IdGeneratorTrait;
-use Cake\View\StringTemplate;
 use Traversable;
 
 /**
  * Input widget class for generating a set of radio buttons.
  *
- * This class is usually used internally by `Cake\View\Helper\FormHelper`,
- * it but can be used to generate standalone radio buttons.
+ * This class is intended as an internal implementation detail
+ * of Cake\View\Helper\FormHelper and is not intended for direct use.
  */
-class RadioWidget extends BasicWidget
+class RadioWidget implements WidgetInterface
 {
+
     use IdGeneratorTrait;
 
     /**
-     * Data defaults.
+     * Template instance.
      *
-     * @var array
+     * @var \Cake\View\StringTemplate
      */
-    protected $defaults = [
-        'name' => '',
-        'options' => [],
-        'disabled' => null,
-        'val' => null,
-        'escape' => true,
-        'label' => true,
-        'empty' => false,
-        'idPrefix' => null,
-        'templateVars' => [],
-    ];
+    protected $_templates;
 
     /**
      * Label instance.
@@ -69,7 +57,7 @@ class RadioWidget extends BasicWidget
      * @param \Cake\View\StringTemplate $templates Templates list.
      * @param \Cake\View\Widget\LabelWidget $label Label widget instance.
      */
-    public function __construct(StringTemplate $templates, LabelWidget $label)
+    public function __construct($templates, $label)
     {
         $this->_templates = $templates;
         $this->_label = $label;
@@ -95,10 +83,19 @@ class RadioWidget extends BasicWidget
      * @param \Cake\View\Form\ContextInterface $context The current form context.
      * @return string
      */
-    public function render(array $data, ContextInterface $context): string
+    public function render(array $data, ContextInterface $context)
     {
-        $data += $this->mergeDefaults($data, $context);
-
+        $data += [
+            'name' => '',
+            'options' => [],
+            'disabled' => null,
+            'val' => null,
+            'escape' => true,
+            'label' => true,
+            'empty' => false,
+            'idPrefix' => null,
+            'templateVars' => [],
+        ];
         if ($data['options'] instanceof Traversable) {
             $options = iterator_to_array($data['options']);
         } else {
@@ -125,10 +122,10 @@ class RadioWidget extends BasicWidget
      * Disabled attribute detection.
      *
      * @param array $radio Radio info.
-     * @param array|true|null $disabled The disabled values.
+     * @param array|null|true $disabled The disabled values.
      * @return bool
      */
-    protected function _isDisabled(array $radio, $disabled): bool
+    protected function _isDisabled($radio, $disabled)
     {
         if (!$disabled) {
             return false;
@@ -138,7 +135,7 @@ class RadioWidget extends BasicWidget
         }
         $isNumeric = is_numeric($radio['value']);
 
-        return !is_array($disabled) || in_array((string)$radio['value'], $disabled, !$isNumeric);
+        return (!is_array($disabled) || in_array((string)$radio['value'], $disabled, !$isNumeric));
     }
 
     /**
@@ -150,10 +147,10 @@ class RadioWidget extends BasicWidget
      * @param \Cake\View\Form\ContextInterface $context The form context
      * @return string
      */
-    protected function _renderInput($val, $text, $data, $context): string
+    protected function _renderInput($val, $text, $data, $context)
     {
         $escape = $data['escape'];
-        if (is_array($text) && isset($text['text'], $text['value'])) {
+        if (is_int($val) && isset($text['text'], $text['value'])) {
             $radio = $text;
         } else {
             $radio = ['value' => $val, 'text' => $text];
@@ -168,14 +165,7 @@ class RadioWidget extends BasicWidget
         }
 
         if (empty($radio['id'])) {
-            if (isset($data['id'])) {
-                $radio['id'] = $data['id'] . '-' . trim(
-                    $this->_idSuffix((string)$radio['value']),
-                    '-'
-                );
-            } else {
-                $radio['id'] = $this->_id((string)$radio['name'], (string)$radio['value']);
-            }
+            $radio['id'] = $this->_id($radio['name'], $radio['value']);
         }
         if (isset($data['val']) && is_bool($data['val'])) {
             $data['val'] = $data['val'] ? 1 : 0;
@@ -186,8 +176,7 @@ class RadioWidget extends BasicWidget
         }
 
         if (!is_bool($data['label']) && isset($radio['checked']) && $radio['checked']) {
-            $selectedClass = $this->_templates->format('selectedClass', []);
-            $data['label'] = $this->_templates->addClass($data['label'], $selectedClass);
+            $data['label'] = $this->_templates->addClass($data['label'], 'selected');
         }
 
         $radio['disabled'] = $this->_isDisabled($radio, $data['disabled']);
@@ -202,10 +191,7 @@ class RadioWidget extends BasicWidget
             'name' => $radio['name'],
             'value' => $escape ? h($radio['value']) : $radio['value'],
             'templateVars' => $radio['templateVars'],
-            'attrs' => $this->_templates->formatAttributes(
-                $radio + $data,
-                ['name', 'value', 'text', 'options', 'label', 'val', 'type']
-            ),
+            'attrs' => $this->_templates->formatAttributes($radio + $data, ['name', 'value', 'text', 'options', 'label', 'val', 'type']),
         ]);
 
         $label = $this->_renderLabel(
@@ -216,8 +202,7 @@ class RadioWidget extends BasicWidget
             $escape
         );
 
-        if (
-            $label === false &&
+        if ($label === false &&
             strpos($this->_templates->get('radioWrapper'), '{{input}}') === false
         ) {
             $label = $input;
@@ -237,17 +222,15 @@ class RadioWidget extends BasicWidget
      * input types (multi-checkboxes) will also need labels generated.
      *
      * @param array $radio The input properties.
-     * @param array|string|false $label The properties for a label.
+     * @param false|string|array $label The properties for a label.
      * @param string $input The input widget.
      * @param \Cake\View\Form\ContextInterface $context The form context.
      * @param bool $escape Whether or not to HTML escape the label.
-     * @return string|false Generated label.
+     * @return string|bool Generated label.
      */
-    protected function _renderLabel(array $radio, $label, $input, $context, $escape)
+    protected function _renderLabel($radio, $label, $input, $context, $escape)
     {
-        if (isset($radio['label'])) {
-            $label = $radio['label'];
-        } elseif ($label === false) {
+        if ($label === false) {
             return false;
         }
         $labelAttrs = is_array($label) ? $label : [];
@@ -260,5 +243,13 @@ class RadioWidget extends BasicWidget
         ];
 
         return $this->_label->render($labelAttrs, $context);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function secureFields(array $data)
+    {
+        return [$data['name']];
     }
 }

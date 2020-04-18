@@ -73,7 +73,7 @@ y = 1
 + 2
 - 3;
 
-// phpcs:set Squiz.WhiteSpace.OperatorSpacing ignoreNewlines true
+// @codingStandardsChangeSetting Squiz.WhiteSpace.OperatorSpacing ignoreNewlines true
 y = 1
   + 2
   - 3;
@@ -85,7 +85,7 @@ y = 1 +
 y = 1
 + 2
 - 3;
-// phpcs:set Squiz.WhiteSpace.OperatorSpacing ignoreNewlines false
+// @codingStandardsChangeSetting Squiz.WhiteSpace.OperatorSpacing ignoreNewlines false
 
 if (true || -1 == b) {
 }
@@ -98,6 +98,3 @@ x = x >>> y;
 x >>>= y;
 
 var foo = bar.map(baz=> baz.length);
-
-// phpcs:set Squiz.WhiteSpace.OperatorSpacing ignoreSpacingBeforeAssignments false
-a  =  3;

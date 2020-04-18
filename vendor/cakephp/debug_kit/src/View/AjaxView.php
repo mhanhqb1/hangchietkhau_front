@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -26,6 +24,7 @@ use Cake\View\View;
  *
  * @property \DebugKit\View\Helper\SimpleGraphHelper $SimpleGraph
  * @property \DebugKit\View\Helper\ToolbarHelper $Toolbar
+ * @property \DebugKit\View\Helper\TidyHelper $Tidy
  */
 class AjaxView extends View
 {
@@ -34,9 +33,9 @@ class AjaxView extends View
      *
      * @return void
      */
-    public function initialize(): void
+    public function initialize()
     {
         parent::initialize();
-        $this->response = $this->response->withType('ajax');
+        $this->response->type('ajax');
     }
 }

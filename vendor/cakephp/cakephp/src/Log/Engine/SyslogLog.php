@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) :  Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -21,6 +19,7 @@ namespace Cake\Log\Engine;
  */
 class SyslogLog extends BaseLog
 {
+
     /**
      * Default config for this class
      *
@@ -55,7 +54,7 @@ class SyslogLog extends BaseLog
         'format' => '%s: %s',
         'flag' => LOG_ODELAY,
         'prefix' => '',
-        'facility' => LOG_USER,
+        'facility' => LOG_USER
     ];
 
     /**
@@ -71,7 +70,7 @@ class SyslogLog extends BaseLog
         'warning' => LOG_WARNING,
         'notice' => LOG_NOTICE,
         'info' => LOG_INFO,
-        'debug' => LOG_DEBUG,
+        'debug' => LOG_DEBUG
     ];
 
     /**
@@ -87,13 +86,12 @@ class SyslogLog extends BaseLog
      * Map the $level back to a LOG_ constant value, split multi-line messages into multiple
      * log messages, pass all messages through the format defined in the configuration
      *
-     * @param mixed $level The severity level of log you are making.
+     * @param string $level The severity level of log you are making.
      * @param string $message The message you want to log.
      * @param array $context Additional information about the logged message
-     * @return void
-     * @see Cake\Log\Log::$_levels
+     * @return bool success of write.
      */
-    public function log($level, $message, array $context = []): void
+    public function log($level, $message, array $context = [])
     {
         if (!$this->_open) {
             $config = $this->_config;
@@ -111,6 +109,8 @@ class SyslogLog extends BaseLog
             $message = sprintf($this->_config['format'], $level, $message);
             $this->_write($priority, $message);
         }
+
+        return true;
     }
 
     /**
@@ -122,7 +122,7 @@ class SyslogLog extends BaseLog
      * @param int $facility the stream or facility to log to
      * @return void
      */
-    protected function _open(string $ident, int $options, int $facility): void
+    protected function _open($ident, $options, $facility)
     {
         openlog($ident, $options, $facility);
     }
@@ -135,7 +135,7 @@ class SyslogLog extends BaseLog
      * @param string $message Message to log.
      * @return bool
      */
-    protected function _write(int $priority, string $message): bool
+    protected function _write($priority, $message)
     {
         return syslog($priority, $message);
     }

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -20,8 +18,8 @@ use Cake\Controller\Component;
 use Cake\Controller\ComponentRegistry;
 use Cake\Datasource\Exception\PageOutOfBoundsException;
 use Cake\Datasource\Paginator;
-use Cake\Datasource\ResultSetInterface;
-use Cake\Http\Exception\NotFoundException;
+use Cake\Datasource\QueryInterface;
+use Cake\Network\Exception\NotFoundException;
 use InvalidArgumentException;
 
 /**
@@ -32,11 +30,11 @@ use InvalidArgumentException;
  *
  * You configure pagination when calling paginate(). See that method for more details.
  *
- * @link https://book.cakephp.org/4/en/controllers/components/pagination.html
- * @mixin \Cake\Datasource\Paginator
+ * @link https://book.cakephp.org/3.0/en/controllers/components/pagination.html
  */
 class PaginatorComponent extends Component
 {
+
     /**
      * Default pagination settings.
      *
@@ -56,7 +54,7 @@ class PaginatorComponent extends Component
         'page' => 1,
         'limit' => 20,
         'maxLimit' => 100,
-        'whitelist' => ['limit', 'sort', 'page', 'direction'],
+        'whitelist' => ['limit', 'sort', 'page', 'direction']
     ];
 
     /**
@@ -67,7 +65,7 @@ class PaginatorComponent extends Component
     protected $_paginator;
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function __construct(ComponentRegistry $registry, array $config = [])
     {
@@ -89,7 +87,7 @@ class PaginatorComponent extends Component
      *
      * @return array
      */
-    public function implementedEvents(): array
+    public function implementedEvents()
     {
         return [];
     }
@@ -187,14 +185,14 @@ class PaginatorComponent extends Component
      * /dashboard?articles[page]=1&tags[page]=2
      * ```
      *
-     * @param \Cake\Datasource\RepositoryInterface|\Cake\Datasource\QueryInterface $object Table or query to paginate.
+     * @param \Cake\Datasource\RepositoryInterface|\Cake\Datasource\QueryInterface $object The table or query to paginate.
      * @param array $settings The settings/configuration used for pagination.
      * @return \Cake\Datasource\ResultSetInterface Query results
-     * @throws \Cake\Http\Exception\NotFoundException
+     * @throws \Cake\Network\Exception\NotFoundException
      */
-    public function paginate(object $object, array $settings = []): ResultSetInterface
+    public function paginate($object, array $settings = [])
     {
-        $request = $this->_registry->getController()->getRequest();
+        $request = $this->_registry->getController()->request;
 
         try {
             $results = $this->_paginator->paginate(
@@ -207,7 +205,7 @@ class PaginatorComponent extends Component
         } catch (PageOutOfBoundsException $e) {
             $this->_setPagingParams();
 
-            throw new NotFoundException(null, null, $e);
+            throw new NotFoundException();
         }
 
         return $results;
@@ -229,9 +227,9 @@ class PaginatorComponent extends Component
      * @param array $settings The settings to merge with the request data.
      * @return array Array of merged options.
      */
-    public function mergeOptions(string $alias, array $settings): array
+    public function mergeOptions($alias, $settings)
     {
-        $request = $this->_registry->getController()->getRequest();
+        $request = $this->_registry->getController()->request;
 
         return $this->_paginator->mergeOptions(
             $request->getQueryParams(),
@@ -243,7 +241,7 @@ class PaginatorComponent extends Component
      * Set paginator instance.
      *
      * @param \Cake\Datasource\Paginator $paginator Paginator instance.
-     * @return $this
+     * @return self
      */
     public function setPaginator(Paginator $paginator)
     {
@@ -257,7 +255,7 @@ class PaginatorComponent extends Component
      *
      * @return \Cake\Datasource\Paginator
      */
-    public function getPaginator(): Paginator
+    public function getPaginator()
     {
         return $this->_paginator;
     }
@@ -267,13 +265,33 @@ class PaginatorComponent extends Component
      *
      * @return void
      */
-    protected function _setPagingParams(): void
+    protected function _setPagingParams()
     {
-        $controller = $this->getController();
-        $request = $controller->getRequest();
-        $paging = $this->_paginator->getPagingParams() + (array)$request->getAttribute('paging', []);
+        $request = $this->_registry->getController()->request;
 
-        $controller->setRequest($request->withAttribute('paging', $paging));
+        $request->addParams([
+            'paging' => $this->_paginator->getPagingParams()
+                + (array)$request->getParam('paging')
+        ]);
+    }
+
+    /**
+     * Proxy getting/setting config options to Paginator.
+     *
+     * @deprecated 3.5.0 use setConfig()/getConfig() instead.
+     * @param string|array|null $key The key to get/set, or a complete array of configs.
+     * @param mixed|null $value The value to set.
+     * @param bool $merge Whether to recursively merge or overwrite existing config, defaults to true.
+     * @return mixed Config value being read, or the object itself on write operations.
+     */
+    public function config($key = null, $value = null, $merge = true)
+    {
+        $return = $this->_paginator->config($key, $value, $merge);
+        if ($return instanceof Paginator) {
+            $return = $this;
+        }
+
+        return $return;
     }
 
     /**
@@ -298,7 +316,7 @@ class PaginatorComponent extends Component
      * @param mixed $default The return value when the key does not exist.
      * @return mixed Config value being read.
      */
-    public function getConfig(?string $key = null, $default = null)
+    public function getConfig($key = null, $default = null)
     {
         return $this->_paginator->getConfig($key, $default);
     }
@@ -312,7 +330,7 @@ class PaginatorComponent extends Component
      */
     public function configShallow($key, $value = null)
     {
-        $this->_paginator->configShallow($key, null);
+        $this->_paginator->configShallow($key, $value = null);
 
         return $this;
     }
@@ -324,7 +342,7 @@ class PaginatorComponent extends Component
      * @param array $args Method arguments.
      * @return mixed
      */
-    public function __call(string $method, array $args)
+    public function __call($method, $args)
     {
         return call_user_func_array([$this->_paginator, $method], $args);
     }

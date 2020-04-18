@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,6 +15,7 @@ declare(strict_types=1);
 namespace Cake\Database\Schema;
 
 use Cake\Database\Exception;
+use Cake\Database\Schema\TableSchema;
 
 /**
  * Schema generation/reflection features for MySQL
@@ -31,41 +30,41 @@ class MysqlSchema extends BaseSchema
     protected $_driver;
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function listTablesSql(array $config): array
+    public function listTablesSql($config)
     {
         return ['SHOW TABLES FROM ' . $this->_driver->quoteIdentifier($config['database']), []];
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function describeColumnSql(string $tableName, array $config): array
+    public function describeColumnSql($tableName, $config)
     {
         return ['SHOW FULL COLUMNS FROM ' . $this->_driver->quoteIdentifier($tableName), []];
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function describeIndexSql(string $tableName, array $config): array
+    public function describeIndexSql($tableName, $config)
     {
         return ['SHOW INDEXES FROM ' . $this->_driver->quoteIdentifier($tableName), []];
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function describeOptionsSql(string $tableName, array $config): array
+    public function describeOptionsSql($tableName, $config)
     {
         return ['SHOW TABLE STATUS WHERE Name = ?', [$tableName]];
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function convertOptionsDescription(TableSchema $schema, array $row): void
+    public function convertOptionsDescription(TableSchema $schema, $row)
     {
         $schema->setOptions([
             'engine' => $row['Engine'],
@@ -76,13 +75,13 @@ class MysqlSchema extends BaseSchema
     /**
      * Convert a MySQL column type into an abstract type.
      *
-     * The returned type will be a type that Cake\Database\TypeFactory can handle.
+     * The returned type will be a type that Cake\Database\Type can handle.
      *
      * @param string $column The column type + length
      * @return array Array of column information.
      * @throws \Cake\Database\Exception When column type cannot be parsed.
      */
-    protected function _convertColumn(string $column): array
+    protected function _convertColumn($column)
     {
         preg_match('/([a-z]+)(?:\(([0-9,]+)\))?\s*([a-z]+)?/i', $column, $matches);
         if (empty($matches)) {
@@ -91,27 +90,18 @@ class MysqlSchema extends BaseSchema
 
         $col = strtolower($matches[1]);
         $length = $precision = null;
-        if (isset($matches[2]) && strlen($matches[2])) {
+        if (isset($matches[2])) {
             $length = $matches[2];
             if (strpos($matches[2], ',') !== false) {
-                [$length, $precision] = explode(',', $length);
+                list($length, $precision) = explode(',', $length);
             }
             $length = (int)$length;
             $precision = (int)$precision;
         }
 
-        if (in_array($col, ['date', 'time'])) {
+        if (in_array($col, ['date', 'time', 'datetime', 'timestamp'])) {
             return ['type' => $col, 'length' => null];
         }
-        if (in_array($col, ['datetime', 'timestamp'])) {
-            $typeName = $col;
-            if ($length > 0) {
-                $typeName = $col . 'fractional';
-            }
-
-            return ['type' => $typeName, 'length' => null, 'precision' => $length];
-        }
-
         if (($col === 'tinyint' && $length === 1) || $col === 'boolean') {
             return ['type' => TableSchema::TYPE_BOOLEAN, 'length' => null];
         }
@@ -133,23 +123,20 @@ class MysqlSchema extends BaseSchema
             return ['type' => TableSchema::TYPE_UUID, 'length' => null];
         }
         if ($col === 'char') {
-            return ['type' => TableSchema::TYPE_CHAR, 'length' => $length];
+            return ['type' => TableSchema::TYPE_STRING, 'fixed' => true, 'length' => $length];
         }
         if (strpos($col, 'char') !== false) {
             return ['type' => TableSchema::TYPE_STRING, 'length' => $length];
         }
         if (strpos($col, 'text') !== false) {
             $lengthName = substr($col, 0, -4);
-            $length = TableSchema::$columnLengths[$lengthName] ?? null;
+            $length = isset(Table::$columnLengths[$lengthName]) ? Table::$columnLengths[$lengthName] : null;
 
             return ['type' => TableSchema::TYPE_TEXT, 'length' => $length];
         }
-        if ($col === 'binary' && $length === 16) {
-            return ['type' => TableSchema::TYPE_BINARY_UUID, 'length' => null];
-        }
-        if (strpos($col, 'blob') !== false || in_array($col, ['binary', 'varbinary'])) {
+        if (strpos($col, 'blob') !== false || $col === 'binary') {
             $lengthName = substr($col, 0, -4);
-            $length = TableSchema::$columnLengths[$lengthName] ?? $length;
+            $length = isset(Table::$columnLengths[$lengthName]) ? Table::$columnLengths[$lengthName] : null;
 
             return ['type' => TableSchema::TYPE_BINARY, 'length' => $length];
         }
@@ -158,7 +145,7 @@ class MysqlSchema extends BaseSchema
                 'type' => TableSchema::TYPE_FLOAT,
                 'length' => $length,
                 'precision' => $precision,
-                'unsigned' => $unsigned,
+                'unsigned' => $unsigned
             ];
         }
         if (strpos($col, 'decimal') !== false) {
@@ -166,7 +153,7 @@ class MysqlSchema extends BaseSchema
                 'type' => TableSchema::TYPE_DECIMAL,
                 'length' => $length,
                 'precision' => $precision,
-                'unsigned' => $unsigned,
+                'unsigned' => $unsigned
             ];
         }
 
@@ -178,9 +165,9 @@ class MysqlSchema extends BaseSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function convertColumnDescription(TableSchema $schema, array $row): void
+    public function convertColumnDescription(TableSchema $schema, $row)
     {
         $field = $this->_convertColumn($row['Type']);
         $field += [
@@ -196,34 +183,34 @@ class MysqlSchema extends BaseSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function convertIndexDescription(TableSchema $schema, array $row): void
+    public function convertIndexDescription(TableSchema $schema, $row)
     {
         $type = null;
         $columns = $length = [];
 
         $name = $row['Key_name'];
         if ($name === 'PRIMARY') {
-            $name = $type = TableSchema::CONSTRAINT_PRIMARY;
+            $name = $type = Table::CONSTRAINT_PRIMARY;
         }
 
         $columns[] = $row['Column_name'];
 
         if ($row['Index_type'] === 'FULLTEXT') {
-            $type = TableSchema::INDEX_FULLTEXT;
-        } elseif ((int)$row['Non_unique'] === 0 && $type !== 'primary') {
-            $type = TableSchema::CONSTRAINT_UNIQUE;
+            $type = Table::INDEX_FULLTEXT;
+        } elseif ($row['Non_unique'] == 0 && $type !== 'primary') {
+            $type = Table::CONSTRAINT_UNIQUE;
         } elseif ($type !== 'primary') {
-            $type = TableSchema::INDEX_INDEX;
+            $type = Table::INDEX_INDEX;
         }
 
         if (!empty($row['Sub_part'])) {
             $length[$row['Column_name']] = $row['Sub_part'];
         }
         $isIndex = (
-            $type === TableSchema::INDEX_INDEX ||
-            $type === TableSchema::INDEX_FULLTEXT
+            $type === Table::INDEX_INDEX ||
+            $type === Table::INDEX_FULLTEXT
         );
         if ($isIndex) {
             $existing = $schema->getIndex($name);
@@ -240,21 +227,21 @@ class MysqlSchema extends BaseSchema
             $schema->addIndex($name, [
                 'type' => $type,
                 'columns' => $columns,
-                'length' => $length,
+                'length' => $length
             ]);
         } else {
             $schema->addConstraint($name, [
                 'type' => $type,
                 'columns' => $columns,
-                'length' => $length,
+                'length' => $length
             ]);
         }
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function describeForeignKeySql(string $tableName, array $config): array
+    public function describeForeignKeySql($tableName, $config)
     {
         $sql = 'SELECT * FROM information_schema.key_column_usage AS kcu
             INNER JOIN information_schema.referential_constraints AS rc
@@ -268,12 +255,12 @@ class MysqlSchema extends BaseSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function convertForeignKeyDescription(TableSchema $schema, array $row): void
+    public function convertForeignKeyDescription(TableSchema $schema, $row)
     {
         $data = [
-            'type' => TableSchema::CONSTRAINT_FOREIGN,
+            'type' => Table::CONSTRAINT_FOREIGN,
             'columns' => [$row['COLUMN_NAME']],
             'references' => [$row['REFERENCED_TABLE_NAME'], $row['REFERENCED_COLUMN_NAME']],
             'update' => $this->_convertOnClause($row['UPDATE_RULE']),
@@ -284,17 +271,17 @@ class MysqlSchema extends BaseSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function truncateTableSql(TableSchema $schema): array
+    public function truncateTableSql(TableSchema $schema)
     {
         return [sprintf('TRUNCATE TABLE `%s`', $schema->name())];
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function createTableSql(TableSchema $schema, array $columns, array $constraints, array $indexes): array
+    public function createTableSql(TableSchema $schema, $columns, $constraints, $indexes)
     {
         $content = implode(",\n", array_merge($columns, $constraints, $indexes));
         $temporary = $schema->isTemporary() ? ' TEMPORARY ' : ' ';
@@ -314,11 +301,10 @@ class MysqlSchema extends BaseSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function columnSql(TableSchema $schema, string $name): string
+    public function columnSql(TableSchema $schema, $name)
     {
-        /** @var array $data */
         $data = $schema->getColumn($name);
         $out = $this->_driver->quoteIdentifier($name);
         $nativeJson = $this->_driver->supportsNativeJson();
@@ -328,25 +314,19 @@ class MysqlSchema extends BaseSchema
             TableSchema::TYPE_SMALLINTEGER => ' SMALLINT',
             TableSchema::TYPE_INTEGER => ' INTEGER',
             TableSchema::TYPE_BIGINTEGER => ' BIGINT',
-            TableSchema::TYPE_BINARY_UUID => ' BINARY(16)',
             TableSchema::TYPE_BOOLEAN => ' BOOLEAN',
             TableSchema::TYPE_FLOAT => ' FLOAT',
             TableSchema::TYPE_DECIMAL => ' DECIMAL',
             TableSchema::TYPE_DATE => ' DATE',
             TableSchema::TYPE_TIME => ' TIME',
             TableSchema::TYPE_DATETIME => ' DATETIME',
-            TableSchema::TYPE_DATETIME_FRACTIONAL => ' DATETIME',
             TableSchema::TYPE_TIMESTAMP => ' TIMESTAMP',
-            TableSchema::TYPE_TIMESTAMP_FRACTIONAL => ' TIMESTAMP',
-            TableSchema::TYPE_TIMESTAMP_TIMEZONE => ' TIMESTAMP',
-            TableSchema::TYPE_CHAR => ' CHAR',
             TableSchema::TYPE_UUID => ' CHAR(36)',
-            TableSchema::TYPE_JSON => $nativeJson ? ' JSON' : ' LONGTEXT',
+            TableSchema::TYPE_JSON => $nativeJson ? ' JSON' : ' LONGTEXT'
         ];
         $specialMap = [
             'string' => true,
             'text' => true,
-            'char' => true,
             'binary' => true,
         ];
         if (isset($typeMap[$data['type']])) {
@@ -355,68 +335,54 @@ class MysqlSchema extends BaseSchema
         if (isset($specialMap[$data['type']])) {
             switch ($data['type']) {
                 case TableSchema::TYPE_STRING:
-                    $out .= ' VARCHAR';
+                    $out .= !empty($data['fixed']) ? ' CHAR' : ' VARCHAR';
                     if (!isset($data['length'])) {
                         $data['length'] = 255;
                     }
                     break;
                 case TableSchema::TYPE_TEXT:
-                    $isKnownLength = in_array($data['length'], TableSchema::$columnLengths);
+                    $isKnownLength = in_array($data['length'], Table::$columnLengths);
                     if (empty($data['length']) || !$isKnownLength) {
                         $out .= ' TEXT';
                         break;
                     }
 
-                    /** @var string $length */
-                    $length = array_search($data['length'], TableSchema::$columnLengths);
-                    $out .= ' ' . strtoupper($length) . 'TEXT';
+                    if ($isKnownLength) {
+                        $length = array_search($data['length'], Table::$columnLengths);
+                        $out .= ' ' . strtoupper($length) . 'TEXT';
+                    }
 
                     break;
                 case TableSchema::TYPE_BINARY:
-                    $isKnownLength = in_array($data['length'], TableSchema::$columnLengths);
-                    if ($isKnownLength) {
-                        /** @var string $length */
-                        $length = array_search($data['length'], TableSchema::$columnLengths);
-                        $out .= ' ' . strtoupper($length) . 'BLOB';
-                        break;
-                    }
-
-                    if (empty($data['length'])) {
+                    $isKnownLength = in_array($data['length'], Table::$columnLengths);
+                    if (empty($data['length']) || !$isKnownLength) {
                         $out .= ' BLOB';
                         break;
                     }
 
-                    if ($data['length'] > 2) {
-                        $out .= ' VARBINARY(' . $data['length'] . ')';
-                    } else {
-                        $out .= ' BINARY(' . $data['length'] . ')';
+                    if ($isKnownLength) {
+                        $length = array_search($data['length'], Table::$columnLengths);
+                        $out .= ' ' . strtoupper($length) . 'BLOB';
                     }
+
                     break;
             }
         }
         $hasLength = [
             TableSchema::TYPE_INTEGER,
-            TableSchema::TYPE_CHAR,
             TableSchema::TYPE_SMALLINTEGER,
             TableSchema::TYPE_TINYINTEGER,
-            TableSchema::TYPE_STRING,
+            TableSchema::TYPE_STRING
         ];
         if (in_array($data['type'], $hasLength, true) && isset($data['length'])) {
-            $out .= '(' . $data['length'] . ')';
+            $out .= '(' . (int)$data['length'] . ')';
         }
 
-        $lengthAndPrecisionTypes = [TableSchema::TYPE_FLOAT, TableSchema::TYPE_DECIMAL];
-        if (in_array($data['type'], $lengthAndPrecisionTypes, true) && isset($data['length'])) {
-            if (isset($data['precision'])) {
-                $out .= '(' . (int)$data['length'] . ',' . (int)$data['precision'] . ')';
-            } else {
-                $out .= '(' . (int)$data['length'] . ')';
-            }
-        }
-
-        $precisionTypes = [TableSchema::TYPE_DATETIME_FRACTIONAL, TableSchema::TYPE_TIMESTAMP_FRACTIONAL];
-        if (in_array($data['type'], $precisionTypes, true) && isset($data['precision'])) {
-            $out .= '(' . (int)$data['precision'] . ')';
+        $hasPrecision = [TableSchema::TYPE_FLOAT, TableSchema::TYPE_DECIMAL];
+        if (in_array($data['type'], $hasPrecision, true) &&
+            (isset($data['length']) || isset($data['precision']))
+        ) {
+            $out .= '(' . (int)$data['length'] . ',' . (int)$data['precision'] . ')';
         }
 
         $hasUnsigned = [
@@ -425,19 +391,16 @@ class MysqlSchema extends BaseSchema
             TableSchema::TYPE_INTEGER,
             TableSchema::TYPE_BIGINTEGER,
             TableSchema::TYPE_FLOAT,
-            TableSchema::TYPE_DECIMAL,
+            TableSchema::TYPE_DECIMAL
         ];
-        if (
-            in_array($data['type'], $hasUnsigned, true) &&
-            isset($data['unsigned']) &&
-            $data['unsigned'] === true
+        if (in_array($data['type'], $hasUnsigned, true) &&
+            isset($data['unsigned']) && $data['unsigned'] === true
         ) {
             $out .= ' UNSIGNED';
         }
 
         $hasCollate = [
             TableSchema::TYPE_TEXT,
-            TableSchema::TYPE_CHAR,
             TableSchema::TYPE_STRING,
         ];
         if (in_array($data['type'], $hasCollate, true) && isset($data['collate']) && $data['collate'] !== '') {
@@ -448,46 +411,24 @@ class MysqlSchema extends BaseSchema
             $out .= ' NOT NULL';
         }
         $addAutoIncrement = (
-            (array)$schema->getPrimaryKey() === [$name] &&
+            [$name] == (array)$schema->primaryKey() &&
             !$schema->hasAutoincrement() &&
             !isset($data['autoIncrement'])
         );
-        if (
-            in_array($data['type'], [TableSchema::TYPE_INTEGER, TableSchema::TYPE_BIGINTEGER]) &&
-            (
-                $data['autoIncrement'] === true ||
-                $addAutoIncrement
-            )
+        if (in_array($data['type'], [TableSchema::TYPE_INTEGER, TableSchema::TYPE_BIGINTEGER]) &&
+            ($data['autoIncrement'] === true || $addAutoIncrement)
         ) {
             $out .= ' AUTO_INCREMENT';
         }
-
-        $timestampTypes = [
-            TableSchema::TYPE_TIMESTAMP,
-            TableSchema::TYPE_TIMESTAMP_FRACTIONAL,
-            TableSchema::TYPE_TIMESTAMP_TIMEZONE,
-        ];
-        if (isset($data['null']) && $data['null'] === true && in_array($data['type'], $timestampTypes, true)) {
+        if (isset($data['null']) && $data['null'] === true && $data['type'] === TableSchema::TYPE_TIMESTAMP) {
             $out .= ' NULL';
             unset($data['default']);
         }
-
-        $dateTimeTypes = [
-            TableSchema::TYPE_DATETIME,
-            TableSchema::TYPE_DATETIME_FRACTIONAL,
-            TableSchema::TYPE_TIMESTAMP,
-            TableSchema::TYPE_TIMESTAMP_FRACTIONAL,
-            TableSchema::TYPE_TIMESTAMP_TIMEZONE,
-        ];
-        if (
-            isset($data['default']) &&
-            in_array($data['type'], $dateTimeTypes) &&
-            strpos(strtolower($data['default']), 'current_timestamp') !== false
+        if (isset($data['default']) &&
+            in_array($data['type'], [TableSchema::TYPE_TIMESTAMP, TableSchema::TYPE_DATETIME]) &&
+            strtolower($data['default']) === 'current_timestamp'
         ) {
             $out .= ' DEFAULT CURRENT_TIMESTAMP';
-            if (isset($data['precision'])) {
-                $out .= '(' . $data['precision'] . ')';
-            }
             unset($data['default']);
         }
         if (isset($data['default'])) {
@@ -502,13 +443,12 @@ class MysqlSchema extends BaseSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function constraintSql(TableSchema $schema, string $name): string
+    public function constraintSql(TableSchema $schema, $name)
     {
-        /** @var array $data */
         $data = $schema->getConstraint($name);
-        if ($data['type'] === TableSchema::CONSTRAINT_PRIMARY) {
+        if ($data['type'] === Table::CONSTRAINT_PRIMARY) {
             $columns = array_map(
                 [$this->_driver, 'quoteIdentifier'],
                 $data['columns']
@@ -518,10 +458,10 @@ class MysqlSchema extends BaseSchema
         }
 
         $out = '';
-        if ($data['type'] === TableSchema::CONSTRAINT_UNIQUE) {
+        if ($data['type'] === Table::CONSTRAINT_UNIQUE) {
             $out = 'UNIQUE KEY ';
         }
-        if ($data['type'] === TableSchema::CONSTRAINT_FOREIGN) {
+        if ($data['type'] === Table::CONSTRAINT_FOREIGN) {
             $out = 'CONSTRAINT ';
         }
         $out .= $this->_driver->quoteIdentifier($name);
@@ -530,17 +470,16 @@ class MysqlSchema extends BaseSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function addConstraintSql(TableSchema $schema): array
+    public function addConstraintSql(TableSchema $schema)
     {
         $sqlPattern = 'ALTER TABLE %s ADD %s;';
         $sql = [];
 
         foreach ($schema->constraints() as $name) {
-            /** @var array $constraint */
             $constraint = $schema->getConstraint($name);
-            if ($constraint['type'] === TableSchema::CONSTRAINT_FOREIGN) {
+            if ($constraint['type'] === Table::CONSTRAINT_FOREIGN) {
                 $tableName = $this->_driver->quoteIdentifier($schema->name());
                 $sql[] = sprintf($sqlPattern, $tableName, $this->constraintSql($schema, $name));
             }
@@ -550,17 +489,16 @@ class MysqlSchema extends BaseSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function dropConstraintSql(TableSchema $schema): array
+    public function dropConstraintSql(TableSchema $schema)
     {
         $sqlPattern = 'ALTER TABLE %s DROP FOREIGN KEY %s;';
         $sql = [];
 
         foreach ($schema->constraints() as $name) {
-            /** @var array $constraint */
             $constraint = $schema->getConstraint($name);
-            if ($constraint['type'] === TableSchema::CONSTRAINT_FOREIGN) {
+            if ($constraint['type'] === Table::CONSTRAINT_FOREIGN) {
                 $tableName = $this->_driver->quoteIdentifier($schema->name());
                 $constraintName = $this->_driver->quoteIdentifier($name);
                 $sql[] = sprintf($sqlPattern, $tableName, $constraintName);
@@ -571,17 +509,16 @@ class MysqlSchema extends BaseSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function indexSql(TableSchema $schema, string $name): string
+    public function indexSql(TableSchema $schema, $name)
     {
-        /** @var array $data */
         $data = $schema->getIndex($name);
         $out = '';
-        if ($data['type'] === TableSchema::INDEX_INDEX) {
+        if ($data['type'] === Table::INDEX_INDEX) {
             $out = 'KEY ';
         }
-        if ($data['type'] === TableSchema::INDEX_FULLTEXT) {
+        if ($data['type'] === Table::INDEX_FULLTEXT) {
             $out = 'FULLTEXT KEY ';
         }
         $out .= $this->_driver->quoteIdentifier($name);
@@ -596,7 +533,7 @@ class MysqlSchema extends BaseSchema
      * @param array $data Key data.
      * @return string
      */
-    protected function _keySql(string $prefix, array $data): string
+    protected function _keySql($prefix, $data)
     {
         $columns = array_map(
             [$this->_driver, 'quoteIdentifier'],
@@ -607,7 +544,7 @@ class MysqlSchema extends BaseSchema
                 $columns[$i] .= sprintf('(%d)', $data['length'][$column]);
             }
         }
-        if ($data['type'] === TableSchema::CONSTRAINT_FOREIGN) {
+        if ($data['type'] === Table::CONSTRAINT_FOREIGN) {
             return $prefix . sprintf(
                 ' FOREIGN KEY (%s) REFERENCES %s (%s) ON UPDATE %s ON DELETE %s',
                 implode(', ', $columns),

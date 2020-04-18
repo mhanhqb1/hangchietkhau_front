@@ -9,8 +9,8 @@
 
 namespace PHP_CodeSniffer\Standards\Squiz\Sniffs\CSS;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
 
 class ForbiddenStylesSniff implements Sniff
 {
@@ -20,33 +20,33 @@ class ForbiddenStylesSniff implements Sniff
      *
      * @var array
      */
-    public $supportedTokenizers = ['CSS'];
+    public $supportedTokenizers = array('CSS');
 
     /**
      * A list of forbidden styles with their alternatives.
      *
      * The value is NULL if no alternative exists. i.e., the
-     * style should just not be used.
+     * function should just not be used.
      *
      * @var array<string, string|null>
      */
-    protected $forbiddenStyles = [
-        '-moz-border-radius'             => 'border-radius',
-        '-webkit-border-radius'          => 'border-radius',
-        '-moz-border-radius-topleft'     => 'border-top-left-radius',
-        '-moz-border-radius-topright'    => 'border-top-right-radius',
-        '-moz-border-radius-bottomright' => 'border-bottom-right-radius',
-        '-moz-border-radius-bottomleft'  => 'border-bottom-left-radius',
-        '-moz-box-shadow'                => 'box-shadow',
-        '-webkit-box-shadow'             => 'box-shadow',
-    ];
+    protected $forbiddenStyles = array(
+                                  '-moz-border-radius'             => 'border-radius',
+                                  '-webkit-border-radius'          => 'border-radius',
+                                  '-moz-border-radius-topleft'     => 'border-top-left-radius',
+                                  '-moz-border-radius-topright'    => 'border-top-right-radius',
+                                  '-moz-border-radius-bottomright' => 'border-bottom-right-radius',
+                                  '-moz-border-radius-bottomleft'  => 'border-bottom-left-radius',
+                                  '-moz-box-shadow'                => 'box-shadow',
+                                  '-webkit-box-shadow'             => 'box-shadow',
+                                 );
 
     /**
      * A cache of forbidden style names, for faster lookups.
      *
      * @var string[]
      */
-    protected $forbiddenStyleNames = [];
+    protected $forbiddenStyleNames = array();
 
     /**
      * If true, forbidden styles will be considered regular expressions.
@@ -78,7 +78,7 @@ class ForbiddenStylesSniff implements Sniff
             }
         }
 
-        return [T_STYLE];
+        return array(T_STYLE);
 
     }//end register()
 
@@ -115,7 +115,7 @@ class ForbiddenStylesSniff implements Sniff
             // Remove the pattern delimiters and modifier.
             $pattern = substr($pattern, 1, -2);
         } else {
-            if (in_array($style, $this->forbiddenStyleNames, true) === false) {
+            if (in_array($style, $this->forbiddenStyleNames) === false) {
                 return;
             }
         }//end if
@@ -138,7 +138,7 @@ class ForbiddenStylesSniff implements Sniff
      */
     protected function addError($phpcsFile, $stackPtr, $style, $pattern=null)
     {
-        $data  = [$style];
+        $data  = array($style);
         $error = 'The use of style %s is ';
         if ($this->error === true) {
             $type   = 'Found';

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -14,7 +12,7 @@ declare(strict_types=1);
  */
 namespace Cake\Controller\Exception;
 
-use Cake\Http\Exception\BadRequestException;
+use Cake\Network\Exception\BadRequestException;
 
 /**
  * Security exception - used when SecurityComponent detects any issue with the current request
@@ -30,7 +28,7 @@ class SecurityException extends BadRequestException
     /**
      * Reason for request blackhole
      *
-     * @var string|null
+     * @var string
      */
     protected $_reason;
 
@@ -39,7 +37,7 @@ class SecurityException extends BadRequestException
      *
      * @return string
      */
-    public function getType(): string
+    public function getType()
     {
         return $this->_type;
     }
@@ -50,7 +48,7 @@ class SecurityException extends BadRequestException
      * @param string $message Exception message
      * @return void
      */
-    public function setMessage(string $message): void
+    public function setMessage($message)
     {
         $this->message = $message;
     }
@@ -59,21 +57,19 @@ class SecurityException extends BadRequestException
      * Set Reason
      *
      * @param string|null $reason Reason details
-     * @return $this
+     * @return void
      */
-    public function setReason(?string $reason = null)
+    public function setReason($reason = null)
     {
         $this->_reason = $reason;
-
-        return $this;
     }
 
     /**
      * Get Reason
      *
-     * @return string|null
+     * @return string
      */
-    public function getReason(): ?string
+    public function getReason()
     {
         return $this->_reason;
     }

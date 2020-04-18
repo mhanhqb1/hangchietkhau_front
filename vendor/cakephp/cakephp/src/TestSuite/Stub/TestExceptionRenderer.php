@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,7 +14,7 @@ declare(strict_types=1);
  */
 namespace Cake\TestSuite\Stub;
 
-use Throwable;
+use Exception;
 
 /**
  * Test Exception Renderer.
@@ -30,14 +28,15 @@ use Throwable;
  */
 class TestExceptionRenderer
 {
+
     /**
      * Simply rethrow the given exception
      *
-     * @param \Throwable $exception Exception.
+     * @param \Exception $exception Exception.
      * @return void
-     * @throws \Throwable $exception Rethrows the passed exception.
+     * @throws \Exception $exception Rethrows the passed exception.
      */
-    public function __construct(Throwable $exception)
+    public function __construct(Exception $exception)
     {
         throw $exception;
     }

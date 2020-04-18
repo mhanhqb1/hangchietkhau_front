@@ -1,32 +1,49 @@
 <?php
-
 /**
- * MIT License
- * For full license information, please view the LICENSE file that was distributed with this source code.
+ * Phinx
+ *
+ * (The MIT license)
+ * Copyright (c) 2015 Rob Morgan
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated * documentation files (the "Software"), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ *
+ * @package    Phinx
+ * @subpackage Phinx\Util
  */
-
 namespace Phinx\Util;
-
-use DateTime;
-use DateTimeZone;
-use Exception;
 
 class Util
 {
     /**
      * @var string
      */
-    public const DATE_FORMAT = 'YmdHis';
+    const DATE_FORMAT = 'YmdHis';
 
     /**
      * @var string
      */
-    protected const MIGRATION_FILE_NAME_PATTERN = '/^\d+_([\w_]+).php$/i';
+    const MIGRATION_FILE_NAME_PATTERN = '/^\d+_([\w_]+).php$/i';
 
     /**
      * @var string
      */
-    protected const SEED_FILE_NAME_PATTERN = '/^([A-Z][a-z0-9]+).php$/i';
+    const SEED_FILE_NAME_PATTERN = '/^([A-Z][a-z0-9]+).php$/i';
 
     /**
      * Gets the current timestamp string, in UTC.
@@ -35,21 +52,18 @@ class Util
      */
     public static function getCurrentTimestamp()
     {
-        $dt = new DateTime('now', new DateTimeZone('UTC'));
-
+        $dt = new \DateTime('now', new \DateTimeZone('UTC'));
         return $dt->format(static::DATE_FORMAT);
     }
 
     /**
      * Gets an array of all the existing migration class names.
      *
-     * @param string $path Path
-     *
      * @return string[]
      */
     public static function getExistingMigrationClassNames($path)
     {
-        $classNames = [];
+        $classNames = array();
 
         if (!is_dir($path)) {
             return $classNames;
@@ -71,14 +85,12 @@ class Util
      * Get the version from the beginning of a file name.
      *
      * @param string $fileName File Name
-     *
      * @return string
      */
     public static function getVersionFromFileName($fileName)
     {
-        $matches = [];
+        $matches = array();
         preg_match('/^[0-9]+/', basename($fileName), $matches);
-
         return $matches[0];
     }
 
@@ -88,15 +100,13 @@ class Util
      * '12345678901234_limit_resource_names_to_30_chars.php'.
      *
      * @param string $className Class Name
-     *
      * @return string
      */
     public static function mapClassNameToFileName($className)
     {
         $arr = preg_split('/(?=[A-Z])/', $className);
         unset($arr[0]); // remove the first element ('')
-        $fileName = static::getCurrentTimestamp() . '_' . strtolower(implode('_', $arr)) . '.php';
-
+        $fileName = static::getCurrentTimestamp() . '_' . strtolower(implode($arr, '_')) . '.php';
         return $fileName;
     }
 
@@ -105,12 +115,11 @@ class Util
      * names like 'CreateUserTable'.
      *
      * @param string $fileName File Name
-     *
      * @return string
      */
     public static function mapFileNameToClassName($fileName)
     {
-        $matches = [];
+        $matches = array();
         if (preg_match(static::MIGRATION_FILE_NAME_PATTERN, $fileName, $matches)) {
             $fileName = $matches[1];
         }
@@ -131,14 +140,12 @@ class Util
      *
      * @param string $className Class Name
      * @param string $path Path
-     *
-     * @return bool
+     * @return boolean
      */
     public static function isUniqueMigrationClassName($className, $path)
     {
         $existingClassNames = static::getExistingMigrationClassNames($path);
-
-        return !(in_array($className, $existingClassNames, true));
+        return !(in_array($className, $existingClassNames));
     }
 
     /**
@@ -150,25 +157,22 @@ class Util
      * Single words are not allowed on their own.
      *
      * @param string $className Class Name
-     *
-     * @return bool
+     * @return boolean
      */
     public static function isValidPhinxClassName($className)
     {
-        return (bool)preg_match('/^([A-Z][a-z0-9]+)+$/', $className);
+        return (bool) preg_match('/^([A-Z][a-z0-9]+)+$/', $className);
     }
 
     /**
      * Check if a migration file name is valid.
      *
      * @param string $fileName File Name
-     *
-     * @return bool
+     * @return boolean
      */
     public static function isValidMigrationFileName($fileName)
     {
-        $matches = [];
-
+        $matches = array();
         return preg_match(static::MIGRATION_FILE_NAME_PATTERN, $fileName, $matches);
     }
 
@@ -176,26 +180,23 @@ class Util
      * Check if a seed file name is valid.
      *
      * @param string $fileName File Name
-     *
-     * @return bool
+     * @return boolean
      */
     public static function isValidSeedFileName($fileName)
     {
-        $matches = [];
-
+        $matches = array();
         return preg_match(static::SEED_FILE_NAME_PATTERN, $fileName, $matches);
     }
 
     /**
      * Expands a set of paths with curly braces (if supported by the OS).
-     *
-     * @param string[] $paths Paths
-     *
-     * @return string[]
+     * 
+     * @param array $paths
+     * @return array
      */
     public static function globAll(array $paths)
     {
-        $result = [];
+        $result = array();
 
         foreach ($paths as $path) {
             $result = array_merge($result, static::glob($path));
@@ -207,65 +208,11 @@ class Util
     /**
      * Expands a path with curly braces (if supported by the OS).
      *
-     * @param string $path Path
-     *
-     * @return string[]
+     * @param $path
+     * @return array
      */
     public static function glob($path)
     {
         return glob($path, defined('GLOB_BRACE') ? GLOB_BRACE : 0);
-    }
-
-    /**
-     * Takes the path to a php file and attempts to include it if readable
-     *
-     * @param string $filename Filename
-     *
-     * @throws \Exception
-     *
-     * @return string
-     */
-    public static function loadPhpFile($filename)
-    {
-        $filePath = realpath($filename);
-        if (!file_exists($filePath)) {
-            throw new Exception(sprintf("File does not exist: %s \n", $filename));
-        }
-
-        /**
-         * I lifed this from phpunits FileLoader class
-         *
-         * @see https://github.com/sebastianbergmann/phpunit/pull/2751
-         */
-        $isReadable = @fopen($filePath, 'r') !== false;
-
-        if (!$isReadable) {
-            throw new Exception(sprintf("Cannot open file %s \n", $filename));
-        }
-
-        include_once $filePath;
-
-        return $filePath;
-    }
-
-    /**
-     * Given an array of paths, return all unique PHP files that are in them
-     *
-     * @param string[] $paths array of paths to get php files
-     *
-     * @return string[]
-     */
-    public static function getFiles($paths)
-    {
-        $files = static::globAll(array_map(function ($path) {
-            return $path . DIRECTORY_SEPARATOR . "*.php";
-        }, $paths));
-        // glob() can return the same file multiple times
-        // This will cause the migration to fail with a
-        // false assumption of duplicate migrations
-        // http://php.net/manual/en/function.glob.php#110340
-        $files = array_unique($files);
-
-        return $files;
     }
 }

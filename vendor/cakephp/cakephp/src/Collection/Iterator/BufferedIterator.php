@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -27,6 +25,7 @@ use SplDoublyLinkedList;
  */
 class BufferedIterator extends Collection implements Countable, Serializable
 {
+
     /**
      * The in-memory cache containing results from previous iterators
      *
@@ -74,9 +73,9 @@ class BufferedIterator extends Collection implements Countable, Serializable
      * Maintains an in-memory cache of the results yielded by the internal
      * iterator.
      *
-     * @param iterable $items The items to be filtered.
+     * @param array|\Traversable $items The items to be filtered.
      */
-    public function __construct(iterable $items)
+    public function __construct($items)
     {
         $this->_buffer = new SplDoublyLinkedList();
         parent::__construct($items);
@@ -107,7 +106,7 @@ class BufferedIterator extends Collection implements Countable, Serializable
      *
      * @return void
      */
-    public function rewind(): void
+    public function rewind()
     {
         if ($this->_index === 0 && !$this->_started) {
             $this->_started = true;
@@ -124,7 +123,7 @@ class BufferedIterator extends Collection implements Countable, Serializable
      *
      * @return bool
      */
-    public function valid(): bool
+    public function valid()
     {
         if ($this->_buffer->offsetExists($this->_index)) {
             $current = $this->_buffer->offsetGet($this->_index);
@@ -141,7 +140,7 @@ class BufferedIterator extends Collection implements Countable, Serializable
             $this->_key = parent::key();
             $this->_buffer->push([
                 'key' => $this->_key,
-                'value' => $this->_current,
+                'value' => $this->_current
             ]);
         }
 
@@ -155,7 +154,7 @@ class BufferedIterator extends Collection implements Countable, Serializable
      *
      * @return void
      */
-    public function next(): void
+    public function next()
     {
         $this->_index++;
 
@@ -169,7 +168,7 @@ class BufferedIterator extends Collection implements Countable, Serializable
      *
      * @return int
      */
-    public function count(): int
+    public function count()
     {
         if (!$this->_started) {
             $this->rewind();
@@ -188,7 +187,7 @@ class BufferedIterator extends Collection implements Countable, Serializable
      *
      * @return string
      */
-    public function serialize(): string
+    public function serialize()
     {
         if (!$this->_finished) {
             $this->count();
@@ -203,7 +202,7 @@ class BufferedIterator extends Collection implements Countable, Serializable
      * @param string $buffer The serialized buffer iterator
      * @return void
      */
-    public function unserialize($buffer): void
+    public function unserialize($buffer)
     {
         $this->__construct([]);
         $this->_buffer = unserialize($buffer);

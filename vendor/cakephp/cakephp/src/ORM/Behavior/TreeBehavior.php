@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,11 +14,10 @@ declare(strict_types=1);
  */
 namespace Cake\ORM\Behavior;
 
-use Cake\Collection\CollectionInterface;
 use Cake\Database\Expression\IdentifierExpression;
 use Cake\Datasource\EntityInterface;
 use Cake\Datasource\Exception\RecordNotFoundException;
-use Cake\Event\EventInterface;
+use Cake\Event\Event;
 use Cake\ORM\Behavior;
 use Cake\ORM\Query;
 use InvalidArgumentException;
@@ -40,6 +37,7 @@ use RuntimeException;
  */
 class TreeBehavior extends Behavior
 {
+
     /**
      * Cached copy of the first column in a table's primary key.
      *
@@ -78,9 +76,9 @@ class TreeBehavior extends Behavior
     ];
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function initialize(array $config): void
+    public function initialize(array $config)
     {
         $this->_config['leftField'] = new IdentifierExpression($this->_config['left']);
         $this->_config['rightField'] = new IdentifierExpression($this->_config['right']);
@@ -91,12 +89,12 @@ class TreeBehavior extends Behavior
      * Transparently manages setting the lft and rght fields if the parent field is
      * included in the parameters to be saved.
      *
-     * @param \Cake\Event\EventInterface $event The beforeSave event that was fired
+     * @param \Cake\Event\Event $event The beforeSave event that was fired
      * @param \Cake\Datasource\EntityInterface $entity the entity that is going to be saved
      * @return void
      * @throws \RuntimeException if the parent to set for the node is invalid
      */
-    public function beforeSave(EventInterface $event, EntityInterface $entity)
+    public function beforeSave(Event $event, EntityInterface $entity)
     {
         $isNew = $entity->isNew();
         $config = $this->getConfig();
@@ -105,7 +103,7 @@ class TreeBehavior extends Behavior
         $dirty = $entity->isDirty($config['parent']);
         $level = $config['level'];
 
-        if ($parent && $entity->get($primaryKey) === $parent) {
+        if ($parent && $entity->get($primaryKey) == $parent) {
             throw new RuntimeException("Cannot set a node's parent as itself");
         }
 
@@ -160,11 +158,11 @@ class TreeBehavior extends Behavior
      *
      * Manages updating level of descendants of currently saved entity.
      *
-     * @param \Cake\Event\EventInterface $event The afterSave event that was fired
+     * @param \Cake\Event\Event $event The afterSave event that was fired
      * @param \Cake\Datasource\EntityInterface $entity the entity that is going to be saved
      * @return void
      */
-    public function afterSave(EventInterface $event, EntityInterface $entity)
+    public function afterSave(Event $event, EntityInterface $entity)
     {
         if (!$this->_config['level'] || $entity->isNew()) {
             return;
@@ -179,7 +177,7 @@ class TreeBehavior extends Behavior
      * @param \Cake\Datasource\EntityInterface $entity The entity whose descendants need to be updated.
      * @return void
      */
-    protected function _setChildrenLevel(EntityInterface $entity): void
+    protected function _setChildrenLevel($entity)
     {
         $config = $this->getConfig();
 
@@ -197,7 +195,7 @@ class TreeBehavior extends Behavior
             'order' => $config['left'],
         ]);
 
-        /** @var \Cake\Datasource\EntityInterface $node */
+        /* @var \Cake\Datasource\EntityInterface $node */
         foreach ($children as $node) {
             $parentIdValue = $node->get($config['parent']);
             $depth = $depths[$parentIdValue] + 1;
@@ -213,11 +211,11 @@ class TreeBehavior extends Behavior
     /**
      * Also deletes the nodes in the subtree of the entity to be delete
      *
-     * @param \Cake\Event\EventInterface $event The beforeDelete event that was fired
+     * @param \Cake\Event\Event $event The beforeDelete event that was fired
      * @param \Cake\Datasource\EntityInterface $entity The entity that is going to be saved
      * @return void
      */
-    public function beforeDelete(EventInterface $event, EntityInterface $entity)
+    public function beforeDelete(Event $event, EntityInterface $entity)
     {
         $config = $this->getConfig();
         $this->_ensureFields($entity);
@@ -226,16 +224,12 @@ class TreeBehavior extends Behavior
         $diff = $right - $left + 1;
 
         if ($diff > 2) {
-            $query = $this->_scope($this->_table->query())
-                ->delete()
-                ->where(function ($exp) use ($config, $left, $right) {
-                    /** @var \Cake\Database\Expression\QueryExpression $exp */
-                    return $exp
-                        ->gte($config['leftField'], $left + 1)
-                        ->lte($config['leftField'], $right - 1);
-                });
-            $statement = $query->execute();
-            $statement->closeCursor();
+            $this->_table->deleteAll(function ($exp) use ($config, $left, $right) {
+                /* @var \Cake\Database\Expression\QueryExpression $exp */
+                return $exp
+                    ->gte($config['leftField'], $left + 1)
+                    ->lte($config['leftField'], $right - 1);
+            });
         }
 
         $this->_sync($diff, '-', "> {$right}");
@@ -251,7 +245,7 @@ class TreeBehavior extends Behavior
      * @return void
      * @throws \RuntimeException if the parent to set to the entity is not valid
      */
-    protected function _setParent(EntityInterface $entity, $parent): void
+    protected function _setParent($entity, $parent)
     {
         $config = $this->getConfig();
         $parentNode = $this->_getNode($parent);
@@ -311,7 +305,7 @@ class TreeBehavior extends Behavior
      * @param \Cake\Datasource\EntityInterface $entity The entity to set as a new root
      * @return void
      */
-    protected function _setAsRoot(EntityInterface $entity): void
+    protected function _setAsRoot($entity)
     {
         $config = $this->getConfig();
         $edge = $this->_getMax();
@@ -344,14 +338,14 @@ class TreeBehavior extends Behavior
      *
      * @return void
      */
-    protected function _unmarkInternalTree(): void
+    protected function _unmarkInternalTree()
     {
         $config = $this->getConfig();
         $this->_table->updateAll(
             function ($exp) use ($config) {
-                /** @var \Cake\Database\Expression\QueryExpression $exp */
+                /* @var \Cake\Database\Expression\QueryExpression $exp */
                 $leftInverse = clone $exp;
-                $leftInverse->setConjunction('*')->add('-1');
+                $leftInverse->type('*')->add('-1');
                 $rightInverse = clone $leftInverse;
 
                 return $exp
@@ -359,7 +353,7 @@ class TreeBehavior extends Behavior
                     ->eq($config['rightField'], $rightInverse->add($config['rightField']));
             },
             function ($exp) use ($config) {
-                /** @var \Cake\Database\Expression\QueryExpression $exp */
+                /* @var \Cake\Database\Expression\QueryExpression $exp */
                 return $exp->lt($config['leftField'], 0);
             }
         );
@@ -375,14 +369,14 @@ class TreeBehavior extends Behavior
      * @return \Cake\ORM\Query
      * @throws \InvalidArgumentException If the 'for' key is missing in options
      */
-    public function findPath(Query $query, array $options): Query
+    public function findPath(Query $query, array $options)
     {
         if (empty($options['for'])) {
             throw new InvalidArgumentException("The 'for' key is required for find('path')");
         }
 
         $config = $this->getConfig();
-        [$left, $right] = array_map(
+        list($left, $right) = array_map(
             function ($field) {
                 return $this->_table->aliasField($field);
             },
@@ -407,7 +401,7 @@ class TreeBehavior extends Behavior
      * direct children
      * @return int Number of children nodes.
      */
-    public function childCount(EntityInterface $node, bool $direct = false): int
+    public function childCount(EntityInterface $node, $direct = false)
     {
         $config = $this->getConfig();
         $parent = $this->_table->aliasField($config['parent']);
@@ -439,18 +433,18 @@ class TreeBehavior extends Behavior
      * @return \Cake\ORM\Query
      * @throws \InvalidArgumentException When the 'for' key is not passed in $options
      */
-    public function findChildren(Query $query, array $options): Query
+    public function findChildren(Query $query, array $options)
     {
         $config = $this->getConfig();
         $options += ['for' => null, 'direct' => false];
-        [$parent, $left, $right] = array_map(
+        list($parent, $left, $right) = array_map(
             function ($field) {
                 return $this->_table->aliasField($field);
             },
             [$config['parent'], $config['left'], $config['right']]
         );
 
-        [$for, $direct] = [$options['for'], $options['direct']];
+        list($for, $direct) = [$options['for'], $options['direct']];
 
         if (empty($for)) {
             throw new InvalidArgumentException("The 'for' key is required for find('children')");
@@ -490,7 +484,7 @@ class TreeBehavior extends Behavior
      * @param array $options Array of options as described above.
      * @return \Cake\ORM\Query
      */
-    public function findTreeList(Query $query, array $options): Query
+    public function findTreeList(Query $query, array $options)
     {
         $left = $this->_table->aliasField($this->getConfig('left'));
 
@@ -520,19 +514,19 @@ class TreeBehavior extends Behavior
      * @param array $options Array of options as described above.
      * @return \Cake\ORM\Query Augmented query.
      */
-    public function formatTreeList(Query $query, array $options = []): Query
+    public function formatTreeList(Query $query, array $options = [])
     {
-        return $query->formatResults(function (CollectionInterface $results) use ($options) {
+        return $query->formatResults(function ($results) use ($options) {
+            /* @var \Cake\Collection\CollectionTrait $results */
             $options += [
                 'keyPath' => $this->_getPrimaryKey(),
                 'valuePath' => $this->_table->getDisplayField(),
                 'spacer' => '_',
             ];
 
-            /** @var \Cake\Collection\Iterator\TreeIterator $nested */
-            $nested = $results->listNested();
-
-            return $nested->printer($options['valuePath'], $options['keyPath'], $options['spacer']);
+            return $results
+                ->listNested()
+                ->printer($options['valuePath'], $options['keyPath'], $options['spacer']);
         });
     }
 
@@ -563,7 +557,7 @@ class TreeBehavior extends Behavior
      * @return \Cake\Datasource\EntityInterface|false the node after being removed from the tree or
      * false on error
      */
-    protected function _removeFromTree(EntityInterface $node)
+    protected function _removeFromTree($node)
     {
         $config = $this->getConfig();
         $left = $node->get($config['left']);
@@ -572,7 +566,7 @@ class TreeBehavior extends Behavior
 
         $node->set($config['parent'], null);
 
-        if ($right - $left === 1) {
+        if ($right - $left == 1) {
             return $this->_table->save($node);
         }
 
@@ -604,9 +598,9 @@ class TreeBehavior extends Behavior
      * this method will return false
      *
      * @param \Cake\Datasource\EntityInterface $node The node to move
-     * @param int|true $number How many places to move the node, or true to move to first position
+     * @param int|bool $number How many places to move the node, or true to move to first position
      * @throws \Cake\Datasource\Exception\RecordNotFoundException When node was not found
-     * @return \Cake\Datasource\EntityInterface|false $node The node after being moved or false on failure
+     * @return \Cake\Datasource\EntityInterface|bool $node The node after being moved or false on failure
      */
     public function moveUp(EntityInterface $node, $number = 1)
     {
@@ -625,24 +619,23 @@ class TreeBehavior extends Behavior
      * Helper function used with the actual code for moveUp
      *
      * @param \Cake\Datasource\EntityInterface $node The node to move
-     * @param int|true $number How many places to move the node, or true to move to first position
-     * @return \Cake\Datasource\EntityInterface $node The node after being moved or false on failure
+     * @param int|bool $number How many places to move the node, or true to move to first position
      * @throws \Cake\Datasource\Exception\RecordNotFoundException When node was not found
+     * @return \Cake\Datasource\EntityInterface|bool $node The node after being moved or false on failure
      */
-    protected function _moveUp(EntityInterface $node, $number): EntityInterface
+    protected function _moveUp($node, $number)
     {
         $config = $this->getConfig();
-        [$parent, $left, $right] = [$config['parent'], $config['left'], $config['right']];
-        [$nodeParent, $nodeLeft, $nodeRight] = array_values($node->extract([$parent, $left, $right]));
+        list($parent, $left, $right) = [$config['parent'], $config['left'], $config['right']];
+        list($nodeParent, $nodeLeft, $nodeRight) = array_values($node->extract([$parent, $left, $right]));
 
         $targetNode = null;
         if ($number !== true) {
-            /** @var \Cake\Datasource\EntityInterface|null $targetNode */
             $targetNode = $this->_scope($this->_table->find())
                 ->select([$left, $right])
                 ->where(["$parent IS" => $nodeParent])
                 ->where(function ($exp) use ($config, $nodeLeft) {
-                    /** @var \Cake\Database\Expression\QueryExpression $exp */
+                    /* @var \Cake\Database\Expression\QueryExpression $exp */
                     return $exp->lt($config['rightField'], $nodeLeft);
                 })
                 ->orderDesc($config['leftField'])
@@ -651,12 +644,11 @@ class TreeBehavior extends Behavior
                 ->first();
         }
         if (!$targetNode) {
-            /** @var \Cake\Datasource\EntityInterface|null $targetNode */
             $targetNode = $this->_scope($this->_table->find())
                 ->select([$left, $right])
                 ->where(["$parent IS" => $nodeParent])
                 ->where(function ($exp) use ($config, $nodeLeft) {
-                    /** @var \Cake\Database\Expression\QueryExpression $exp */
+                    /* @var \Cake\Database\Expression\QueryExpression $exp */
                     return $exp->lt($config['rightField'], $nodeLeft);
                 })
                 ->orderAsc($config['leftField'])
@@ -668,7 +660,7 @@ class TreeBehavior extends Behavior
             }
         }
 
-        [$targetLeft] = array_values($targetNode->extract([$left, $right]));
+        list($targetLeft) = array_values($targetNode->extract([$left, $right]));
         $edge = $this->_getMax();
         $leftBoundary = $targetLeft;
         $rightBoundary = $nodeLeft - 1;
@@ -681,7 +673,7 @@ class TreeBehavior extends Behavior
         $this->_sync($nodeToHole, '-', "> {$edge}");
 
         $node->set($left, $targetLeft);
-        $node->set($right, $targetLeft + $nodeRight - $nodeLeft);
+        $node->set($right, $targetLeft + ($nodeRight - $nodeLeft));
 
         $node->setDirty($left, false);
         $node->setDirty($right, false);
@@ -696,9 +688,9 @@ class TreeBehavior extends Behavior
      * this method will return false
      *
      * @param \Cake\Datasource\EntityInterface $node The node to move
-     * @param int|true $number How many places to move the node or true to move to last position
+     * @param int|bool $number How many places to move the node or true to move to last position
      * @throws \Cake\Datasource\Exception\RecordNotFoundException When node was not found
-     * @return \Cake\Datasource\EntityInterface|false the entity after being moved or false on failure
+     * @return \Cake\Datasource\EntityInterface|bool the entity after being moved or false on failure
      */
     public function moveDown(EntityInterface $node, $number = 1)
     {
@@ -717,24 +709,23 @@ class TreeBehavior extends Behavior
      * Helper function used with the actual code for moveDown
      *
      * @param \Cake\Datasource\EntityInterface $node The node to move
-     * @param int|true $number How many places to move the node, or true to move to last position
-     * @return \Cake\Datasource\EntityInterface $node The node after being moved or false on failure
+     * @param int|bool $number How many places to move the node, or true to move to last position
      * @throws \Cake\Datasource\Exception\RecordNotFoundException When node was not found
+     * @return \Cake\Datasource\EntityInterface|bool $node The node after being moved or false on failure
      */
-    protected function _moveDown(EntityInterface $node, $number): EntityInterface
+    protected function _moveDown($node, $number)
     {
         $config = $this->getConfig();
-        [$parent, $left, $right] = [$config['parent'], $config['left'], $config['right']];
-        [$nodeParent, $nodeLeft, $nodeRight] = array_values($node->extract([$parent, $left, $right]));
+        list($parent, $left, $right) = [$config['parent'], $config['left'], $config['right']];
+        list($nodeParent, $nodeLeft, $nodeRight) = array_values($node->extract([$parent, $left, $right]));
 
         $targetNode = null;
         if ($number !== true) {
-            /** @var \Cake\Datasource\EntityInterface|null $targetNode */
             $targetNode = $this->_scope($this->_table->find())
                 ->select([$left, $right])
                 ->where(["$parent IS" => $nodeParent])
                 ->where(function ($exp) use ($config, $nodeRight) {
-                    /** @var \Cake\Database\Expression\QueryExpression $exp */
+                    /* @var \Cake\Database\Expression\QueryExpression $exp */
                     return $exp->gt($config['leftField'], $nodeRight);
                 })
                 ->orderAsc($config['leftField'])
@@ -743,12 +734,11 @@ class TreeBehavior extends Behavior
                 ->first();
         }
         if (!$targetNode) {
-            /** @var \Cake\Datasource\EntityInterface|null $targetNode */
             $targetNode = $this->_scope($this->_table->find())
                 ->select([$left, $right])
                 ->where(["$parent IS" => $nodeParent])
                 ->where(function ($exp) use ($config, $nodeRight) {
-                    /** @var \Cake\Database\Expression\QueryExpression $exp */
+                    /* @var \Cake\Database\Expression\QueryExpression $exp */
                     return $exp->gt($config['leftField'], $nodeRight);
                 })
                 ->orderDesc($config['leftField'])
@@ -760,7 +750,7 @@ class TreeBehavior extends Behavior
             }
         }
 
-        [, $targetRight] = array_values($targetNode->extract([$left, $right]));
+        list(, $targetRight) = array_values($targetNode->extract([$left, $right]));
         $edge = $this->_getMax();
         $leftBoundary = $nodeRight + 1;
         $rightBoundary = $targetRight;
@@ -787,12 +777,11 @@ class TreeBehavior extends Behavior
      * @param mixed $id Record id.
      * @return \Cake\Datasource\EntityInterface
      * @throws \Cake\Datasource\Exception\RecordNotFoundException When node was not found
-     * @psalm-suppress InvalidReturnType
      */
-    protected function _getNode($id): EntityInterface
+    protected function _getNode($id)
     {
         $config = $this->getConfig();
-        [$parent, $left, $right] = [$config['parent'], $config['left'], $config['right']];
+        list($parent, $left, $right) = [$config['parent'], $config['left'], $config['right']];
         $primaryKey = $this->_getPrimaryKey();
         $fields = [$parent, $left, $right];
         if ($config['level']) {
@@ -808,7 +797,6 @@ class TreeBehavior extends Behavior
             throw new RecordNotFoundException("Node \"{$id}\" was not found in the tree.");
         }
 
-        /** @psalm-suppress InvalidReturnStatement */
         return $node;
     }
 
@@ -818,9 +806,9 @@ class TreeBehavior extends Behavior
      *
      * @return void
      */
-    public function recover(): void
+    public function recover()
     {
-        $this->_table->getConnection()->transactional(function (): void {
+        $this->_table->getConnection()->transactional(function () {
             $this->_recoverTree();
         });
     }
@@ -833,10 +821,10 @@ class TreeBehavior extends Behavior
      * @param int $level Node level
      * @return int The next value to use for the left column
      */
-    protected function _recoverTree(int $counter = 0, $parentId = null, $level = -1): int
+    protected function _recoverTree($counter = 0, $parentId = null, $level = -1)
     {
         $config = $this->getConfig();
-        [$parent, $left, $right] = [$config['parent'], $config['left'], $config['right']];
+        list($parent, $left, $right) = [$config['parent'], $config['left'], $config['right']];
         $primaryKey = $this->_getPrimaryKey();
         $aliasedPrimaryKey = $this->_table->aliasField($primaryKey);
         $order = $config['recoverOrder'] ?: $aliasedPrimaryKey;
@@ -845,7 +833,7 @@ class TreeBehavior extends Behavior
             ->select([$aliasedPrimaryKey])
             ->where([$this->_table->aliasField($parent) . ' IS' => $parentId])
             ->order($order)
-            ->disableHydration();
+            ->enableHydration(false);
 
         $leftCounter = $counter;
         $nextLevel = $level + 1;
@@ -876,7 +864,7 @@ class TreeBehavior extends Behavior
      *
      * @return int
      */
-    protected function _getMax(): int
+    protected function _getMax()
     {
         $field = $this->_config['right'];
         $rightField = $this->_config['rightField'];
@@ -885,11 +873,11 @@ class TreeBehavior extends Behavior
             ->orderDesc($rightField)
             ->first();
 
-        if ($edge === null || empty($edge[$field])) {
+        if (empty($edge->{$field})) {
             return 0;
         }
 
-        return $edge[$field];
+        return $edge->{$field};
     }
 
     /**
@@ -904,7 +892,7 @@ class TreeBehavior extends Behavior
      * modified by future calls to this function.
      * @return void
      */
-    protected function _sync(int $shift, string $dir, string $conditions, bool $mark = false): void
+    protected function _sync($shift, $dir, $conditions, $mark = false)
     {
         $config = $this->_config;
 
@@ -913,7 +901,7 @@ class TreeBehavior extends Behavior
             $exp = $query->newExpr();
 
             $movement = clone $exp;
-            $movement->add($field)->add((string)$shift)->setConjunction($dir);
+            $movement->add($field)->add("$shift")->setConjunction($dir);
 
             $inverse = clone $exp;
             $movement = $mark ?
@@ -938,15 +926,15 @@ class TreeBehavior extends Behavior
      * @param \Cake\ORM\Query $query the Query to modify
      * @return \Cake\ORM\Query
      */
-    protected function _scope(Query $query): Query
+    protected function _scope($query)
     {
-        $scope = $this->getConfig('scope');
+        $config = $this->getConfig();
 
-        if (is_array($scope)) {
-            return $query->where($scope);
+        if (is_array($config['scope'])) {
+            return $query->where($config['scope']);
         }
-        if (is_callable($scope)) {
-            return $scope($query);
+        if (is_callable($config['scope'])) {
+            return $config['scope']($query);
         }
 
         return $query;
@@ -959,7 +947,7 @@ class TreeBehavior extends Behavior
      * @param \Cake\Datasource\EntityInterface $entity The entity to ensure fields for
      * @return void
      */
-    protected function _ensureFields(EntityInterface $entity): void
+    protected function _ensureFields($entity)
     {
         $config = $this->getConfig();
         $fields = [$config['left'], $config['right']];
@@ -981,7 +969,7 @@ class TreeBehavior extends Behavior
      *
      * @return string
      */
-    protected function _getPrimaryKey(): string
+    protected function _getPrimaryKey()
     {
         if (!$this->_primaryKey) {
             $primaryKey = (array)$this->_table->getPrimaryKey();
@@ -995,7 +983,7 @@ class TreeBehavior extends Behavior
      * Returns the depth level of a node in the tree.
      *
      * @param int|string|\Cake\Datasource\EntityInterface $entity The entity or primary key get the level of.
-     * @return int|false Integer of the level or false if the node does not exist.
+     * @return int|bool Integer of the level or false if the node does not exist.
      */
     public function getLevel($entity)
     {

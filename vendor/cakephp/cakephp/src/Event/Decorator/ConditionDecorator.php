@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,7 +14,7 @@ declare(strict_types=1);
  */
 namespace Cake\Event\Decorator;
 
-use Cake\Event\EventInterface;
+use Cake\Event\Event;
 use RuntimeException;
 
 /**
@@ -27,8 +25,9 @@ use RuntimeException;
  */
 class ConditionDecorator extends AbstractDecorator
 {
+
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function __invoke()
     {
@@ -43,10 +42,10 @@ class ConditionDecorator extends AbstractDecorator
     /**
      * Checks if the event is triggered for this listener.
      *
-     * @param \Cake\Event\EventInterface $event Event object.
+     * @param \Cake\Event\Event $event Event object.
      * @return bool
      */
-    public function canTrigger(EventInterface $event): bool
+    public function canTrigger(Event $event)
     {
         $if = $this->_evaluateCondition('if', $event);
         $unless = $this->_evaluateCondition('unless', $event);
@@ -58,18 +57,22 @@ class ConditionDecorator extends AbstractDecorator
      * Evaluates the filter conditions
      *
      * @param string $condition Condition type
-     * @param \Cake\Event\EventInterface $event Event object
+     * @param \Cake\Event\Event $event Event object
      * @return bool
      */
-    protected function _evaluateCondition(string $condition, EventInterface $event): bool
+    protected function _evaluateCondition($condition, Event $event)
     {
         if (!isset($this->_options[$condition])) {
-            return $condition !== 'unless';
+            if ($condition === 'unless') {
+                return false;
+            }
+
+            return true;
         }
         if (!is_callable($this->_options[$condition])) {
             throw new RuntimeException(self::class . ' the `' . $condition . '` condition is not a callable!');
         }
 
-        return (bool)$this->_options[$condition]($event);
+        return $this->_options[$condition]($event);
     }
 }

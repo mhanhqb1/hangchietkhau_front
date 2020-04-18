@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,14 +14,15 @@ declare(strict_types=1);
 namespace Cake\TestSuite\Fixture;
 
 use Cake\Core\Exception\Exception as CakeException;
-use Cake\Database\ConstraintsInterface;
 use Cake\Database\Schema\TableSchema;
 use Cake\Database\Schema\TableSchemaAwareInterface;
+use Cake\Database\Schema\TableSchemaInterface as DatabaseTableSchemaInterface;
 use Cake\Datasource\ConnectionInterface;
 use Cake\Datasource\ConnectionManager;
 use Cake\Datasource\FixtureInterface;
+use Cake\Datasource\TableSchemaInterface;
 use Cake\Log\Log;
-use Cake\ORM\Locator\LocatorAwareTrait;
+use Cake\ORM\TableRegistry;
 use Cake\Utility\Inflector;
 use Exception;
 
@@ -31,9 +30,8 @@ use Exception;
  * Cake TestFixture is responsible for building and destroying tables to be used
  * during testing.
  */
-class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchemaAwareInterface
+class TestFixture implements FixtureInterface, TableSchemaInterface, TableSchemaAwareInterface
 {
-    use LocatorAwareTrait;
 
     /**
      * Fixture Datasource
@@ -46,7 +44,6 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
      * Full Table Name
      *
      * @var string
-     * @psalm-suppress PropertyNotSetInConstructor
      */
     public $table;
 
@@ -82,8 +79,7 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
     /**
      * The schema for this fixture.
      *
-     * @var \Cake\Database\Schema\TableSchemaInterface&\Cake\Database\Schema\SqlGeneratorInterface
-     * @psalm-suppress PropertyNotSetInConstructor
+     * @var \Cake\Database\Schema\TableSchema
      */
     protected $_schema;
 
@@ -107,7 +103,7 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
                 $message = sprintf(
                     'Invalid datasource name "%s" for "%s" fixture. Fixture datasource names must begin with "test".',
                     $connection,
-                    static::class
+                    $this->table
                 );
                 throw new CakeException($message);
             }
@@ -116,17 +112,17 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function connection(): string
+    public function connection()
     {
         return $this->connection;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function sourceName(): string
+    public function sourceName()
     {
         return $this->table;
     }
@@ -137,7 +133,7 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
      * @return void
      * @throws \Cake\ORM\Exception\MissingTableClassException When importing from a table that does not exist.
      */
-    public function init(): void
+    public function init()
     {
         if ($this->table === null) {
             $this->table = $this->_tableFromClass();
@@ -161,9 +157,9 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
      *
      * @return string
      */
-    protected function _tableFromClass(): string
+    protected function _tableFromClass()
     {
-        [, $class] = namespaceSplit(static::class);
+        list(, $class) = namespaceSplit(get_class($this));
         preg_match('/^(.*)Fixture$/', $class, $matches);
         $table = $class;
 
@@ -179,10 +175,10 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
      *
      * @return void
      */
-    protected function _schemaFromFields(): void
+    protected function _schemaFromFields()
     {
         $connection = ConnectionManager::get($this->connection());
-        $this->_schema = $connection->getDriver()->newTableSchema($this->table);
+        $this->_schema = new TableSchema($this->table);
         foreach ($this->fields as $field => $data) {
             if ($field === '_constraints' || $field === '_indexes' || $field === '_options') {
                 continue;
@@ -214,7 +210,7 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
      * @return void
      * @throws \Cake\Core\Exception\Exception when trying to import from an empty table.
      */
-    protected function _schemaFromImport(): void
+    protected function _schemaFromImport()
     {
         if (!is_array($this->import)) {
             return;
@@ -225,7 +221,7 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
             if (!empty($import['table'])) {
                 throw new CakeException('You cannot define both table and model.');
             }
-            $import['table'] = $this->getTableLocator()->get($import['model'])->getTable();
+            $import['table'] = TableRegistry::get($import['model'])->getTable();
         }
 
         if (empty($import['table'])) {
@@ -235,7 +231,7 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
         $this->table = $import['table'];
 
         $db = ConnectionManager::get($import['connection'], false);
-        $schemaCollection = $db->getSchemaCollection();
+        $schemaCollection = $db->schemaCollection();
         $table = $schemaCollection->describe($import['table']);
         $this->_schema = $table;
     }
@@ -246,18 +242,18 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
      * @return void
      * @throws \Cake\Core\Exception\Exception when trying to reflect a table that does not exist
      */
-    protected function _schemaFromReflection(): void
+    protected function _schemaFromReflection()
     {
         $db = ConnectionManager::get($this->connection());
-        $schemaCollection = $db->getSchemaCollection();
+        $schemaCollection = $db->schemaCollection();
         $tables = $schemaCollection->listTables();
 
-        if (!in_array($this->table, $tables, true)) {
+        if (!in_array($this->table, $tables)) {
             throw new CakeException(
                 sprintf(
-                    'Cannot describe schema for table `%s` for fixture `%s`: the table does not exist.',
+                    'Cannot describe schema for table `%s` for fixture `%s` : the table does not exist.',
                     $this->table,
-                    static::class
+                    get_class($this)
                 )
             );
         }
@@ -266,9 +262,25 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
     }
 
     /**
-     * @inheritDoc
+     * Gets/Sets the TableSchema instance used by this fixture.
+     *
+     * @param \Cake\Database\Schema\TableSchema|null $schema The table to set.
+     * @return \Cake\Database\Schema\TableSchema|null
+     * @deprecated 3.5.0 Use getTableSchema/setTableSchema instead.
      */
-    public function create(ConnectionInterface $db): bool
+    public function schema(TableSchema $schema = null)
+    {
+        if ($schema) {
+            $this->setTableSchema($schema);
+        }
+
+        return $this->getTableSchema();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function create(ConnectionInterface $db)
     {
         if (empty($this->_schema)) {
             return false;
@@ -301,9 +313,9 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function drop(ConnectionInterface $db): bool
+    public function drop(ConnectionInterface $db)
     {
         if (empty($this->_schema)) {
             return false;
@@ -326,15 +338,15 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function insert(ConnectionInterface $db)
     {
         if (isset($this->records) && !empty($this->records)) {
-            [$fields, $values, $types] = $this->_getRecords();
+            list($fields, $values, $types) = $this->_getRecords();
             $query = $db->newQuery()
                 ->insert($fields, $types)
-                ->into($this->sourceName());
+                ->into($this->table);
 
             foreach ($values as $row) {
                 $query->values($row);
@@ -349,9 +361,9 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function createConstraints(ConnectionInterface $db): bool
+    public function createConstraints(ConnectionInterface $db)
     {
         if (empty($this->_constraints)) {
             return true;
@@ -375,9 +387,9 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function dropConstraints(ConnectionInterface $db): bool
+    public function dropConstraints(ConnectionInterface $db)
     {
         if (empty($this->_constraints)) {
             return true;
@@ -405,7 +417,7 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
      *
      * @return array
      */
-    protected function _getRecords(): array
+    protected function _getRecords()
     {
         $fields = $values = $types = [];
         $columns = $this->_schema->columns();
@@ -414,9 +426,7 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
         }
         $fields = array_values(array_unique($fields));
         foreach ($fields as $field) {
-            /** @var array $column */
-            $column = $this->_schema->getColumn($field);
-            $types[$field] = $column['type'];
+            $types[$field] = $this->_schema->getColumn($field)['type'];
         }
         $default = array_fill_keys($fields, null);
         foreach ($this->records as $record) {
@@ -427,9 +437,9 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function truncate(ConnectionInterface $db): bool
+    public function truncate(ConnectionInterface $db)
     {
         $sql = $this->_schema->truncateSql($db);
         foreach ($sql as $stmt) {
@@ -440,7 +450,7 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function getTableSchema()
     {
@@ -448,9 +458,9 @@ class TestFixture implements ConstraintsInterface, FixtureInterface, TableSchema
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function setTableSchema($schema)
+    public function setTableSchema(DatabaseTableSchemaInterface $schema)
     {
         $this->_schema = $schema;
 

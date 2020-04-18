@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -19,9 +17,11 @@ use DebugKit\DebugPanel;
 
 /**
  * Provides debug information on previous requests.
+ *
  */
 class HistoryPanel extends DebugPanel
 {
+
     /**
      * Get the data for the panel.
      *
@@ -29,7 +29,7 @@ class HistoryPanel extends DebugPanel
      */
     public function data()
     {
-        $table = TableRegistry::getTableLocator()->get('DebugKit.Requests');
+        $table = TableRegistry::get('DebugKit.Requests');
         $recent = $table->find('recent');
 
         return [

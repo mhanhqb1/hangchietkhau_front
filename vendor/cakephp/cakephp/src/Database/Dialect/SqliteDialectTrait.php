@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,8 +15,6 @@ declare(strict_types=1);
 namespace Cake\Database\Dialect;
 
 use Cake\Database\Expression\FunctionExpression;
-use Cake\Database\QueryCompiler;
-use Cake\Database\Schema\BaseSchema;
 use Cake\Database\Schema\SqliteSchema;
 use Cake\Database\SqlDialectTrait;
 use Cake\Database\SqliteCompiler;
@@ -30,6 +26,7 @@ use Cake\Database\SqliteCompiler;
  */
 trait SqliteDialectTrait
 {
+
     use SqlDialectTrait;
     use TupleComparisonTranslatorTrait;
 
@@ -66,7 +63,7 @@ trait SqliteDialectTrait
         'minute' => 'M',
         'second' => 'S',
         'week' => 'W',
-        'year' => 'Y',
+        'year' => 'Y'
     ];
 
     /**
@@ -75,13 +72,13 @@ trait SqliteDialectTrait
      *
      * @return array
      */
-    protected function _expressionTranslators(): array
+    protected function _expressionTranslators()
     {
         $namespace = 'Cake\Database\Expression';
 
         return [
             $namespace . '\FunctionExpression' => '_transformFunctionExpression',
-            $namespace . '\TupleComparison' => '_transformTupleComparison',
+            $namespace . '\TupleComparison' => '_transformTupleComparison'
         ];
     }
 
@@ -93,7 +90,7 @@ trait SqliteDialectTrait
      *   to translate for SQLite.
      * @return void
      */
-    protected function _transformFunctionExpression(FunctionExpression $expression): void
+    protected function _transformFunctionExpression(FunctionExpression $expression)
     {
         switch ($expression->getName()) {
             case 'CONCAT':
@@ -110,11 +107,6 @@ trait SqliteDialectTrait
                 break;
             case 'NOW':
                 $expression->setName('DATETIME')->add(["'now'" => 'literal']);
-                break;
-            case 'RAND':
-                $expression
-                    ->setName('ABS')
-                    ->add(["RANDOM() % 1" => 'literal'], [], true);
                 break;
             case 'CURRENT_DATE':
                 $expression->setName('DATE')->add(["'now'" => 'literal']);
@@ -165,11 +157,11 @@ trait SqliteDialectTrait
      * Used by Cake\Database\Schema package to reflect schema and
      * generate schema.
      *
-     * @return \Cake\Database\Schema\BaseSchema
+     * @return \Cake\Database\Schema\SqliteSchema
      */
-    public function schemaDialect(): BaseSchema
+    public function schemaDialect()
     {
-        if ($this->_schemaDialect === null) {
+        if (!$this->_schemaDialect) {
             $this->_schemaDialect = new SqliteSchema($this);
         }
 
@@ -177,17 +169,17 @@ trait SqliteDialectTrait
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function disableForeignKeySQL(): string
+    public function disableForeignKeySQL()
     {
         return 'PRAGMA foreign_keys = OFF';
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function enableForeignKeySQL(): string
+    public function enableForeignKeySQL()
     {
         return 'PRAGMA foreign_keys = ON';
     }
@@ -197,7 +189,7 @@ trait SqliteDialectTrait
      *
      * @return \Cake\Database\SqliteCompiler
      */
-    public function newCompiler(): QueryCompiler
+    public function newCompiler()
     {
         return new SqliteCompiler();
     }

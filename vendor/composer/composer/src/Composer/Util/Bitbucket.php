@@ -44,7 +44,7 @@ class Bitbucket
     {
         $this->io = $io;
         $this->config = $config;
-        $this->process = $process ?: new ProcessExecutor($io);
+        $this->process = $process ?: new ProcessExecutor;
         $this->remoteFilesystem = $remoteFilesystem ?: Factory::createRemoteFilesystem($this->io, $config);
         $this->time = $time;
     }

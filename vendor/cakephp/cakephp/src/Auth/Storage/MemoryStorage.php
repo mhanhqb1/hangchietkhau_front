@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -21,22 +19,23 @@ namespace Cake\Auth\Storage;
  */
 class MemoryStorage implements StorageInterface
 {
+
     /**
      * User record.
      *
-     * @var \ArrayAccess|array|null
+     * @var array|null
      */
     protected $_user;
 
     /**
-     * Redirect URL.
+     * Redirect url.
      *
-     * @var string|array|null
+     * @var string|null
      */
     protected $_redirectUrl;
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function read()
     {
@@ -44,23 +43,23 @@ class MemoryStorage implements StorageInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function write($user): void
+    public function write($user)
     {
         $this->_user = $user;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function delete(): void
+    public function delete()
     {
         $this->_user = null;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function redirectUrl($url = null)
     {

@@ -9,8 +9,8 @@
 
 namespace PHP_CodeSniffer\Standards\Generic\Sniffs\Files;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
 
 class EndFileNewlineSniff implements Sniff
 {
@@ -20,11 +20,11 @@ class EndFileNewlineSniff implements Sniff
      *
      * @var array
      */
-    public $supportedTokenizers = [
-        'PHP',
-        'JS',
-        'CSS',
-    ];
+    public $supportedTokenizers = array(
+                                   'PHP',
+                                   'JS',
+                                   'CSS',
+                                  );
 
 
     /**
@@ -34,7 +34,7 @@ class EndFileNewlineSniff implements Sniff
      */
     public function register()
     {
-        return [T_OPEN_TAG];
+        return array(T_OPEN_TAG);
 
     }//end register()
 

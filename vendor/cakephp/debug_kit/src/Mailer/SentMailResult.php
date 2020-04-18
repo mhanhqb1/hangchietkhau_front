@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -14,11 +12,16 @@ declare(strict_types=1);
  */
 namespace DebugKit\Mailer;
 
+use Cake\Mailer\Mailer;
+use ReflectionClass;
+
 /**
  * Represents the result of an already sent email
+ *
  */
 class SentMailResult extends AbstractResult
 {
+
     /**
      * Processes the mailer to extract the headers and parts
      *

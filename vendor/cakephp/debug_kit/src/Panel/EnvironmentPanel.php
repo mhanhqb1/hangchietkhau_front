@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -11,18 +9,22 @@ declare(strict_types=1);
  * @copyright     Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  * @link          http://cakephp.org CakePHP(tm) Project
  * @license       http://www.opensource.org/licenses/mit-license.php MIT License
+ *
  */
 namespace DebugKit\Panel;
 
+use Cake\Controller\Controller;
 use Cake\Core\Configure;
-use Cake\Event\EventInterface;
+use Cake\Event\Event;
 use DebugKit\DebugPanel;
 
 /**
  * Provides information about your PHP and CakePHP environment to assist with debugging.
+ *
  */
 class EnvironmentPanel extends DebugPanel
 {
+
     /**
      * Get necessary data about environment to pass back to controller
      *
@@ -39,15 +41,6 @@ class EnvironmentPanel extends DebugPanel
         );
         unset($return['php']['argv']);
 
-        // ini Data
-        $return['ini'] = [
-            'intl.default_locale' => ini_get('intl.default_locale'),
-            'memory_limit' => ini_get('memory_limit'),
-            'error_reporting' => ini_get('error_reporting'),
-            'upload_max_filesize' => ini_get('upload_max_filesize'),
-            'post_max_size' => ini_get('post_max_size'),
-        ];
-
         // CakePHP Data
         $return['cake'] = [
             'APP' => APP,
@@ -63,7 +56,7 @@ class EnvironmentPanel extends DebugPanel
             'ROOT' => ROOT,
             'TESTS' => TESTS,
             'TMP' => TMP,
-            'WWW_ROOT' => WWW_ROOT,
+            'WWW_ROOT' => WWW_ROOT
         ];
 
         $hiddenCakeConstants = array_fill_keys(
@@ -85,10 +78,10 @@ class EnvironmentPanel extends DebugPanel
     /**
      * Shutdown callback
      *
-     * @param \Cake\Event\EventInterface $event Event
+     * @param \Cake\Event\Event $event Event
      * @return void
      */
-    public function shutdown(EventInterface $event)
+    public function shutdown(Event $event)
     {
         $this->_data = $this->_prepare();
     }

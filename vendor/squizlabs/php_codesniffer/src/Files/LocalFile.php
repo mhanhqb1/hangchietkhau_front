@@ -28,11 +28,11 @@ class LocalFile extends File
      */
     public function __construct($path, Ruleset $ruleset, Config $config)
     {
-        $this->path = trim($path);
-        if (is_readable($this->path) === false) {
-            parent::__construct($this->path, $ruleset, $config);
+        $path = trim($path);
+        if (is_readable($path) === false) {
+            parent::__construct($path, $ruleset, $config);
             $error = 'Error opening file; file no longer exists or you do not have access to read the file';
-            $this->addMessage(true, $error, 1, 1, 'Internal.LocalFile', [], 5, false);
+            $this->addMessage(true, $error, 1, 1, 'Internal.LocalFile', array(), 5, false);
             $this->ignored = true;
             return;
         }
@@ -41,25 +41,28 @@ class LocalFile extends File
         // to see if there is a tag up top to indicate that the whole
         // file should be ignored. It must be on one of the first two lines.
         if ($config->annotations === true) {
-            $handle = fopen($this->path, 'r');
+            $handle = fopen($path, 'r');
             if ($handle !== false) {
                 $firstContent  = fgets($handle);
                 $firstContent .= fgets($handle);
                 fclose($handle);
 
-                if (strpos($firstContent, '@codingStandardsIgnoreFile') !== false
-                    || stripos($firstContent, 'phpcs:ignorefile') !== false
-                ) {
+                if (strpos($firstContent, '@codingStandardsIgnoreFile') !== false) {
                     // We are ignoring the whole file.
+                    if (PHP_CODESNIFFER_VERBOSITY > 0) {
+                        echo 'Ignoring '.basename($path).PHP_EOL;
+                    }
+
                     $this->ignored = true;
                     return;
                 }
             }
         }
 
+        $this->path = $path;
         $this->reloadContent();
 
-        parent::__construct($this->path, $ruleset, $config);
+        return parent::__construct($path, $ruleset, $config);
 
     }//end __construct()
 
@@ -69,7 +72,7 @@ class LocalFile extends File
      *
      * @return void
      */
-    public function reloadContent()
+    function reloadContent()
     {
         $this->setContent(file_get_contents($this->path));
 
@@ -88,12 +91,10 @@ class LocalFile extends File
         }
 
         if ($this->configCache['cache'] === false) {
-            parent::process();
-            return;
+            return parent::process();
         }
 
         $hash  = md5_file($this->path);
-        $hash .= fileperms($this->path);
         $cache = Cache::get($this->path);
         if ($cache !== false && $cache['hash'] === $hash) {
             // We can't filter metrics, so just load all of them.
@@ -128,16 +129,16 @@ class LocalFile extends File
 
         parent::process();
 
-        $cache = [
-            'hash'         => $hash,
-            'errors'       => $this->errors,
-            'warnings'     => $this->warnings,
-            'metrics'      => $this->metrics,
-            'errorCount'   => $this->errorCount,
-            'warningCount' => $this->warningCount,
-            'fixableCount' => $this->fixableCount,
-            'numTokens'    => $this->numTokens,
-        ];
+        $cache = array(
+                  'hash'         => $hash,
+                  'errors'       => $this->errors,
+                  'warnings'     => $this->warnings,
+                  'metrics'      => $this->metrics,
+                  'errorCount'   => $this->errorCount,
+                  'warningCount' => $this->warningCount,
+                  'fixableCount' => $this->fixableCount,
+                  'numTokens'    => $this->numTokens,
+                 );
 
         Cache::set($this->path, $cache);
 
@@ -166,13 +167,11 @@ class LocalFile extends File
      */
     private function replayErrors($errors, $warnings)
     {
-        $this->errors       = [];
-        $this->warnings     = [];
+        $this->errors       = array();
+        $this->warnings     = array();
         $this->errorCount   = 0;
         $this->warningCount = 0;
         $this->fixableCount = 0;
-
-        $this->replayingErrors = true;
 
         foreach ($errors as $line => $lineErrors) {
             foreach ($lineErrors as $column => $colErrors) {
@@ -184,7 +183,7 @@ class LocalFile extends File
                         $line,
                         $column,
                         $error['source'],
-                        [],
+                        array(),
                         $error['severity'],
                         $error['fixable']
                     );
@@ -202,15 +201,13 @@ class LocalFile extends File
                         $line,
                         $column,
                         $error['source'],
-                        [],
+                        array(),
                         $error['severity'],
                         $error['fixable']
                     );
                 }
             }
         }
-
-        $this->replayingErrors = false;
 
     }//end replayErrors()
 

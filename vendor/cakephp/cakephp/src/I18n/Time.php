@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -20,18 +18,19 @@ use Cake\Chronos\MutableDateTime;
 use DateTimeInterface;
 use DateTimeZone;
 use IntlDateFormatter;
+use JsonSerializable;
 
 /**
  * Extends the built-in DateTime class to provide handy methods and locale-aware
  * formatting helpers
  */
-class Time extends MutableDateTime implements I18nDateTimeInterface
+class Time extends MutableDateTime implements JsonSerializable
 {
     use DateFormatTrait;
 
     /**
      * The format to use when formatting a time using `Cake\I18n\Time::i18nFormat()`
-     * and `__toString`. This format is also used by `parseDateTime()`.
+     * and `__toString`
      *
      * The format should be either the formatting constants from IntlDateFormatter as
      * described in (https://secure.php.net/manual/en/class.intldateformatter.php) or a pattern
@@ -45,22 +44,6 @@ class Time extends MutableDateTime implements I18nDateTimeInterface
      * @see \Cake\I18n\Time::i18nFormat()
      */
     protected static $_toStringFormat = [IntlDateFormatter::SHORT, IntlDateFormatter::SHORT];
-
-    /**
-     * The format to use when converting this object to JSON.
-     *
-     * The format should be either the formatting constants from IntlDateFormatter as
-     * described in (https://secure.php.net/manual/en/class.intldateformatter.php) or a pattern
-     * as specified in (http://www.icu-project.org/apiref/icu4c/classSimpleDateFormat.html#details)
-     *
-     * It is possible to provide an array of 2 constants. In this case, the first position
-     * will be used for formatting the date part of the object and the second position
-     * will be used to format the time part.
-     *
-     * @var string|array|int
-     * @see \Cake\I18n\Time::i18nFormat()
-     */
-    protected static $_jsonEncodeFormat = "yyyy-MM-dd'T'HH':'mm':'ssxxx";
 
     /**
      * The format to use when formatting a time using `Cake\I18n\Time::nice()`
@@ -91,7 +74,7 @@ class Time extends MutableDateTime implements I18nDateTimeInterface
      * The format to use when formatting a time using `Time::timeAgoInWords()`
      * and the difference is less than `Time::$wordEnd`
      *
-     * @var string[]
+     * @var array
      * @see \Cake\I18n\Time::timeAgoInWords()
      */
     public static $wordAccuracy = [
@@ -117,19 +100,16 @@ class Time extends MutableDateTime implements I18nDateTimeInterface
      *
      * @var string
      */
-    public const UNIX_TIMESTAMP_FORMAT = 'unixTimestampFormat';
+    const UNIX_TIMESTAMP_FORMAT = 'unixTimestampFormat';
 
     /**
-     * Create a new mutable time instance.
-     *
-     * @param string|int|\DateTimeInterface|null $time Fixed or relative time
-     * @param \DateTimeZone|string|null $tz The timezone for the instance
+     * {@inheritDoc}
      */
     public function __construct($time = null, $tz = null)
     {
         if ($time instanceof DateTimeInterface) {
             $tz = $time->getTimezone();
-            $time = $time->format('Y-m-d H:i:s.u');
+            $time = $time->format('Y-m-d H:i:s');
         }
 
         if (is_numeric($time)) {
@@ -149,9 +129,9 @@ class Time extends MutableDateTime implements I18nDateTimeInterface
      * @param string|null $locale The locale name in which the date should be displayed (e.g. pt-BR)
      * @return string Formatted date string
      */
-    public function nice($timezone = null, $locale = null): string
+    public function nice($timezone = null, $locale = null)
     {
-        return (string)$this->i18nFormat(static::$niceFormat, $timezone, $locale);
+        return $this->i18nFormat(static::$niceFormat, $timezone, $locale);
     }
 
     /**
@@ -159,9 +139,9 @@ class Time extends MutableDateTime implements I18nDateTimeInterface
      *
      * @return bool
      */
-    public function isThisWeek(): bool
+    public function isThisWeek()
     {
-        return static::now($this->getTimezone())->format('W o') === $this->format('W o');
+        return static::now($this->getTimezone())->format('W o') == $this->format('W o');
     }
 
     /**
@@ -169,9 +149,9 @@ class Time extends MutableDateTime implements I18nDateTimeInterface
      *
      * @return bool
      */
-    public function isThisMonth(): bool
+    public function isThisMonth()
     {
-        return static::now($this->getTimezone())->format('m Y') === $this->format('m Y');
+        return static::now($this->getTimezone())->format('m Y') == $this->format('m Y');
     }
 
     /**
@@ -179,20 +159,20 @@ class Time extends MutableDateTime implements I18nDateTimeInterface
      *
      * @return bool
      */
-    public function isThisYear(): bool
+    public function isThisYear()
     {
-        return static::now($this->getTimezone())->format('Y') === $this->format('Y');
+        return static::now($this->getTimezone())->format('Y') == $this->format('Y');
     }
 
     /**
      * Returns the quarter
      *
      * @param bool $range Range.
-     * @return string[]|int 1, 2, 3, or 4 quarter of year, or array if $range true
+     * @return int|array 1, 2, 3, or 4 quarter of year, or array if $range true
      */
-    public function toQuarter(bool $range = false)
+    public function toQuarter($range = false)
     {
-        $quarter = (int)ceil((int)$this->format('m') / 3);
+        $quarter = ceil($this->format('m') / 3);
         if ($range === false) {
             return $quarter;
         }
@@ -205,10 +185,9 @@ class Time extends MutableDateTime implements I18nDateTimeInterface
                 return [$year . '-04-01', $year . '-06-30'];
             case 3:
                 return [$year . '-07-01', $year . '-09-30'];
+            case 4:
+                return [$year . '-10-01', $year . '-12-31'];
         }
-
-        // 4th quarter
-        return [$year . '-10-01', $year . '-12-31'];
     }
 
     /**
@@ -216,7 +195,7 @@ class Time extends MutableDateTime implements I18nDateTimeInterface
      *
      * @return string UNIX timestamp
      */
-    public function toUnixString(): string
+    public function toUnixString()
     {
         return $this->format('U');
     }
@@ -230,13 +209,13 @@ class Time extends MutableDateTime implements I18nDateTimeInterface
      * - `from` => another Time object representing the "now" time
      * - `format` => a fall back format if the relative time is longer than the duration specified by end
      * - `accuracy` => Specifies how accurate the date should be described (array)
-     *     - year =>   The format if years > 0   (default "day")
-     *     - month =>  The format if months > 0  (default "day")
-     *     - week =>   The format if weeks > 0   (default "day")
-     *     - day =>    The format if weeks > 0   (default "hour")
-     *     - hour =>   The format if hours > 0   (default "minute")
-     *     - minute => The format if minutes > 0 (default "minute")
-     *     - second => The format if seconds > 0 (default "second")
+     *    - year =>   The format if years > 0   (default "day")
+     *    - month =>  The format if months > 0  (default "day")
+     *    - week =>   The format if weeks > 0   (default "day")
+     *    - day =>    The format if weeks > 0   (default "hour")
+     *    - hour =>   The format if hours > 0   (default "minute")
+     *    - minute => The format if minutes > 0 (default "minute")
+     *    - second => The format if seconds > 0 (default "second")
      * - `end` => The end of relative time telling
      * - `relativeString` => The `printf` compatible string when outputting relative time
      * - `absoluteString` => The `printf` compatible string when outputting absolute time
@@ -258,10 +237,9 @@ class Time extends MutableDateTime implements I18nDateTimeInterface
      * @param array $options Array of options.
      * @return string Relative time string.
      */
-    public function timeAgoInWords(array $options = []): string
+    public function timeAgoInWords(array $options = [])
     {
-        /** @psalm-suppress UndefinedInterfaceMethod */
-        return static::getDiffFormatter()->timeAgoInWords($this, $options);
+        return static::diffFormatter()->timeAgoInWords($this, $options);
     }
 
     /**
@@ -279,7 +257,7 @@ class Time extends MutableDateTime implements I18nDateTimeInterface
      * @return array List of timezone identifiers
      * @since 2.2
      */
-    public static function listTimezones($filter = null, ?string $country = null, $options = []): array
+    public static function listTimezones($filter = null, $country = null, $options = [])
     {
         if (is_bool($options)) {
             $options = [
@@ -303,7 +281,7 @@ class Time extends MutableDateTime implements I18nDateTimeInterface
         if ($filter === null) {
             $filter = DateTimeZone::ALL;
         }
-        $identifiers = DateTimeZone::listIdentifiers($filter, (string)$country) ?: [];
+        $identifiers = DateTimeZone::listIdentifiers($filter, $country);
 
         if ($regex) {
             foreach ($identifiers as $key => $tz) {
@@ -318,14 +296,14 @@ class Time extends MutableDateTime implements I18nDateTimeInterface
             $now = time();
             $before = $options['before'];
             $after = $options['after'];
-            foreach ($identifiers as $tz) {
-                $abbr = '';
+            foreach ($identifiers as $key => $tz) {
+                $abbr = null;
                 if ($options['abbr']) {
                     $dateTimeZone = new DateTimeZone($tz);
                     $trans = $dateTimeZone->getTransitions($now, $now);
                     $abbr = isset($trans[0]['abbr']) ?
                         $before . $trans[0]['abbr'] . $after :
-                        '';
+                        null;
                 }
                 $item = explode('/', $tz, 2);
                 if (isset($item[1])) {
@@ -339,5 +317,47 @@ class Time extends MutableDateTime implements I18nDateTimeInterface
         }
 
         return array_combine($identifiers, $identifiers);
+    }
+
+    /**
+     * Returns true this instance will happen within the specified interval
+     *
+     * This overridden method provides backwards compatible behavior for integers,
+     * or strings with trailing spaces. This behavior is *deprecated* and will be
+     * removed in future versions of CakePHP.
+     *
+     * @param string|int $timeInterval the numeric value with space then time type.
+     *    Example of valid types: 6 hours, 2 days, 1 minute.
+     * @return bool
+     */
+    public function wasWithinLast($timeInterval)
+    {
+        $tmp = trim($timeInterval);
+        if (is_numeric($tmp)) {
+            $timeInterval = $tmp . ' days';
+        }
+
+        return parent::wasWithinLast($timeInterval);
+    }
+
+    /**
+     * Returns true this instance happened within the specified interval
+     *
+     * This overridden method provides backwards compatible behavior for integers,
+     * or strings with trailing spaces. This behavior is *deprecated* and will be
+     * removed in future versions of CakePHP.
+     *
+     * @param string|int $timeInterval the numeric value with space then time type.
+     *    Example of valid types: 6 hours, 2 days, 1 minute.
+     * @return bool
+     */
+    public function isWithinNext($timeInterval)
+    {
+        $tmp = trim($timeInterval);
+        if (is_numeric($tmp)) {
+            $timeInterval = $tmp . ' days';
+        }
+
+        return parent::isWithinNext($timeInterval);
     }
 }

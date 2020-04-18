@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -18,7 +16,6 @@ namespace Cake\ORM\Rule;
 
 use Cake\Datasource\EntityInterface;
 use Cake\ORM\Association;
-use Cake\ORM\Table;
 use RuntimeException;
 
 /**
@@ -27,6 +24,7 @@ use RuntimeException;
  */
 class ExistsIn
 {
+
     /**
      * The list of fields to check
      *
@@ -37,7 +35,7 @@ class ExistsIn
     /**
      * The repository where the field will be looked for
      *
-     * @var \Cake\ORM\Table|\Cake\ORM\Association|string
+     * @var \Cake\Datasource\RepositoryInterface|\Cake\ORM\Association
      */
     protected $_repository;
 
@@ -55,8 +53,8 @@ class ExistsIn
      * Set to true to accept composite foreign keys where one or more nullable columns are null.
      *
      * @param string|array $fields The field or fields to check existence as primary key.
-     * @param \Cake\ORM\Table|\Cake\ORM\Association|string $repository The repository where the
-     * field will be looked for, or the association name for the repository.
+     * @param object|string $repository The repository where the field will be looked for,
+     * or the association name for the repository.
      * @param array $options The options that modify the rules behavior.
      *     Options 'allowNullableNulls' will make the rule pass if given foreign keys are set to `null`.
      *     Notice: allowNullableNulls cannot pass by database columns set to `NOT NULL`.
@@ -79,10 +77,11 @@ class ExistsIn
      * @throws \RuntimeException When the rule refers to an undefined association.
      * @return bool
      */
-    public function __invoke(EntityInterface $entity, array $options): bool
+    public function __invoke(EntityInterface $entity, array $options)
     {
         if (is_string($this->_repository)) {
-            if (!$options['repository']->hasAssociation($this->_repository)) {
+            $repository = $options['repository']->association($this->_repository);
+            if (!$repository) {
                 throw new RuntimeException(sprintf(
                     "ExistsIn rule for '%s' is invalid. '%s' is not associated with '%s'.",
                     implode(', ', $this->_fields),
@@ -90,19 +89,13 @@ class ExistsIn
                     get_class($options['repository'])
                 ));
             }
-            $repository = $options['repository']->getAssociation($this->_repository);
             $this->_repository = $repository;
         }
 
-        $fields = $this->_fields;
         $source = $target = $this->_repository;
-        if ($target instanceof Association) {
-            $bindingKey = (array)$target->getBindingKey();
-            $realTarget = $target->getTarget();
-        } else {
-            $bindingKey = (array)$target->getPrimaryKey();
-            $realTarget = $target;
-        }
+        $isAssociation = $target instanceof Association;
+        $bindingKey = $isAssociation ? (array)$target->getBindingKey() : (array)$target->getPrimaryKey();
+        $realTarget = $isAssociation ? $target->getTarget() : $target;
 
         if (!empty($options['_sourceTable']) && $realTarget === $options['_sourceTable']) {
             return true;
@@ -125,22 +118,20 @@ class ExistsIn
 
         if ($this->_options['allowNullableNulls']) {
             $schema = $source->getSchema();
-            foreach ($fields as $i => $field) {
+            foreach ($this->_fields as $i => $field) {
                 if ($schema->getColumn($field) && $schema->isNullable($field) && $entity->get($field) === null) {
-                    unset($bindingKey[$i], $fields[$i]);
+                    unset($bindingKey[$i], $this->_fields[$i]);
                 }
             }
         }
 
         $primary = array_map(
-            function ($key) use ($target) {
-                return $target->aliasField($key) . ' IS';
-            },
+            [$target, 'aliasField'],
             $bindingKey
         );
         $conditions = array_combine(
             $primary,
-            $entity->extract($fields)
+            $entity->extract($this->_fields)
         );
 
         return $target->exists($conditions);
@@ -153,7 +144,7 @@ class ExistsIn
      * @param \Cake\ORM\Table $source The table to use schema from.
      * @return bool
      */
-    protected function _fieldsAreNull(EntityInterface $entity, Table $source): bool
+    protected function _fieldsAreNull($entity, $source)
     {
         $nulls = 0;
         $schema = $source->getSchema();

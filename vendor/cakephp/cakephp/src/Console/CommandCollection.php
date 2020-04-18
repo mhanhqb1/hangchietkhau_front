@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -17,10 +15,11 @@ declare(strict_types=1);
 namespace Cake\Console;
 
 use ArrayIterator;
+use Cake\Console\CommandScanner;
+use Cake\Console\Shell;
 use Countable;
 use InvalidArgumentException;
 use IteratorAggregate;
-use Traversable;
 
 /**
  * Collection for Commands.
@@ -35,7 +34,6 @@ class CommandCollection implements IteratorAggregate, Countable
      * Command list
      *
      * @var array
-     * @psalm-var (\Cake\Console\Shell|\Cake\Console\CommandInterface|class-string)[]
      */
     protected $commands = [];
 
@@ -55,25 +53,17 @@ class CommandCollection implements IteratorAggregate, Countable
      * Add a command to the collection
      *
      * @param string $name The name of the command you want to map.
-     * @param string|\Cake\Console\Shell|\Cake\Console\CommandInterface $command The command to map.
-     *   Can be a FQCN, Shell instance or CommandInterface instance.
+     * @param string|\Cake\Console\Shell $command The command to map.
      * @return $this
-     * @throws \InvalidArgumentException
      */
-    public function add(string $name, $command)
+    public function add($name, $command)
     {
-        if (!is_subclass_of($command, Shell::class) && !is_subclass_of($command, CommandInterface::class)) {
+        // Once we have a new Command class this should check
+        // against that interface.
+        if (!is_subclass_of($command, Shell::class)) {
             $class = is_string($command) ? $command : get_class($command);
-            throw new InvalidArgumentException(sprintf(
-                "Cannot use '%s' for command '%s'. " .
-                "It is not a subclass of Cake\Console\Shell or Cake\Command\CommandInterface.",
-                $class,
-                $name
-            ));
-        }
-        if (!preg_match('/^[^\s]+(?:(?: [^\s]+){1,2})?$/ui', $name)) {
             throw new InvalidArgumentException(
-                "The command name `{$name}` is invalid. Names can only be a maximum of three words."
+                "Cannot use '$class' for command '$name' it is not a subclass of Cake\Console\Shell."
             );
         }
 
@@ -104,7 +94,7 @@ class CommandCollection implements IteratorAggregate, Countable
      * @param string $name The named shell.
      * @return $this
      */
-    public function remove(string $name)
+    public function remove($name)
     {
         unset($this->commands[$name]);
 
@@ -117,7 +107,7 @@ class CommandCollection implements IteratorAggregate, Countable
      * @param string $name The named shell.
      * @return bool
      */
-    public function has(string $name): bool
+    public function has($name)
     {
         return isset($this->commands[$name]);
     }
@@ -126,11 +116,10 @@ class CommandCollection implements IteratorAggregate, Countable
      * Get the target for a command.
      *
      * @param string $name The named shell.
-     * @return string|\Cake\Console\Shell|\Cake\Console\CommandInterface Either the command class or an instance.
+     * @return string|\Cake\Console\Shell Either the shell class or an instance.
      * @throws \InvalidArgumentException when unknown commands are fetched.
-     * @psalm-return class-string|\Cake\Console\Shell|\Cake\Console\CommandInterface
      */
-    public function get(string $name)
+    public function get($name)
     {
         if (!$this->has($name)) {
             throw new InvalidArgumentException("The $name is not a known command name.");
@@ -142,10 +131,9 @@ class CommandCollection implements IteratorAggregate, Countable
     /**
      * Implementation of IteratorAggregate.
      *
-     * @return \Traversable
-     * @psalm-return \Traversable<string, \Cake\Console\Shell|\Cake\Console\CommandInterface|class-string>
+     * @return \ArrayIterator
      */
-    public function getIterator(): Traversable
+    public function getIterator()
     {
         return new ArrayIterator($this->commands);
     }
@@ -157,57 +145,9 @@ class CommandCollection implements IteratorAggregate, Countable
      *
      * @return int
      */
-    public function count(): int
+    public function count()
     {
         return count($this->commands);
-    }
-
-    /**
-     * Auto-discover shell & commands from the named plugin.
-     *
-     * Discovered commands will have their names de-duplicated with
-     * existing commands in the collection. If a command is already
-     * defined in the collection and discovered in a plugin, only
-     * the long name (`plugin.command`) will be returned.
-     *
-     * @param string $plugin The plugin to scan.
-     * @return string[] Discovered plugin commands.
-     */
-    public function discoverPlugin(string $plugin): array
-    {
-        $scanner = new CommandScanner();
-        $shells = $scanner->scanPlugin($plugin);
-
-        return $this->resolveNames($shells);
-    }
-
-    /**
-     * Resolve names based on existing commands
-     *
-     * @param array $input The results of a CommandScanner operation.
-     * @return string[] A flat map of command names => class names.
-     */
-    protected function resolveNames(array $input): array
-    {
-        $out = [];
-        foreach ($input as $info) {
-            $name = $info['name'];
-            $addLong = $name !== $info['fullName'];
-
-            // If the short name has been used, use the full name.
-            // This allows app shells to have name preference.
-            // and app shells to overwrite core shells.
-            if ($this->has($name) && $addLong) {
-                $name = $info['fullName'];
-            }
-
-            $out[$name] = $info['class'];
-            if ($addLong) {
-                $out[$info['fullName']] = $info['class'];
-            }
-        }
-
-        return $out;
     }
 
     /**
@@ -218,29 +158,52 @@ class CommandCollection implements IteratorAggregate, Countable
      *
      * - CakePHP provided commands
      * - Application commands
+     * - Plugin commands
      *
-     * Commands defined in the application will ovewrite commands with
-     * the same name provided by CakePHP.
+     * Commands from plugins will be added based on the order plugins are loaded.
+     * Plugin shells will attempt to use a short name. If however, a plugin
+     * provides a shell that conflicts with CakePHP or the application shells,
+     * the full `plugin_name.shell` name will be used. Plugin shells are added
+     * in the order that plugins were loaded.
      *
-     * @return string[] An array of command names and their classes.
+     * @return array An array of command names and their classes.
      */
-    public function autoDiscover(): array
+    public function autoDiscover()
     {
         $scanner = new CommandScanner();
+        $shells = $scanner->scanAll();
 
-        $core = $this->resolveNames($scanner->scanCore());
-        $app = $this->resolveNames($scanner->scanApp());
+        $adder = function ($out, $shells, $key) {
+            if (empty($shells[$key])) {
+                return $out;
+            }
 
-        return array_merge($core, $app);
-    }
+            foreach ($shells[$key] as $info) {
+                $name = $info['name'];
+                $addLong = $name !== $info['fullName'];
 
-    /**
-     * Get the list of available command names.
-     *
-     * @return string[] Command names
-     */
-    public function keys(): array
-    {
-        return array_keys($this->commands);
+                // If the short name has been used, use the full name.
+                // This allows app shells to have name preference.
+                // and app shells to overwrite core shells.
+                if (isset($out[$name]) && $addLong) {
+                    $name = $info['fullName'];
+                }
+
+                $out[$name] = $info['class'];
+                if ($addLong) {
+                    $out[$info['fullName']] = $info['class'];
+                }
+            }
+
+            return $out;
+        };
+
+        $out = $adder([], $shells, 'CORE');
+        $out = $adder($out, $shells, 'app');
+        foreach (array_keys($shells['plugins']) as $key) {
+            $out = $adder($out, $shells['plugins'], $key);
+        }
+
+        return $out;
     }
 }

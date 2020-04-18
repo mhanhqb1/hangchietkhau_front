@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -21,8 +19,6 @@ use Cake\Http\Response;
 use Cake\Utility\CookieCryptTrait;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\MiddlewareInterface;
-use Psr\Http\Server\RequestHandlerInterface;
 
 /**
  * Middlware for encrypting & decrypting cookies.
@@ -38,19 +34,18 @@ use Psr\Http\Server\RequestHandlerInterface;
  * The encryption types and padding are compatible with those used by CookieComponent
  * for backwards compatibility.
  */
-class EncryptedCookieMiddleware implements MiddlewareInterface
+class EncryptedCookieMiddleware
 {
     use CookieCryptTrait;
 
     /**
      * The list of cookies to encrypt/decrypt
-     *
-     * @var string[]
+     * @var array
      */
     protected $cookieNames;
 
     /**
-     * Encryption key to use.
+     * Encrpytion key to use.
      *
      * @var string
      */
@@ -66,11 +61,12 @@ class EncryptedCookieMiddleware implements MiddlewareInterface
     /**
      * Constructor
      *
-     * @param string[] $cookieNames The list of cookie names that should have their values encrypted.
+     * @param array $cookieNames The list of cookie names that should have their values encrypted.
      * @param string $key The encryption key to use.
-     * @param string $cipherType The cipher type to use. Defaults to 'aes'.
+     * @param string $cipherType The cipher type to use. Defaults to 'aes', but can also be 'rijndael' for
+     *   backwards compatibility.
      */
-    public function __construct(array $cookieNames, string $key, string $cipherType = 'aes')
+    public function __construct(array $cookieNames, $key, $cipherType = 'aes')
     {
         $this->cookieNames = $cookieNames;
         $this->key = $key;
@@ -81,16 +77,16 @@ class EncryptedCookieMiddleware implements MiddlewareInterface
      * Apply cookie encryption/decryption.
      *
      * @param \Psr\Http\Message\ServerRequestInterface $request The request.
-     * @param \Psr\Http\Server\RequestHandlerInterface $handler The request handler.
+     * @param \Psr\Http\Message\ResponseInterface $response The response.
+     * @param callable $next The next middleware to call.
      * @return \Psr\Http\Message\ResponseInterface A response.
      */
-    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    public function __invoke(ServerRequestInterface $request, ResponseInterface $response, $next)
     {
         if ($request->getCookieParams()) {
             $request = $this->decodeCookies($request);
         }
-
-        $response = $handler->handle($request);
+        $response = $next($request, $response);
         if ($response->hasHeader('Set-Cookie')) {
             $response = $this->encodeSetCookieHeader($response);
         }
@@ -108,7 +104,7 @@ class EncryptedCookieMiddleware implements MiddlewareInterface
      *
      * @return string
      */
-    protected function _getCookieEncryptionKey(): string
+    protected function _getCookieEncryptionKey()
     {
         return $this->key;
     }
@@ -119,7 +115,7 @@ class EncryptedCookieMiddleware implements MiddlewareInterface
      * @param \Psr\Http\Message\ServerRequestInterface $request The request to decode cookies from.
      * @return \Psr\Http\Message\ServerRequestInterface Updated request with decoded cookies.
      */
-    protected function decodeCookies(ServerRequestInterface $request): ServerRequestInterface
+    protected function decodeCookies(ServerRequestInterface $request)
     {
         $cookies = $request->getCookieParams();
         foreach ($this->cookieNames as $name) {
@@ -137,9 +133,8 @@ class EncryptedCookieMiddleware implements MiddlewareInterface
      * @param \Cake\Http\Response $response The response to encode cookies in.
      * @return \Cake\Http\Response Updated response with encoded cookies.
      */
-    protected function encodeCookies(Response $response): Response
+    protected function encodeCookies(Response $response)
     {
-        /** @var \Cake\Http\Cookie\CookieInterface[] $cookies */
         $cookies = $response->getCookieCollection();
         foreach ($cookies as $cookie) {
             if (in_array($cookie->getName(), $this->cookieNames, true)) {
@@ -157,9 +152,8 @@ class EncryptedCookieMiddleware implements MiddlewareInterface
      * @param \Psr\Http\Message\ResponseInterface $response The response to encode cookies in.
      * @return \Psr\Http\Message\ResponseInterface Updated response with encoded cookies.
      */
-    protected function encodeSetCookieHeader(ResponseInterface $response): ResponseInterface
+    protected function encodeSetCookieHeader(ResponseInterface $response)
     {
-        /** @var \Cake\Http\Cookie\CookieInterface[] $cookies */
         $cookies = CookieCollection::createFromHeader($response->getHeader('Set-Cookie'));
         $header = [];
         foreach ($cookies as $cookie) {

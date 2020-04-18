@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -19,15 +17,13 @@ use Cake\I18n\I18n;
 use Locale;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\MiddlewareInterface;
-use Psr\Http\Server\RequestHandlerInterface;
 
 /**
  * Sets the runtime default locale for the request based on the
  * Accept-Language header. The default will only be set if it
  * matches the list of passed valid locales.
  */
-class LocaleSelectorMiddleware implements MiddlewareInterface
+class LocaleSelectorMiddleware
 {
     /**
      * List of valid locales for the request
@@ -48,25 +44,21 @@ class LocaleSelectorMiddleware implements MiddlewareInterface
     }
 
     /**
-     * Set locale based on request headers.
-     *
-     * @param \Psr\Http\Message\ServerRequestInterface $request The request.
-     * @param \Psr\Http\Server\RequestHandlerInterface $handler The request handler.
+     * @param ServerRequestInterface $request The request.
+     * @param ResponseInterface $response The response.
+     * @param callable $next The next middleware to call.
      * @return \Psr\Http\Message\ResponseInterface A response.
      */
-    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    public function __invoke(ServerRequestInterface $request, ResponseInterface $response, $next)
     {
         $locale = Locale::acceptFromHttp($request->getHeaderLine('Accept-Language'));
         if (!$locale) {
-            return $handler->handle($request);
+            return $next($request, $response);
         }
-        if ($this->locales !== ['*']) {
-            $locale = Locale::lookup($this->locales, $locale, true);
-        }
-        if ($locale || $this->locales === ['*']) {
+        if (in_array($locale, $this->locales) || $this->locales === ['*']) {
             I18n::setLocale($locale);
         }
 
-        return $handler->handle($request);
+        return $next($request, $response);
     }
 }

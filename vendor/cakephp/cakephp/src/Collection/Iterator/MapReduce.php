@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -28,6 +26,7 @@ use Traversable;
  */
 class MapReduce implements IteratorAggregate
 {
+
     /**
      * Holds the shuffled results that were emitted from the map
      * phase
@@ -53,7 +52,7 @@ class MapReduce implements IteratorAggregate
     /**
      * Holds the original data that needs to be processed
      *
-     * @var \Traversable
+     * @var \Traversable|null
      */
     protected $_data;
 
@@ -68,7 +67,7 @@ class MapReduce implements IteratorAggregate
      * A callable that will be executed for each intermediate record emitted during
      * the Map phase
      *
-     * @var callable|null
+     * @var callable
      */
     protected $_reducer;
 
@@ -114,7 +113,7 @@ class MapReduce implements IteratorAggregate
      * of the bucket that was created during the mapping phase and third one is an
      * instance of this class.
      */
-    public function __construct(Traversable $data, callable $mapper, ?callable $reducer = null)
+    public function __construct(Traversable $data, callable $mapper, callable $reducer = null)
     {
         $this->_data = $data;
         $this->_mapper = $mapper;
@@ -125,9 +124,9 @@ class MapReduce implements IteratorAggregate
      * Returns an iterator with the end result of running the Map and Reduce
      * phases on the original data
      *
-     * @return \Traversable
+     * @return \ArrayIterator
      */
-    public function getIterator(): Traversable
+    public function getIterator()
     {
         if (!$this->_executed) {
             $this->_execute();
@@ -140,26 +139,26 @@ class MapReduce implements IteratorAggregate
      * Appends a new record to the bucket labelled with $key, usually as a result
      * of mapping a single record from the original data.
      *
-     * @param mixed $val The record itself to store in the bucket
-     * @param mixed $bucket the name of the bucket where to put the record
+     * @param mixed $value The record itself to store in the bucket
+     * @param string $bucket the name of the bucket where to put the record
      * @return void
      */
-    public function emitIntermediate($val, $bucket): void
+    public function emitIntermediate($value, $bucket)
     {
-        $this->_intermediate[$bucket][] = $val;
+        $this->_intermediate[$bucket][] = $value;
     }
 
     /**
      * Appends a new record to the final list of results and optionally assign a key
      * for this record.
      *
-     * @param mixed $val The value to be appended to the final list of results
-     * @param mixed $key and optional key to assign to the value
+     * @param mixed $value The value to be appended to the final list of results
+     * @param string|null $key and optional key to assign to the value
      * @return void
      */
-    public function emit($val, $key = null): void
+    public function emit($value, $key = null)
     {
-        $this->_result[$key ?? $this->_counter] = $val;
+        $this->_result[$key === null ? $this->_counter : $key] = $value;
         $this->_counter++;
     }
 
@@ -172,18 +171,18 @@ class MapReduce implements IteratorAggregate
      * @throws \LogicException if emitIntermediate was called but no reducer function
      * was provided
      */
-    protected function _execute(): void
+    protected function _execute()
     {
         $mapper = $this->_mapper;
-        foreach ($this->_data as $key => $val) {
-            $mapper($val, $key, $this);
+        foreach ($this->_data as $key => $value) {
+            $mapper($value, $key, $this);
         }
+        $this->_data = null;
 
         if (!empty($this->_intermediate) && empty($this->_reducer)) {
             throw new LogicException('No reducer function was provided');
         }
 
-        /** @var callable $reducer */
         $reducer = $this->_reducer;
         foreach ($this->_intermediate as $key => $list) {
             $reducer($list, $key, $this);

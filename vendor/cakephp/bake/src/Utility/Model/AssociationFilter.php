@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -22,18 +20,20 @@ use Exception;
 
 /**
  * Utility class to filter Model Table associations
+ *
  */
 class AssociationFilter
 {
+
     /**
      * Detect existing belongsToMany associations and cleanup the hasMany aliases based on existing
      * belongsToMany associations provided
      *
      * @param \Cake\ORM\Table $table Table
-     * @param string[] $aliases array of aliases
-     * @return string[] $aliases
+     * @param array $aliases array of aliases
+     * @return array $aliases
      */
-    public function filterHasManyAssociationsAliases(Table $table, array $aliases): array
+    public function filterHasManyAssociationsAliases(Table $table, array $aliases)
     {
         $belongsToManyJunctionsAliases = $this->belongsToManyJunctionAliases($table);
 
@@ -43,33 +43,33 @@ class AssociationFilter
     /**
      * Get the array of junction aliases for all the BelongsToMany associations
      *
-     * @param \Cake\ORM\Table $table Table
+     * @param Table $table Table
      * @return array junction aliases of all the BelongsToMany associations
      */
-    public function belongsToManyJunctionAliases(Table $table): array
+    public function belongsToManyJunctionAliases(Table $table)
     {
         $extractor = function ($val) {
             return $val->junction()->getAlias();
         };
 
-        return array_map($extractor, $table->associations()->getByType('BelongsToMany'));
+        return array_map($extractor, $table->associations()->type('BelongsToMany'));
     }
 
     /**
      * Returns filtered associations for controllers models. HasMany association are filtered if
      * already existing in BelongsToMany
      *
-     * @param \Cake\ORM\Table $model The model to build associations for.
+     * @param Table $model The model to build associations for.
      * @return array associations
      */
-    public function filterAssociations(Table $model): array
+    public function filterAssociations(Table $model)
     {
         $belongsToManyJunctionsAliases = $this->belongsToManyJunctionAliases($model);
         $keys = ['BelongsTo', 'HasOne', 'HasMany', 'BelongsToMany'];
         $associations = [];
 
         foreach ($keys as $type) {
-            foreach ($model->associations()->getByType($type) as $assoc) {
+            foreach ($model->associations()->type($type) as $assoc) {
                 $target = $assoc->getTarget();
                 $assocName = $assoc->getName();
                 $alias = $target->getAlias();
@@ -78,7 +78,7 @@ class AssociationFilter
                     continue;
                 }
                 $targetClass = get_class($target);
-                [, $className] = namespaceSplit($targetClass);
+                list(, $className) = namespaceSplit($targetClass);
 
                 $navLink = true;
                 $modelClass = get_class($model);
@@ -104,9 +104,6 @@ class AssociationFilter
                         'navLink' => $navLink,
                     ];
                 } catch (Exception $e) {
-                    if ($assocName === 'Authors') {
-                        dd($e);
-                    }
                     // Do nothing it could be a bogus association name.
                 }
             }

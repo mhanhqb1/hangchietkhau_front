@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -23,11 +21,10 @@ use Cake\Core\ObjectRegistry;
 /**
  * Registry for Tasks. Provides features
  * for lazily loading tasks.
- *
- * @extends \Cake\Core\ObjectRegistry<\Cake\Console\Shell>
  */
 class TaskRegistry extends ObjectRegistry
 {
+
     /**
      * Shell to use to set params to tasks.
      *
@@ -38,11 +35,11 @@ class TaskRegistry extends ObjectRegistry
     /**
      * Constructor
      *
-     * @param \Cake\Console\Shell $shell Shell instance
+     * @param \Cake\Console\Shell $Shell Shell instance
      */
-    public function __construct(Shell $shell)
+    public function __construct(Shell $Shell)
     {
-        $this->_Shell = $shell;
+        $this->_Shell = $Shell;
     }
 
     /**
@@ -51,10 +48,9 @@ class TaskRegistry extends ObjectRegistry
      * Part of the template method for Cake\Core\ObjectRegistry::load()
      *
      * @param string $class Partial classname to resolve.
-     * @return string|null Either the correct class name or null.
-     * @psalm-return class-string|null
+     * @return string|false Either the correct classname or false.
      */
-    protected function _resolveClassName(string $class): ?string
+    protected function _resolveClassName($class)
     {
         return App::className($class, 'Shell/Task', 'Task');
     }
@@ -70,11 +66,11 @@ class TaskRegistry extends ObjectRegistry
      * @return void
      * @throws \Cake\Console\Exception\MissingTaskException
      */
-    protected function _throwMissingClassError(string $class, ?string $plugin): void
+    protected function _throwMissingClassError($class, $plugin)
     {
         throw new MissingTaskException([
             'class' => $class,
-            'plugin' => $plugin,
+            'plugin' => $plugin
         ]);
     }
 
@@ -87,12 +83,9 @@ class TaskRegistry extends ObjectRegistry
      * @param string $alias The alias of the task.
      * @param array $settings An array of settings to use for the task.
      * @return \Cake\Console\Shell The constructed task class.
-     * @psalm-suppress MoreSpecificImplementedParamType
      */
-    protected function _create($class, string $alias, array $settings): Shell
+    protected function _create($class, $alias, $settings)
     {
-        // phpcs:ignore SlevomatCodingStandard.Commenting.InlineDocCommentDeclaration.InvalidFormat
-        /** @var \Cake\Console\Shell */
         return new $class($this->_Shell->getIo());
     }
 }

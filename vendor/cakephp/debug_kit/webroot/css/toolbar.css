@@ -49,9 +49,6 @@ h4 {
 p {
 	margin-bottom: 10px;
 }
-strong {
-	font-weight: bold;
-}
 
 .centered-text {
 	text-align: center;
@@ -79,7 +76,6 @@ strong {
 	overflow: hidden;
 	white-space: nowrap;
 	display: flex;
-    justify-content: flex-end;
 }
 
 .hidden {
@@ -277,12 +273,6 @@ pre,
 .list {
 	list-style: disc;
 	margin: 10px 0 10px 20px;
-}
-.list li {
-	margin: 10px 0;
-}
-.deprecation-list li {
-	font-family: Monaco, Consolas, mono-space;
 }
 
 /**
@@ -502,7 +492,6 @@ pre,
 	color: #fff;
 	border-radius: 4px;
 	box-shadow: 0 2px 0 #2a6496;
-	padding: 4px 10px;
 }
 .btn-primary:active {
 	box-shadow: none;

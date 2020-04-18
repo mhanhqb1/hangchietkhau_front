@@ -9,8 +9,8 @@
 
 namespace PHP_CodeSniffer\Standards\Squiz\Sniffs\Objects;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Util\Tokens;
 
 class ObjectInstantiationSniff implements Sniff
@@ -24,7 +24,7 @@ class ObjectInstantiationSniff implements Sniff
      */
     public function register()
     {
-        return [T_NEW];
+        return array(T_NEW);
 
     }//end register()
 
@@ -47,14 +47,14 @@ class ObjectInstantiationSniff implements Sniff
 
         $prev = $phpcsFile->findPrevious($allowedTokens, ($stackPtr - 1), null, true);
 
-        $allowedTokens = [
-            T_EQUAL        => true,
-            T_DOUBLE_ARROW => true,
-            T_THROW        => true,
-            T_RETURN       => true,
-            T_INLINE_THEN  => true,
-            T_INLINE_ELSE  => true,
-        ];
+        $allowedTokens = array(
+                          T_EQUAL        => true,
+                          T_DOUBLE_ARROW => true,
+                          T_THROW        => true,
+                          T_RETURN       => true,
+                          T_INLINE_THEN  => true,
+                          T_INLINE_ELSE  => true,
+                         );
 
         if (isset($allowedTokens[$tokens[$prev]['code']]) === false) {
             $error = 'New objects must be assigned to a variable';

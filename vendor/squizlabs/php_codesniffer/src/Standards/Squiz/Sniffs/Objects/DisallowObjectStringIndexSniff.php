@@ -9,8 +9,8 @@
 
 namespace PHP_CodeSniffer\Standards\Squiz\Sniffs\Objects;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
 
 class DisallowObjectStringIndexSniff implements Sniff
 {
@@ -20,7 +20,7 @@ class DisallowObjectStringIndexSniff implements Sniff
      *
      * @var array
      */
-    public $supportedTokenizers = ['JS'];
+    public $supportedTokenizers = array('JS');
 
 
     /**
@@ -30,7 +30,7 @@ class DisallowObjectStringIndexSniff implements Sniff
      */
     public function register()
     {
-        return [T_OPEN_SQUARE_BRACKET];
+        return array(T_OPEN_SQUARE_BRACKET);
 
     }//end register()
 

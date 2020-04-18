@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -23,4 +21,5 @@ use Cake\Core\Exception\Exception as CakeException;
  */
 class Exception extends CakeException
 {
+
 }

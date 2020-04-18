@@ -44,12 +44,10 @@ class SearchCommand extends BaseCommand
                 new InputOption('type', 't', InputOption::VALUE_REQUIRED, 'Search for a specific package type'),
                 new InputArgument('tokens', InputArgument::IS_ARRAY | InputArgument::REQUIRED, 'tokens to search for'),
             ))
-            ->setHelp(
-                <<<EOT
+            ->setHelp(<<<EOT
 The search command searches for packages by its name
 <info>php composer.phar search symfony composer</info>
 
-Read more at https://getcomposer.org/doc/03-cli.md#search
 EOT
             )
         ;
@@ -61,7 +59,7 @@ EOT
         $platformRepo = new PlatformRepository;
         $io = $this->getIO();
         if (!($composer = $this->getComposer(false))) {
-            $composer = Factory::create($this->getIO(), array(), $input->hasParameterOption('--no-plugins'));
+            $composer = Factory::create($this->getIO(), array());
         }
         $localRepo = $composer->getRepositoryManager()->getLocalRepository();
         $installedRepo = new CompositeRepository(array($localRepo, $platformRepo));
@@ -79,7 +77,5 @@ EOT
         foreach ($results as $result) {
             $io->write($result['name'] . (isset($result['description']) ? ' '. $result['description'] : ''));
         }
-
-        return 0;
     }
 }

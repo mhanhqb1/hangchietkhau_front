@@ -9,9 +9,9 @@
 
 namespace PHP_CodeSniffer\Standards\Generic\Sniffs\Debug;
 
-use PHP_CodeSniffer\Config;
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
+use PHP_CodeSniffer\Config;
 
 class ESLintSniff implements Sniff
 {
@@ -21,7 +21,8 @@ class ESLintSniff implements Sniff
      *
      * @var array
      */
-    public $supportedTokenizers = ['JS'];
+    public $supportedTokenizers = array('JS');
+
 
     /**
      * ESLint configuration file path.
@@ -38,7 +39,7 @@ class ESLintSniff implements Sniff
      */
     public function register()
     {
-        return [T_OPEN_TAG];
+        return array(T_OPEN_TAG);
 
     }//end register()
 
@@ -71,7 +72,7 @@ class ESLintSniff implements Sniff
             }
         }
 
-        $eslintOptions = ['--format json'];
+        $eslintOptions = array('--format json');
         if (empty($configFile) === false) {
             $eslintOptions[] = '--config '.escapeshellarg($configFile);
         }

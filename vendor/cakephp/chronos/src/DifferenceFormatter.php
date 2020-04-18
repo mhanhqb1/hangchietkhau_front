@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
@@ -20,8 +18,9 @@ namespace Cake\Chronos;
  * Provides a swappable component for other libraries to leverage.
  * when localizing or customizing the difference output.
  */
-class DifferenceFormatter implements DifferenceFormatterInterface
+class DifferenceFormatter
 {
+
     /**
      * The text translator object
      *
@@ -34,7 +33,7 @@ class DifferenceFormatter implements DifferenceFormatterInterface
      *
      * @param \Cake\Chronos\Translator|null $translate The text translator object.
      */
-    public function __construct(?Translator $translate = null)
+    public function __construct($translate = null)
     {
         $this->translate = $translate ?: new Translator();
     }
@@ -48,11 +47,8 @@ class DifferenceFormatter implements DifferenceFormatterInterface
      * @return string The difference between the two days in a human readable format
      * @see \Cake\Chronos\ChronosInterface::diffForHumans
      */
-    public function diffForHumans(
-        ChronosInterface $date,
-        ?ChronosInterface $other = null,
-        bool $absolute = false
-    ): string {
+    public function diffForHumans(ChronosInterface $date, ChronosInterface $other = null, $absolute = false)
+    {
         $isNow = $other === null;
         if ($isNow) {
             $other = $date->now($date->tz);
@@ -60,15 +56,15 @@ class DifferenceFormatter implements DifferenceFormatterInterface
         $diffInterval = $date->diff($other);
 
         switch (true) {
-            case $diffInterval->y > 0:
+            case ($diffInterval->y > 0):
                 $unit = 'year';
                 $count = $diffInterval->y;
                 break;
-            case $diffInterval->m > 0:
+            case ($diffInterval->m > 0):
                 $unit = 'month';
                 $count = $diffInterval->m;
                 break;
-            case $diffInterval->d > 0:
+            case ($diffInterval->d > 0):
                 $unit = 'day';
                 $count = $diffInterval->d;
                 if ($count >= ChronosInterface::DAYS_PER_WEEK) {
@@ -76,11 +72,11 @@ class DifferenceFormatter implements DifferenceFormatterInterface
                     $count = (int)($count / ChronosInterface::DAYS_PER_WEEK);
                 }
                 break;
-            case $diffInterval->h > 0:
+            case ($diffInterval->h > 0):
                 $unit = 'hour';
                 $count = $diffInterval->h;
                 break;
-            case $diffInterval->i > 0:
+            case ($diffInterval->i > 0):
                 $unit = 'minute';
                 $count = $diffInterval->i;
                 break;

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -15,13 +13,24 @@ declare(strict_types=1);
 namespace DebugKit\Controller;
 
 use Cake\Cache\Cache;
-use Cake\Http\Exception\NotFoundException;
+use Cake\Controller\Controller;
+use Cake\Core\Configure;
+use Cake\Event\Event;
+use Cake\Network\Exception\NotFoundException;
 
 /**
  * Provides utility features need by the toolbar.
  */
-class ToolbarController extends DebugKitController
+class ToolbarController extends Controller
 {
+
+    /**
+     * components
+     *
+     * @var array
+     */
+    public $components = ['RequestHandler'];
+
     /**
      * View class
      *
@@ -30,29 +39,36 @@ class ToolbarController extends DebugKitController
     public $viewClass = 'Cake\View\JsonView';
 
     /**
-     * Initialize controller
+     * Before filter handler.
      *
+     * @param \Cake\Event\Event $event The event.
      * @return void
+     * @throws \Cake\Network\Exception\NotFoundException
      */
-    public function initialize(): void
+    public function beforeFilter(Event $event)
     {
-        $this->loadComponent('RequestHandler');
+        // TODO add config override.
+        if (!Configure::read('debug')) {
+            throw new NotFoundException();
+        }
     }
 
     /**
      * Clear a named cache.
      *
      * @return void
-     * @throws \Cake\Http\Exception\NotFoundException
+     * @throws \Cake\Network\Exception\NotFoundException
      */
     public function clearCache()
     {
         $this->request->allowMethod('post');
-        if (!$this->request->getData('name')) {
-            throw new NotFoundException(__d('debug_kit', 'Invalid cache engine name.'));
+        if (!$this->request->data('name')) {
+            throw new NotFoundException('Invalid cache engine name.');
         }
-        $result = Cache::clear($this->request->getData('name'));
-        $this->set('success', $result);
-        $this->viewBuilder()->setOption('serialize', ['success']);
+        $result = Cache::clear(false, $this->request->data('name'));
+        $this->set([
+            '_serialize' => ['success'],
+            'success' => $result,
+        ]);
     }
 }

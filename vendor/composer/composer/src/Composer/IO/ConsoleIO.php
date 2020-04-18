@@ -12,12 +12,11 @@
 
 namespace Composer\IO;
 
-use Composer\Question\StrictConfirmationQuestion;
-use Symfony\Component\Console\Helper\HelperSet;
 use Symfony\Component\Console\Input\InputInterface;
 use Symfony\Component\Console\Output\ConsoleOutputInterface;
 use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Question\ChoiceQuestion;
+use Symfony\Component\Console\Helper\HelperSet;
+use Composer\Question\StrictConfirmationQuestion;
 use Symfony\Component\Console\Question\Question;
 
 /**
@@ -130,28 +129,12 @@ class ConsoleIO extends BaseIO
     }
 
     /**
-     * {@inheritDoc}
-     */
-    public function writeRaw($messages, $newline = true, $verbosity = self::NORMAL)
-    {
-        $this->doWrite($messages, $newline, false, $verbosity, true);
-    }
-
-    /**
-     * {@inheritDoc}
-     */
-    public function writeErrorRaw($messages, $newline = true, $verbosity = self::NORMAL)
-    {
-        $this->doWrite($messages, $newline, true, $verbosity, true);
-    }
-
-    /**
      * @param array|string $messages
      * @param bool         $newline
      * @param bool         $stderr
      * @param int          $verbosity
      */
-    private function doWrite($messages, $newline, $stderr, $verbosity, $raw = false)
+    private function doWrite($messages, $newline, $stderr, $verbosity)
     {
         $sfVerbosity = $this->verbosityMap[$verbosity];
         if ($sfVerbosity > $this->output->getVerbosity()) {
@@ -165,19 +148,11 @@ class ConsoleIO extends BaseIO
             $sfVerbosity = OutputInterface::OUTPUT_NORMAL;
         }
 
-        if ($raw) {
-            if ($sfVerbosity === OutputInterface::OUTPUT_NORMAL) {
-                $sfVerbosity = OutputInterface::OUTPUT_RAW;
-            } else {
-                $sfVerbosity |= OutputInterface::OUTPUT_RAW;
-            }
-        }
-
         if (null !== $this->startTime) {
             $memoryUsage = memory_get_usage() / 1024 / 1024;
             $timeSpent = microtime(true) - $this->startTime;
             $messages = array_map(function ($message) use ($memoryUsage, $timeSpent) {
-                return sprintf('[%.1fMiB/%.2fs] %s', $memoryUsage, $timeSpent, $message);
+                return sprintf('[%.1fMB/%.2fs] %s', $memoryUsage, $timeSpent, $message);
             }, (array) $messages);
         }
 
@@ -296,12 +271,9 @@ class ConsoleIO extends BaseIO
      */
     public function askAndHideAnswer($question)
     {
-        /** @var \Symfony\Component\Console\Helper\QuestionHelper $helper */
-        $helper = $this->helperSet->get('question');
-        $question = new Question($question);
-        $question->setHidden(true);
+        $this->writeError($question, false);
 
-        return $helper->ask($this->input, $this->getErrorOutput(), $question);
+        return \Seld\CliPrompt\CliPrompt::hiddenPrompt(true);
     }
 
     /**
@@ -309,27 +281,11 @@ class ConsoleIO extends BaseIO
      */
     public function select($question, $choices, $default, $attempts = false, $errorMessage = 'Value "%s" is invalid', $multiselect = false)
     {
-        /** @var \Symfony\Component\Console\Helper\QuestionHelper $helper */
-        $helper = $this->helperSet->get('question');
-        $question = new ChoiceQuestion($question, $choices, $default);
-        $question->setMaxAttempts($attempts ?: null); // IOInterface requires false, and Question requires null or int
-        $question->setErrorMessage($errorMessage);
-        $question->setMultiselect($multiselect);
-
-        $result = $helper->ask($this->input, $this->getErrorOutput(), $question);
-
-        if (!is_array($result)) {
-            return (string) array_search($result, $choices, true);
+        if ($this->isInteractive()) {
+            return $this->helperSet->get('dialog')->select($this->getErrorOutput(), $question, $choices, $default, $attempts, $errorMessage, $multiselect);
         }
 
-        $results = array();
-        foreach ($choices as $index => $choice) {
-            if (in_array($choice, $result, true)) {
-                $results[] = (string) $index;
-            }
-        }
-
-        return $results;
+        return $default;
     }
 
     /**

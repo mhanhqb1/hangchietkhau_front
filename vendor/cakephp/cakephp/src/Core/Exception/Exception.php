@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -15,15 +13,13 @@ declare(strict_types=1);
 namespace Cake\Core\Exception;
 
 use RuntimeException;
-use Throwable;
 
 /**
  * Base class that all CakePHP Exceptions extend.
- *
- * @method int getCode()
  */
 class Exception extends RuntimeException
 {
+
     /**
      * Array of attributes that are passed in from the constructor, and
      * made available in the view when a development error is displayed.
@@ -57,14 +53,14 @@ class Exception extends RuntimeException
      * Constructor.
      *
      * Allows you to create exceptions that are treated as framework errors and disabled
-     * when debug mode is off.
+     * when debug = 0.
      *
      * @param string|array $message Either the string of the error message, or an array of attributes
      *   that are made available in the view, and sprintf()'d into Exception::$_messageTemplate
      * @param int|null $code The code of the error, is also the HTTP status code for the error.
-     * @param \Throwable|null $previous the previous exception.
+     * @param \Exception|null $previous the previous exception.
      */
-    public function __construct($message = '', ?int $code = null, ?Throwable $previous = null)
+    public function __construct($message, $code = null, $previous = null)
     {
         if ($code === null) {
             $code = $this->_defaultCode;
@@ -82,7 +78,7 @@ class Exception extends RuntimeException
      *
      * @return array
      */
-    public function getAttributes(): array
+    public function getAttributes()
     {
         return $this->_attributes;
     }
@@ -90,14 +86,15 @@ class Exception extends RuntimeException
     /**
      * Get/set the response header to be used
      *
-     * See also Cake\Http\Response::withHeader()
+     * See also Cake\Http\Response::header()
      *
-     * @param string|array|null $header A single header string or an associative
-     *   array of "header name" => "header value"
+     * @param string|array|null $header An array of header strings or a single header string
+     *  - an associative array of "header name" => "header value"
+     *  - an array of string headers is also accepted
      * @param string|null $value The header value.
-     * @return array|null
+     * @return array
      */
-    public function responseHeader($header = null, $value = null): ?array
+    public function responseHeader($header = null, $value = null)
     {
         if ($header === null) {
             return $this->_responseHeaders;
@@ -105,7 +102,6 @@ class Exception extends RuntimeException
         if (is_array($header)) {
             return $this->_responseHeaders = $header;
         }
-
-        return $this->_responseHeaders = [$header => $value];
+        $this->_responseHeaders = [$header => $value];
     }
 }

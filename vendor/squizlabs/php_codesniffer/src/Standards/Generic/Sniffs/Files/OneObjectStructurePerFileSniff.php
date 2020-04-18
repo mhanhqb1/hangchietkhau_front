@@ -9,8 +9,8 @@
 
 namespace PHP_CodeSniffer\Standards\Generic\Sniffs\Files;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
 
 class OneObjectStructurePerFileSniff implements Sniff
 {
@@ -23,11 +23,11 @@ class OneObjectStructurePerFileSniff implements Sniff
      */
     public function register()
     {
-        return [
-            T_CLASS,
-            T_INTERFACE,
-            T_TRAIT,
-        ];
+        return array(
+                T_CLASS,
+                T_INTERFACE,
+                T_TRAIT,
+               );
 
     }//end register()
 

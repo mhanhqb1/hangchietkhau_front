@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -19,7 +17,6 @@ namespace Cake\Collection\Iterator;
 use ArrayIterator;
 use Cake\Collection\Collection;
 use Cake\Collection\CollectionInterface;
-use Traversable;
 
 /**
  * Creates an iterator from another iterator that will modify each of the values
@@ -27,6 +24,7 @@ use Traversable;
  */
 class ReplaceIterator extends Collection
 {
+
     /**
      * The callback function to be used to transform values
      *
@@ -37,7 +35,7 @@ class ReplaceIterator extends Collection
     /**
      * A reference to the internal iterator this object is wrapping.
      *
-     * @var \Traversable
+     * @var \Iterator
      */
     protected $_innerIterator;
 
@@ -49,10 +47,10 @@ class ReplaceIterator extends Collection
      * in the current iteration, the key of the element and the passed $items iterator
      * as arguments, in that order.
      *
-     * @param iterable $items The items to be filtered.
+     * @param array|\Traversable $items The items to be filtered.
      * @param callable $callback Callback.
      */
-    public function __construct(iterable $items, callable $callback)
+    public function __construct($items, callable $callback)
     {
         $this->_callback = $callback;
         parent::__construct($items);
@@ -78,9 +76,9 @@ class ReplaceIterator extends Collection
      * We perform here some strictness analysis so that the
      * iterator logic is bypassed entirely.
      *
-     * @return \Traversable
+     * @return \Iterator
      */
-    public function unwrap(): Traversable
+    public function unwrap()
     {
         $iterator = $this->_innerIterator;
 
@@ -88,7 +86,7 @@ class ReplaceIterator extends Collection
             $iterator = $iterator->unwrap();
         }
 
-        if (get_class($iterator) !== ArrayIterator::class) {
+        if (!$iterator instanceof ArrayIterator) {
             return $this;
         }
 

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -18,26 +16,19 @@ namespace Cake\Http;
 use Cake\Core\App;
 use Cake\Core\Exception\Exception;
 use Cake\Core\InstanceConfigTrait;
-use Cake\Http\Client\Adapter\Curl;
-use Cake\Http\Client\Adapter\Stream;
-use Cake\Http\Client\AdapterInterface;
+use Cake\Http\Client\CookieCollection;
 use Cake\Http\Client\Request;
-use Cake\Http\Client\Response;
-use Cake\Http\Cookie\CookieCollection;
 use Cake\Http\Cookie\CookieInterface;
 use Cake\Utility\Hash;
 use InvalidArgumentException;
-use Laminas\Diactoros\Uri;
-use Psr\Http\Client\ClientInterface;
-use Psr\Http\Message\RequestInterface;
-use Psr\Http\Message\ResponseInterface;
+use Zend\Diactoros\Uri;
 
 /**
  * The end user interface for doing HTTP requests.
  *
  * ### Scoped clients
  *
- * If you're doing multiple requests to the same hostname it's often convenient
+ * If you're doing multiple requests to the same hostname its often convenient
  * to use the constructor arguments to create a scoped client. This allows you
  * to keep your code DRY and not repeat hostnames, authentication, and other options.
  *
@@ -96,12 +87,15 @@ use Psr\Http\Message\ResponseInterface;
  * ### Using proxies
  *
  * By using the `proxy` key you can set authentication credentials for
- * a proxy if you need to use one. The type sub option can be used to
+ * a proxy if you need to use one.. The type sub option can be used to
  * specify which authentication strategy you want to use.
  * CakePHP comes with built-in support for basic authentication.
+ *
+ * @mixin \Cake\Core\InstanceConfigTrait
  */
-class Client implements ClientInterface
+class Client
 {
+
     use InstanceConfigTrait;
 
     /**
@@ -110,7 +104,7 @@ class Client implements ClientInterface
      * @var array
      */
     protected $_defaultConfig = [
-        'adapter' => null,
+        'adapter' => 'Cake\Http\Client\Adapter\Stream',
         'host' => null,
         'port' => null,
         'scheme' => 'http',
@@ -120,7 +114,6 @@ class Client implements ClientInterface
         'ssl_verify_depth' => 5,
         'ssl_verify_host' => true,
         'redirect' => false,
-        'protocolVersion' => '1.1',
     ];
 
     /**
@@ -129,14 +122,15 @@ class Client implements ClientInterface
      * Cookies are indexed by the cookie's domain or
      * request host name.
      *
-     * @var \Cake\Http\Cookie\CookieCollection
+     * @var \Cake\Http\Client\CookieCollection
      */
     protected $_cookies;
 
     /**
-     * Adapter for sending requests.
+     * Adapter for sending requests. Defaults to
+     * Cake\Http\Client\Adapter\Stream
      *
-     * @var \Cake\Http\Client\AdapterInterface
+     * @var \Cake\Http\Client\Adapter\Stream
      */
     protected $_adapter;
 
@@ -155,40 +149,22 @@ class Client implements ClientInterface
      *   Defaults to true.
      * - ssl_verify_peer_name - Whether or not peer names should be validated.
      *   Defaults to true.
-     * - ssl_verify_depth - The maximum certificate chain depth to traverse.
+     * - ssl_verify_depth - The maximum certificate chain depth to travers.
      *   Defaults to 5.
      * - ssl_verify_host - Verify that the certificate and hostname match.
      *   Defaults to true.
      * - redirect - Number of redirects to follow. Defaults to false.
-     * - adapter - The adapter class name or instance. Defaults to
-     *   \Cake\Http\Client\Adapter\Curl if `curl` extension is loaded else
-     *   \Cake\Http\Client\Adapter\Stream.
-     * - protocolVersion - The HTTP protocol version to use. Defaults to 1.1
      *
      * @param array $config Config options for scoped clients.
-     * @throws \InvalidArgumentException
      */
-    public function __construct(array $config = [])
+    public function __construct($config = [])
     {
         $this->setConfig($config);
 
         $adapter = $this->_config['adapter'];
-        if ($adapter === null) {
-            $adapter = Curl::class;
-
-            if (!extension_loaded('curl')) {
-                $adapter = Stream::class;
-            }
-        } else {
-            $this->setConfig('adapter', null);
-        }
-
+        $this->setConfig('adapter', null);
         if (is_string($adapter)) {
             $adapter = new $adapter();
-        }
-
-        if (!$adapter instanceof AdapterInterface) {
-            throw new InvalidArgumentException('Adapter must be an instance of Cake\Http\Client\AdapterInterface');
         }
         $this->_adapter = $adapter;
 
@@ -203,9 +179,9 @@ class Client implements ClientInterface
     /**
      * Get the cookies stored in the Client.
      *
-     * @return \Cake\Http\Cookie\CookieCollection
+     * @return \Cake\Http\Client\CookieCollection
      */
-    public function cookies(): CookieCollection
+    public function cookies()
     {
         return $this->_cookies;
     }
@@ -215,7 +191,6 @@ class Client implements ClientInterface
      *
      * @param \Cake\Http\Cookie\CookieInterface $cookie Cookie object.
      * @return $this
-     * @throws \InvalidArgumentException
      */
     public function addCookie(CookieInterface $cookie)
     {
@@ -232,19 +207,19 @@ class Client implements ClientInterface
      *
      * The $data argument supports a special `_content` key
      * for providing a request body in a GET request. This is
-     * generally not used, but services like ElasticSearch use
+     * generally not used but services like ElasticSearch use
      * this feature.
      *
      * @param string $url The url or path you want to request.
-     * @param array|string $data The query data you want to send.
+     * @param array $data The query data you want to send.
      * @param array $options Additional options for the request.
      * @return \Cake\Http\Client\Response
      */
-    public function get(string $url, $data = [], array $options = []): Response
+    public function get($url, $data = [], array $options = [])
     {
         $options = $this->_mergeOptions($options);
         $body = null;
-        if (is_array($data) && isset($data['_content'])) {
+        if (isset($data['_content'])) {
             $body = $data['_content'];
             unset($data['_content']);
         }
@@ -266,7 +241,7 @@ class Client implements ClientInterface
      * @param array $options Additional options for the request.
      * @return \Cake\Http\Client\Response
      */
-    public function post(string $url, $data = [], array $options = []): Response
+    public function post($url, $data = [], array $options = [])
     {
         $options = $this->_mergeOptions($options);
         $url = $this->buildUrl($url, [], $options);
@@ -282,7 +257,7 @@ class Client implements ClientInterface
      * @param array $options Additional options for the request.
      * @return \Cake\Http\Client\Response
      */
-    public function put(string $url, $data = [], array $options = []): Response
+    public function put($url, $data = [], array $options = [])
     {
         $options = $this->_mergeOptions($options);
         $url = $this->buildUrl($url, [], $options);
@@ -298,7 +273,7 @@ class Client implements ClientInterface
      * @param array $options Additional options for the request.
      * @return \Cake\Http\Client\Response
      */
-    public function patch(string $url, $data = [], array $options = []): Response
+    public function patch($url, $data = [], array $options = [])
     {
         $options = $this->_mergeOptions($options);
         $url = $this->buildUrl($url, [], $options);
@@ -314,7 +289,7 @@ class Client implements ClientInterface
      * @param array $options Additional options for the request.
      * @return \Cake\Http\Client\Response
      */
-    public function options(string $url, $data = [], array $options = []): Response
+    public function options($url, $data = [], array $options = [])
     {
         $options = $this->_mergeOptions($options);
         $url = $this->buildUrl($url, [], $options);
@@ -330,7 +305,7 @@ class Client implements ClientInterface
      * @param array $options Additional options for the request.
      * @return \Cake\Http\Client\Response
      */
-    public function trace(string $url, $data = [], array $options = []): Response
+    public function trace($url, $data = [], array $options = [])
     {
         $options = $this->_mergeOptions($options);
         $url = $this->buildUrl($url, [], $options);
@@ -346,7 +321,7 @@ class Client implements ClientInterface
      * @param array $options Additional options for the request.
      * @return \Cake\Http\Client\Response
      */
-    public function delete(string $url, $data = [], array $options = []): Response
+    public function delete($url, $data = [], array $options = [])
     {
         $options = $this->_mergeOptions($options);
         $url = $this->buildUrl($url, [], $options);
@@ -362,7 +337,7 @@ class Client implements ClientInterface
      * @param array $options Additional options for the request.
      * @return \Cake\Http\Client\Response
      */
-    public function head(string $url, array $data = [], array $options = []): Response
+    public function head($url, array $data = [], array $options = [])
     {
         $options = $this->_mergeOptions($options);
         $url = $this->buildUrl($url, $data, $options);
@@ -376,10 +351,10 @@ class Client implements ClientInterface
      * @param string $method HTTP method.
      * @param string $url URL to request.
      * @param mixed $data The request body.
-     * @param array $options The options to use. Contains auth, proxy, etc.
+     * @param array $options The options to use. Contains auth, proxy etc.
      * @return \Cake\Http\Client\Response
      */
-    protected function _doRequest(string $method, string $url, $data, $options): Response
+    protected function _doRequest($method, $url, $data, $options)
     {
         $request = $this->_createRequest(
             $method,
@@ -397,21 +372,9 @@ class Client implements ClientInterface
      * @param array $options Options to merge.
      * @return array Options merged with set config.
      */
-    protected function _mergeOptions(array $options): array
+    protected function _mergeOptions($options)
     {
         return Hash::merge($this->_config, $options);
-    }
-
-    /**
-     * Sends a PSR-7 request and returns a PSR-7 response.
-     *
-     * @param \Psr\Http\Message\RequestInterface $request Request instance.
-     * @return \Psr\Http\Message\ResponseInterface Response instance.
-     * @throws \Psr\Http\Client\ClientExceptionInterface If an error happens while processing the request.
-     */
-    public function sendRequest(RequestInterface $request): ResponseInterface
-    {
-        return $this->send($request, $this->_config);
     }
 
     /**
@@ -420,11 +383,11 @@ class Client implements ClientInterface
      * Used internally by other methods, but can also be used to send
      * handcrafted Request objects.
      *
-     * @param \Psr\Http\Message\RequestInterface $request The request to send.
+     * @param \Cake\Http\Client\Request $request The request to send.
      * @param array $options Additional options to use.
      * @return \Cake\Http\Client\Response
      */
-    public function send(RequestInterface $request, array $options = []): Response
+    public function send(Request $request, $options = [])
     {
         $redirects = 0;
         if (isset($options['redirect'])) {
@@ -438,16 +401,17 @@ class Client implements ClientInterface
             $handleRedirect = $response->isRedirect() && $redirects-- > 0;
             if ($handleRedirect) {
                 $url = $request->getUri();
+                $request = $this->_cookies->addToRequest($request, []);
 
                 $location = $response->getHeaderLine('Location');
                 $locationUrl = $this->buildUrl($location, [], [
                     'host' => $url->getHost(),
                     'port' => $url->getPort(),
                     'scheme' => $url->getScheme(),
-                    'protocolRelative' => true,
+                    'protocolRelative' => true
                 ]);
+
                 $request = $request->withUri(new Uri($locationUrl));
-                $request = $this->_cookies->addToRequest($request, []);
             }
         } while ($handleRedirect);
 
@@ -457,13 +421,14 @@ class Client implements ClientInterface
     /**
      * Send a request without redirection.
      *
-     * @param \Psr\Http\Message\RequestInterface $request The request to send.
+     * @param \Cake\Http\Client\Request $request The request to send.
      * @param array $options Additional options to use.
      * @return \Cake\Http\Client\Response
      */
-    protected function _sendRequest(RequestInterface $request, array $options): Response
+    protected function _sendRequest(Request $request, $options)
     {
         $responses = $this->_adapter->send($request, $options);
+        $url = $request->getUri();
         foreach ($responses as $response) {
             $this->_cookies = $this->_cookies->addFromResponse($response, $request);
         }
@@ -477,15 +442,15 @@ class Client implements ClientInterface
      * @param string $url Either a full URL or just the path.
      * @param string|array $query The query data for the URL.
      * @param array $options The config options stored with Client::config()
-     * @return string A complete url with scheme, port, host, and path.
+     * @return string A complete url with scheme, port, host, path.
      */
-    public function buildUrl(string $url, $query = [], array $options = []): string
+    public function buildUrl($url, $query = [], $options = [])
     {
         if (empty($options) && empty($query)) {
             return $url;
         }
         if ($query) {
-            $q = strpos($url, '?') === false ? '?' : '&';
+            $q = (strpos($url, '?') === false) ? '?' : '&';
             $url .= $q;
             $url .= is_string($query) ? $query : http_build_query($query);
         }
@@ -493,7 +458,7 @@ class Client implements ClientInterface
             'host' => null,
             'port' => null,
             'scheme' => 'http',
-            'protocolRelative' => false,
+            'protocolRelative' => false
         ];
         $options += $defaults;
 
@@ -506,10 +471,10 @@ class Client implements ClientInterface
 
         $defaultPorts = [
             'http' => 80,
-            'https' => 443,
+            'https' => 443
         ];
         $out = $options['scheme'] . '://' . $options['host'];
-        if ($options['port'] && (int)$options['port'] !== $defaultPorts[$options['scheme']]) {
+        if ($options['port'] && $options['port'] != $defaultPorts[$options['scheme']]) {
             $out .= ':' . $options['port'];
         }
         $out .= '/' . ltrim($url, '/');
@@ -523,12 +488,12 @@ class Client implements ClientInterface
      * @param string $method HTTP method name.
      * @param string $url The url including query string.
      * @param mixed $data The request body.
-     * @param array $options The options to use. Contains auth, proxy, etc.
+     * @param array $options The options to use. Contains auth, proxy etc.
      * @return \Cake\Http\Client\Request
      */
-    protected function _createRequest(string $method, string $url, $data, $options): Request
+    protected function _createRequest($method, $url, $data, $options)
     {
-        $headers = (array)($options['headers'] ?? []);
+        $headers = isset($options['headers']) ? (array)$options['headers'] : [];
         if (isset($options['type'])) {
             $headers = array_merge($headers, $this->_typeHeaders($options['type']));
         }
@@ -537,10 +502,7 @@ class Client implements ClientInterface
         }
 
         $request = new Request($url, $method, $headers, $data);
-        /** @var \Cake\Http\Client\Request $request */
-        $request = $request->withProtocolVersion($this->getConfig('protocolVersion'));
-        $cookies = $options['cookies'] ?? [];
-        /** @var \Cake\Http\Client\Request $request */
+        $cookies = isset($options['cookies']) ? $options['cookies'] : [];
         $request = $this->_cookies->addToRequest($request, $cookies);
         if (isset($options['auth'])) {
             $request = $this->_addAuthentication($request, $options);
@@ -557,16 +519,15 @@ class Client implements ClientInterface
      * or full mime-type.
      *
      * @param string $type short type alias or full mimetype.
-     * @return string[] Headers to set on the request.
+     * @return array Headers to set on the request.
      * @throws \Cake\Core\Exception\Exception When an unknown type alias is used.
-     * @psalm-return array{Accept: string, Content-Type: string}
      */
-    protected function _typeHeaders(string $type): array
+    protected function _typeHeaders($type)
     {
         if (strpos($type, '/') !== false) {
             return [
                 'Accept' => $type,
-                'Content-Type' => $type,
+                'Content-Type' => $type
             ];
         }
         $typeMap = [
@@ -593,13 +554,13 @@ class Client implements ClientInterface
      * @param array $options Array of options containing the 'auth' key.
      * @return \Cake\Http\Client\Request The updated request object.
      */
-    protected function _addAuthentication(Request $request, array $options): Request
+    protected function _addAuthentication(Request $request, $options)
     {
         $auth = $options['auth'];
-        /** @var \Cake\Http\Client\Auth\Basic $adapter */
         $adapter = $this->_createAuth($auth, $options);
+        $result = $adapter->authentication($request, $options['auth']);
 
-        return $adapter->authentication($request, $options['auth']);
+        return $result ?: $request;
     }
 
     /**
@@ -612,13 +573,13 @@ class Client implements ClientInterface
      * @param array $options Array of options containing the 'proxy' key.
      * @return \Cake\Http\Client\Request The updated request object.
      */
-    protected function _addProxy(Request $request, array $options): Request
+    protected function _addProxy(Request $request, $options)
     {
         $auth = $options['proxy'];
-        /** @var \Cake\Http\Client\Auth\Basic $adapter */
         $adapter = $this->_createAuth($auth, $options);
+        $result = $adapter->proxyAuthentication($request, $options['proxy']);
 
-        return $adapter->proxyAuthentication($request, $options['proxy']);
+        return $result ?: $request;
     }
 
     /**
@@ -629,10 +590,10 @@ class Client implements ClientInterface
      *
      * @param array $auth The authentication options to use.
      * @param array $options The overall request options to use.
-     * @return object Authentication strategy instance.
+     * @return mixed Authentication strategy instance.
      * @throws \Cake\Core\Exception\Exception when an invalid strategy is chosen.
      */
-    protected function _createAuth(array $auth, array $options)
+    protected function _createAuth($auth, $options)
     {
         if (empty($auth['type'])) {
             $auth['type'] = 'basic';
@@ -648,3 +609,5 @@ class Client implements ClientInterface
         return new $class($this, $options);
     }
 }
+// @deprecated Backwards compatibility with earler 3.x versions.
+class_alias('Cake\Http\Client', 'Cake\Network\Http\Client');

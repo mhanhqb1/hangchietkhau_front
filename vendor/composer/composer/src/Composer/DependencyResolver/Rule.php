@@ -41,7 +41,6 @@ abstract class Rule
     const BITFIELD_DISABLED = 16;
 
     protected $bitfield;
-    protected $job;
     protected $reasonData;
 
     /**
@@ -68,7 +67,7 @@ abstract class Rule
 
     public function getJob()
     {
-        return $this->job;
+        return isset($this->job) ? $this->job : null;
     }
 
     abstract public function equals(Rule $rule);
@@ -111,7 +110,7 @@ abstract class Rule
 
     public function enable()
     {
-        $this->bitfield &= ~(255 << self::BITFIELD_DISABLED);
+        $this->bitfield = $this->bitfield & ~(255 << self::BITFIELD_DISABLED);
     }
 
     public function isDisabled()
@@ -175,17 +174,12 @@ abstract class Rule
                             return $text . ' -> your HHVM version does not satisfy that requirement.';
                         }
 
-                        $packages = $pool->whatProvides($targetName);
-                        $package = count($packages) ? current($packages) : phpversion();
-
                         if ($targetName === 'hhvm') {
-                            if ($package instanceof CompletePackage) {
-                                return $text . ' -> your HHVM version ('.$package->getPrettyVersion().') does not satisfy that requirement.';
-                            } else {
-                                return $text . ' -> you are running this with PHP and not HHVM.';
-                            }
+                            return $text . ' -> you are running this with PHP and not HHVM.';
                         }
 
+                        $packages = $pool->whatProvides($targetName);
+                        $package = count($packages) ? current($packages) : phpversion();
 
                         if (!($package instanceof CompletePackage)) {
                             return $text . ' -> your PHP version ('.phpversion().') does not satisfy that requirement.';

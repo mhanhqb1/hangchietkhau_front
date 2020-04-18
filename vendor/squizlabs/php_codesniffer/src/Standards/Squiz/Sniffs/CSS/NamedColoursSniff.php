@@ -9,8 +9,8 @@
 
 namespace PHP_CodeSniffer\Standards\Squiz\Sniffs\CSS;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
 
 class NamedColoursSniff implements Sniff
 {
@@ -20,34 +20,35 @@ class NamedColoursSniff implements Sniff
      *
      * @var array
      */
-    public $supportedTokenizers = ['CSS'];
+    public $supportedTokenizers = array('CSS');
+
 
     /**
      * A list of named colours.
      *
-     * This is the list of standard colours defined in the CSS specification.
+     * This is the list of standard colours defined in the CSS spec.
      *
      * @var array
      */
-    protected $colourNames = [
-        'aqua'    => 'aqua',
-        'black'   => 'black',
-        'blue'    => 'blue',
-        'fuchsia' => 'fuchsia',
-        'gray'    => 'gray',
-        'green'   => 'green',
-        'lime'    => 'lime',
-        'maroon'  => 'maroon',
-        'navy'    => 'navy',
-        'olive'   => 'olive',
-        'orange'  => 'orange',
-        'purple'  => 'purple',
-        'red'     => 'red',
-        'silver'  => 'silver',
-        'teal'    => 'teal',
-        'white'   => 'white',
-        'yellow'  => 'yellow',
-    ];
+    protected $colourNames = array(
+                              'aqua'    => 'aqua',
+                              'black'   => 'black',
+                              'blue'    => 'blue',
+                              'fuchsia' => 'fuchsia',
+                              'gray'    => 'gray',
+                              'green'   => 'green',
+                              'lime'    => 'lime',
+                              'maroon'  => 'maroon',
+                              'navy'    => 'navy',
+                              'olive'   => 'olive',
+                              'orange'  => 'orange',
+                              'purple'  => 'purple',
+                              'red'     => 'red',
+                              'silver'  => 'silver',
+                              'teal'    => 'teal',
+                              'white'   => 'white',
+                              'yellow'  => 'yellow',
+                             );
 
 
     /**
@@ -57,7 +58,7 @@ class NamedColoursSniff implements Sniff
      */
     public function register()
     {
-        return [T_STRING];
+        return array(T_STRING);
 
     }//end register()
 

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -69,7 +67,7 @@ class MailPreview
      */
     public function name()
     {
-        $classname = static::class;
+        $classname = get_class($this);
         $pos = strrpos($classname, '\\');
 
         return substr($classname, $pos + 1);
@@ -88,7 +86,7 @@ class MailPreview
             return false;
         }
 
-        $baseClass = new ReflectionClass(self::class);
+        $baseClass = new ReflectionClass(get_class());
         if ($baseClass->hasMethod($email)) {
             return false;
         }

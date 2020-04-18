@@ -41,10 +41,6 @@ class GitDriver extends VcsDriver
             $this->repoDir = $this->url;
             $cacheUrl = realpath($this->url);
         } else {
-            if (!Cache::isUsable($this->config->get('cache-vcs-dir'))) {
-                throw new \RuntimeException('GitDriver requires a usable cache directory, and it looks like you set it to be disabled');
-            }
-
             $this->repoDir = $this->config->get('cache-vcs-dir') . '/' . preg_replace('{[^a-z0-9.]}i', '-', $this->url) . '/';
 
             GitUtil::cleanEnv();
@@ -143,7 +139,7 @@ class GitDriver extends VcsDriver
     public function getChangeDate($identifier)
     {
         $this->process->execute(sprintf(
-            'git -c log.showSignature=false log -1 --format=%%at %s',
+            'git log -1 --format=%%at %s',
             ProcessExecutor::escape($identifier)
         ), $output, $this->repoDir);
 
@@ -220,7 +216,10 @@ class GitDriver extends VcsDriver
         }
 
         $process = new ProcessExecutor($io);
+        if ($process->execute('git ls-remote --heads ' . ProcessExecutor::escape($url), $output) === 0) {
+            return true;
+        }
 
-        return $process->execute('git ls-remote --heads ' . ProcessExecutor::escape($url), $output) === 0;
+        return false;
     }
 }

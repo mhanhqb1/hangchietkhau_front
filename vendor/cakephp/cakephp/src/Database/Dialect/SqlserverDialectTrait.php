@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,13 +14,11 @@ declare(strict_types=1);
  */
 namespace Cake\Database\Dialect;
 
+use Cake\Database\ExpressionInterface;
 use Cake\Database\Expression\FunctionExpression;
 use Cake\Database\Expression\OrderByExpression;
 use Cake\Database\Expression\UnaryExpression;
-use Cake\Database\ExpressionInterface;
 use Cake\Database\Query;
-use Cake\Database\QueryCompiler;
-use Cake\Database\Schema\BaseSchema;
 use Cake\Database\Schema\SqlserverSchema;
 use Cake\Database\SqlDialectTrait;
 use Cake\Database\SqlserverCompiler;
@@ -37,6 +33,7 @@ use PDO;
  */
 trait SqlserverDialectTrait
 {
+
     use SqlDialectTrait;
     use TupleComparisonTranslatorTrait;
 
@@ -60,7 +57,7 @@ trait SqlserverDialectTrait
      * @param \Cake\Database\Query $query The query to translate
      * @return \Cake\Database\Query The modified query
      */
-    protected function _selectQueryTranslator(Query $query): Query
+    protected function _selectQueryTranslator($query)
     {
         $limit = $query->clause('limit');
         $offset = $query->clause('offset');
@@ -73,7 +70,7 @@ trait SqlserverDialectTrait
             $query->order($query->newExpr()->add('(SELECT NULL)'));
         }
 
-        if ($this->version() < 11 && $offset !== null) {
+        if ($this->_version() < 11 && $offset !== null) {
             return $this->_pagingSubquery($query, $limit, $offset);
         }
 
@@ -83,9 +80,10 @@ trait SqlserverDialectTrait
     /**
      * Get the version of SQLserver we are connected to.
      *
-     * @return string
+     * @return int
      */
-    protected function version(): string
+    // @codingStandardsIgnoreLine
+    public function _version()
     {
         $this->connect();
 
@@ -99,11 +97,11 @@ trait SqlserverDialectTrait
      * be used.
      *
      * @param \Cake\Database\Query $original The query to wrap in a subquery.
-     * @param int|null $limit The number of rows to fetch.
-     * @param int|null $offset The number of rows to offset.
+     * @param int $limit The number of rows to fetch.
+     * @param int $offset The number of rows to offset.
      * @return \Cake\Database\Query Modified query object.
      */
-    protected function _pagingSubquery(Query $original, ?int $limit, ?int $offset): Query
+    protected function _pagingSubquery($original, $limit, $offset)
     {
         $field = '_cake_paging_._cake_page_rownum_';
 
@@ -118,8 +116,7 @@ trait SqlserverDialectTrait
                 ->clause('order')
                 ->iterateParts(function ($direction, $orderBy) use ($select, $order) {
                     $key = $orderBy;
-                    if (
-                        isset($select[$orderBy]) &&
+                    if (isset($select[$orderBy]) &&
                         $select[$orderBy] instanceof ExpressionInterface
                     ) {
                         $key = $select[$orderBy]->sql(new ValueBinder());
@@ -135,7 +132,7 @@ trait SqlserverDialectTrait
 
         $query = clone $original;
         $query->select([
-                '_cake_page_rownum_' => new UnaryExpression('ROW_NUMBER() OVER', $order),
+                '_cake_page_rownum_' => new UnaryExpression('ROW_NUMBER() OVER', $order)
             ])->limit(null)
             ->offset(null)
             ->order([], true);
@@ -172,7 +169,7 @@ trait SqlserverDialectTrait
      * @param \Cake\Database\Query $original The query to be transformed
      * @return \Cake\Database\Query
      */
-    protected function _transformDistinct(Query $original): Query
+    protected function _transformDistinct($original)
     {
         if (!is_array($original->clause('distinct'))) {
             return $original;
@@ -193,7 +190,7 @@ trait SqlserverDialectTrait
                     ->setConjunction(' ');
 
                 return [
-                    '_cake_distinct_pivot_' => $over,
+                    '_cake_distinct_pivot_' => $over
                 ];
             })
             ->limit(null)
@@ -224,13 +221,13 @@ trait SqlserverDialectTrait
      *
      * @return array
      */
-    protected function _expressionTranslators(): array
+    protected function _expressionTranslators()
     {
         $namespace = 'Cake\Database\Expression';
 
         return [
             $namespace . '\FunctionExpression' => '_transformFunctionExpression',
-            $namespace . '\TupleComparison' => '_transformTupleComparison',
+            $namespace . '\TupleComparison' => '_transformTupleComparison'
         ];
     }
 
@@ -241,7 +238,7 @@ trait SqlserverDialectTrait
      * @param \Cake\Database\Expression\FunctionExpression $expression The function expression to convert to TSQL.
      * @return void
      */
-    protected function _transformFunctionExpression(FunctionExpression $expression): void
+    protected function _transformFunctionExpression(FunctionExpression $expression)
     {
         switch ($expression->getName()) {
             case 'CONCAT':
@@ -249,7 +246,6 @@ trait SqlserverDialectTrait
                 $expression->setName('')->setConjunction(' +');
                 break;
             case 'DATEDIFF':
-                /** @var bool $hasDay */
                 $hasDay = false;
                 $visitor = function ($value) use (&$hasDay) {
                     if ($value === 'day') {
@@ -329,9 +325,9 @@ trait SqlserverDialectTrait
      * Used by Cake\Schema package to reflect schema and
      * generate schema.
      *
-     * @return \Cake\Database\Schema\BaseSchema
+     * @return \Cake\Database\Schema\SqlserverSchema
      */
-    public function schemaDialect(): BaseSchema
+    public function schemaDialect()
     {
         return new SqlserverSchema($this);
     }
@@ -339,10 +335,10 @@ trait SqlserverDialectTrait
     /**
      * Returns a SQL snippet for creating a new transaction savepoint
      *
-     * @param string|int $name save point name
+     * @param string $name save point name
      * @return string
      */
-    public function savePointSQL($name): string
+    public function savePointSQL($name)
     {
         return 'SAVE TRANSACTION t' . $name;
     }
@@ -350,10 +346,10 @@ trait SqlserverDialectTrait
     /**
      * Returns a SQL snippet for releasing a previously created save point
      *
-     * @param string|int $name save point name
+     * @param string $name save point name
      * @return string
      */
-    public function releaseSavePointSQL($name): string
+    public function releaseSavePointSQL($name)
     {
         return 'COMMIT TRANSACTION t' . $name;
     }
@@ -361,10 +357,10 @@ trait SqlserverDialectTrait
     /**
      * Returns a SQL snippet for rollbacking a previously created save point
      *
-     * @param string|int $name save point name
+     * @param string $name save point name
      * @return string
      */
-    public function rollbackSavePointSQL($name): string
+    public function rollbackSavePointSQL($name)
     {
         return 'ROLLBACK TRANSACTION t' . $name;
     }
@@ -374,23 +370,23 @@ trait SqlserverDialectTrait
      *
      * @return \Cake\Database\SqlserverCompiler
      */
-    public function newCompiler(): QueryCompiler
+    public function newCompiler()
     {
         return new SqlserverCompiler();
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function disableForeignKeySQL(): string
+    public function disableForeignKeySQL()
     {
         return 'EXEC sp_msforeachtable "ALTER TABLE ? NOCHECK CONSTRAINT all"';
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function enableForeignKeySQL(): string
+    public function enableForeignKeySQL()
     {
         return 'EXEC sp_msforeachtable "ALTER TABLE ? WITH CHECK CHECK CONSTRAINT all"';
     }

@@ -40,37 +40,40 @@ class Caster
     /**
      * Casts objects to arrays and adds the dynamic property prefix.
      *
-     * @param bool $hasDebugInfo Whether the __debugInfo method exists on $obj or not
+     * @param object $obj          The object to cast
+     * @param string $class        The class of the object
+     * @param bool   $hasDebugInfo Whether the __debugInfo method exists on $obj or not
      *
      * @return array The array-cast of the object, with prefixed dynamic properties
      */
-    public static function castObject(object $obj, string $class, bool $hasDebugInfo = false): array
+    public static function castObject($obj, $class, $hasDebugInfo = false)
     {
-        if ($hasDebugInfo) {
-            try {
-                $debugInfo = $obj->__debugInfo();
-            } catch (\Exception $e) {
-                // ignore failing __debugInfo()
-                $hasDebugInfo = false;
-            }
+        if ($class instanceof \ReflectionClass) {
+            @trigger_error(sprintf('Passing a ReflectionClass to %s() is deprecated since version 3.3 and will be unsupported in 4.0. Pass the class name as string instead.', __METHOD__), E_USER_DEPRECATED);
+            $hasDebugInfo = $class->hasMethod('__debugInfo');
+            $class = $class->name;
         }
-
-        $a = $obj instanceof \Closure ? [] : (array) $obj;
-
+        if ($hasDebugInfo) {
+            $a = $obj->__debugInfo();
+        } elseif ($obj instanceof \Closure) {
+            $a = array();
+        } else {
+            $a = (array) $obj;
+        }
         if ($obj instanceof \__PHP_Incomplete_Class) {
             return $a;
         }
 
         if ($a) {
-            static $publicProperties = [];
+            static $publicProperties = array();
 
             $i = 0;
-            $prefixedKeys = [];
+            $prefixedKeys = array();
             foreach ($a as $k => $v) {
-                if ("\0" !== ($k[0] ?? '')) {
+                if (isset($k[0]) ? "\0" !== $k[0] : \PHP_VERSION_ID >= 70200) {
                     if (!isset($publicProperties[$class])) {
-                        foreach ((new \ReflectionClass($class))->getProperties(\ReflectionProperty::IS_PUBLIC) as $prop) {
-                            $publicProperties[$class][$prop->name] = true;
+                        foreach (get_class_vars($class) as $prop => $v) {
+                            $publicProperties[$class][$prop] = true;
                         }
                     }
                     if (!isset($publicProperties[$class][$k])) {
@@ -90,17 +93,6 @@ class Caster
             }
         }
 
-        if ($hasDebugInfo && \is_array($debugInfo)) {
-            foreach ($debugInfo as $k => $v) {
-                if (!isset($k[0]) || "\0" !== $k[0]) {
-                    $k = self::PREFIX_VIRTUAL.$k;
-                }
-
-                unset($a[$k]);
-                $a[$k] = $v;
-            }
-        }
-
         return $a;
     }
 
@@ -117,7 +109,7 @@ class Caster
      *
      * @return array The filtered array
      */
-    public static function filter(array $a, int $filter, array $listedProperties = [], ?int &$count = 0): array
+    public static function filter(array $a, $filter, array $listedProperties = array(), &$count = 0)
     {
         $count = 0;
 
@@ -126,14 +118,14 @@ class Caster
 
             if (null === $v) {
                 $type |= self::EXCLUDE_NULL & $filter;
-                $type |= self::EXCLUDE_EMPTY & $filter;
-            } elseif (false === $v || '' === $v || '0' === $v || 0 === $v || 0.0 === $v || [] === $v) {
+            }
+            if (empty($v)) {
                 $type |= self::EXCLUDE_EMPTY & $filter;
             }
-            if ((self::EXCLUDE_NOT_IMPORTANT & $filter) && !\in_array($k, $listedProperties, true)) {
+            if ((self::EXCLUDE_NOT_IMPORTANT & $filter) && !in_array($k, $listedProperties, true)) {
                 $type |= self::EXCLUDE_NOT_IMPORTANT;
             }
-            if ((self::EXCLUDE_VERBOSE & $filter) && \in_array($k, $listedProperties, true)) {
+            if ((self::EXCLUDE_VERBOSE & $filter) && in_array($k, $listedProperties, true)) {
                 $type |= self::EXCLUDE_VERBOSE;
             }
 
@@ -158,7 +150,7 @@ class Caster
         return $a;
     }
 
-    public static function castPhpIncompleteClass(\__PHP_Incomplete_Class $c, array $a, Stub $stub, bool $isNested): array
+    public static function castPhpIncompleteClass(\__PHP_Incomplete_Class $c, array $a, Stub $stub, $isNested)
     {
         if (isset($a['__PHP_Incomplete_Class_Name'])) {
             $stub->class .= '('.$a['__PHP_Incomplete_Class_Name'].')';

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,7 +15,6 @@ declare(strict_types=1);
 namespace Cake\ORM;
 
 use Cake\Collection\Collection;
-use Cake\Collection\CollectionInterface;
 use Cake\Database\Expression\TupleComparison;
 use Cake\Datasource\EntityInterface;
 
@@ -29,6 +26,7 @@ use Cake\Datasource\EntityInterface;
  */
 class LazyEagerLoader
 {
+
     /**
      * Loads the specified associations in the passed entity or list of entities
      * by executing extra queries in the database and merging the results in the
@@ -36,11 +34,11 @@ class LazyEagerLoader
      *
      * The properties for the associations to be loaded will be overwritten on each entity.
      *
-     * @param \Cake\Datasource\EntityInterface|\Cake\Datasource\EntityInterface[] $entities a single entity or list of entities
+     * @param \Cake\Datasource\EntityInterface|array $entities a single entity or list of entities
      * @param array $contain A `contain()` compatible array.
-     * @see \Cake\ORM\Query::contain()
+     * @see \Cake\ORM\Query\contain()
      * @param \Cake\ORM\Table $source The table to use for fetching the top level entities
-     * @return \Cake\Datasource\EntityInterface|\Cake\Datasource\EntityInterface[]
+     * @return \Cake\Datasource\EntityInterface|array
      */
     public function loadInto($entities, array $contain, Table $source)
     {
@@ -53,7 +51,7 @@ class LazyEagerLoader
 
         $entities = new Collection($entities);
         $query = $this->_getQuery($entities, $contain, $source);
-        $associations = array_keys($query->getContain());
+        $associations = array_keys($query->contain());
 
         $entities = $this->_injectResults($entities, $query, $associations, $source);
 
@@ -69,7 +67,7 @@ class LazyEagerLoader
      * @param \Cake\ORM\Table $source The table to use for fetching the top level entities
      * @return \Cake\ORM\Query
      */
-    protected function _getQuery(CollectionInterface $objects, array $contain, Table $source): Query
+    protected function _getQuery($objects, $contain, $source)
     {
         $primaryKey = $source->getPrimaryKey();
         $method = is_string($primaryKey) ? 'get' : 'extract';
@@ -82,10 +80,6 @@ class LazyEagerLoader
             ->find()
             ->select((array)$primaryKey)
             ->where(function ($exp, $q) use ($primaryKey, $keys, $source) {
-                /**
-                 * @var \Cake\Database\Expression\QueryExpression $exp
-                 * @var \Cake\ORM\Query $q
-                 */
                 if (is_array($primaryKey) && count($primaryKey) === 1) {
                     $primaryKey = current($primaryKey);
                 }
@@ -94,12 +88,11 @@ class LazyEagerLoader
                     return $exp->in($source->aliasField($primaryKey), $keys->toList());
                 }
 
-                $types = array_intersect_key($q->getDefaultTypes(), array_flip($primaryKey));
+                $types = array_intersect_key($q->defaultTypes(), array_flip($primaryKey));
                 $primaryKey = array_map([$source, 'aliasField'], $primaryKey);
 
                 return new TupleComparison($primaryKey, $keys->toList(), $types, 'IN');
             })
-            ->enableAutoFields()
             ->contain($contain);
 
         foreach ($query->getEagerLoader()->attachableAssociations($source) as $loadable) {
@@ -116,15 +109,14 @@ class LazyEagerLoader
      * in the top level entities.
      *
      * @param \Cake\ORM\Table $source The table having the top level associations
-     * @param string[] $associations The name of the top level associations
-     * @return string[]
+     * @param array $associations The name of the top level associations
+     * @return array
      */
-    protected function _getPropertyMap(Table $source, array $associations): array
+    protected function _getPropertyMap($source, $associations)
     {
         $map = [];
         $container = $source->associations();
         foreach ($associations as $assoc) {
-            /** @psalm-suppress PossiblyNullReference */
             $map[$assoc] = $container->get($assoc)->getProperty();
         }
 
@@ -135,20 +127,19 @@ class LazyEagerLoader
      * Injects the results of the eager loader query into the original list of
      * entities.
      *
-     * @param \Cake\Datasource\EntityInterface[]|\Traversable $objects The original list of entities
-     * @param \Cake\Collection\CollectionInterface|\Cake\ORM\Query $results The loaded results
-     * @param string[] $associations The top level associations that were loaded
+     * @param array|\Traversable $objects The original list of entities
+     * @param \Cake\Collection\CollectionInterface|\Cake\Database\Query $results The loaded results
+     * @param array $associations The top level associations that were loaded
      * @param \Cake\ORM\Table $source The table where the entities came from
      * @return array
      */
-    protected function _injectResults(iterable $objects, $results, array $associations, Table $source): array
+    protected function _injectResults($objects, $results, $associations, $source)
     {
         $injected = [];
         $properties = $this->_getPropertyMap($source, $associations);
         $primaryKey = (array)$source->getPrimaryKey();
         $results = $results
             ->indexBy(function ($e) use ($primaryKey) {
-                /** @var \Cake\Datasource\EntityInterface $e */
                 return implode(';', $e->extract($primaryKey));
             })
             ->toArray();
@@ -160,7 +151,6 @@ class LazyEagerLoader
                 continue;
             }
 
-            /** @var \Cake\Datasource\EntityInterface $loaded */
             $loaded = $results[$key];
             foreach ($associations as $assoc) {
                 $property = $properties[$assoc];

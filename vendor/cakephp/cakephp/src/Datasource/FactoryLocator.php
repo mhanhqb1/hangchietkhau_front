@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -19,9 +17,6 @@ namespace Cake\Datasource;
 use Cake\ORM\TableRegistry;
 use InvalidArgumentException;
 
-/**
- * Class FactoryLocator
- */
 class FactoryLocator
 {
     /**
@@ -38,7 +33,7 @@ class FactoryLocator
      * @param callable $factory The factory function used to create instances.
      * @return void
      */
-    public static function add(string $type, callable $factory): void
+    public static function add($type, callable $factory)
     {
         static::$_modelFactories[$type] = $factory;
     }
@@ -49,7 +44,7 @@ class FactoryLocator
      * @param string $type The name of the repository type to drop the factory for.
      * @return void
      */
-    public static function drop(string $type): void
+    public static function drop($type)
     {
         unset(static::$_modelFactories[$type]);
     }
@@ -58,10 +53,10 @@ class FactoryLocator
      * Get the factory for the specified repository type.
      *
      * @param string $type The repository type to get the factory for.
-     * @throws \InvalidArgumentException If the specified repository type has no factory.
+     * @throws InvalidArgumentException If the specified repository type has no factory.
      * @return callable The factory for the repository type.
      */
-    public static function get(string $type): callable
+    public static function get($type)
     {
         if (!isset(static::$_modelFactories['Table'])) {
             static::$_modelFactories['Table'] = [TableRegistry::getTableLocator(), 'get'];

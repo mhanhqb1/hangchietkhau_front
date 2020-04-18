@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -16,8 +14,8 @@ declare(strict_types=1);
 namespace DebugKit\Database\Log;
 
 use Cake\Database\Log\LoggedQuery;
-use Psr\Log\AbstractLogger;
-use Psr\Log\LoggerInterface;
+use Cake\Database\Log\QueryLogger;
+use Psr\Log\AbstractLogger as PsrAbstractLogger;
 
 /**
  * DebugKit Query logger.
@@ -26,8 +24,9 @@ use Psr\Log\LoggerInterface;
  * and stores log messages internally so they can be displayed
  * or stored for future use.
  */
-class DebugLog extends AbstractLogger
+class DebugLog extends QueryLogger
 {
+
     /**
      * Logs from the current request.
      *
@@ -38,7 +37,7 @@ class DebugLog extends AbstractLogger
     /**
      * Decorated logger.
      *
-     * @var \Psr\Log\LoggerInterface|null
+     * @var \Cake\Database\Log\LoggedQuery
      */
     protected $_logger;
 
@@ -74,11 +73,11 @@ class DebugLog extends AbstractLogger
     /**
      * Constructor
      *
-     * @param \Psr\Log\LoggerInterface|null $logger The logger to decorate and spy on.
+     * @param \Cake\Database\Log\QueryLogger $logger The logger to decorate and spy on.
      * @param string $name The name of the connection being logged.
      * @param bool $includeSchema Whether or not schema reflection should be included.
      */
-    public function __construct(?LoggerInterface $logger, string $name, bool $includeSchema = false)
+    public function __construct($logger, $name, $includeSchema = false)
     {
         $this->_logger = $logger;
         $this->_connectionName = $name;
@@ -91,7 +90,7 @@ class DebugLog extends AbstractLogger
      * @param bool $value Set
      * @return $this
      */
-    public function setIncludeSchema(bool $value)
+    public function setIncludeSchema($value)
     {
         $this->_includeSchema = $value;
 
@@ -101,9 +100,9 @@ class DebugLog extends AbstractLogger
     /**
      * Get the connection name.
      *
-     * @return string
+     * @return array
      */
-    public function name(): string
+    public function name()
     {
         return $this->_connectionName;
     }
@@ -113,7 +112,7 @@ class DebugLog extends AbstractLogger
      *
      * @return array
      */
-    public function queries(): array
+    public function queries()
     {
         return $this->_queries;
     }
@@ -123,7 +122,7 @@ class DebugLog extends AbstractLogger
      *
      * @return int
      */
-    public function totalTime(): int
+    public function totalTime()
     {
         return $this->_totalTime;
     }
@@ -133,33 +132,41 @@ class DebugLog extends AbstractLogger
      *
      * @return int
      */
-    public function totalRows(): int
+    public function totalRows()
     {
         return $this->_totalRows;
     }
 
     /**
-     * @inheritDoc
+     * Log queries
+     *
+     * @param \Cake\Database\Log\LoggedQuery $query The query being logged.
+     * @return void
      */
-    public function log($level, $message, array $context = []): void
+    public function log(LoggedQuery $query)
     {
-        $query = $context['query'];
-
         if ($this->_logger) {
-            $this->_logger->log($level, $message, $context);
+            if ($this->_logger instanceof PsrAbstractLogger) {
+                $this->_logger->log($query, $query->error);
+            } else {
+                $this->_logger->log($query);
+            }
         }
 
         if ($this->_includeSchema === false && $this->isSchemaQuery($query)) {
             return;
         }
 
+        if (!empty($query->params)) {
+            $query->query = $this->_interpolate($query);
+        }
         $this->_totalTime += $query->took;
         $this->_totalRows += $query->numRows;
 
         $this->_queries[] = [
-            'query' => (string)$query,
+            'query' => $query->query,
             'took' => $query->took,
-            'rows' => $query->numRows,
+            'rows' => $query->numRows
         ];
     }
 
@@ -169,11 +176,12 @@ class DebugLog extends AbstractLogger
      * @param \Cake\Database\Log\LoggedQuery $query The query to check.
      * @return bool
      */
-    protected function isSchemaQuery(LoggedQuery $query): bool
+    protected function isSchemaQuery(LoggedQuery $query)
     {
         $querystring = $query->query;
 
-        return // Multiple engines
+        return (
+            // Multiple engines
             strpos($querystring, 'FROM information_schema') !== false ||
             // Postgres
             strpos($querystring, 'FROM pg_catalog') !== false ||
@@ -186,6 +194,7 @@ class DebugLog extends AbstractLogger
             strpos($querystring, 'PRAGMA') === 0 ||
             // Sqlserver
             strpos($querystring, 'FROM INFORMATION_SCHEMA') !== false ||
-            strpos($querystring, 'FROM sys.') !== false;
+            strpos($querystring, 'FROM sys.') !== false
+        );
     }
 }

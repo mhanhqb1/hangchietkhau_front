@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -23,27 +21,16 @@ use Cake\ORM\Table;
  */
 interface LocatorInterface
 {
-    /**
-     * Returns configuration for an alias or the full configuration array for
-     * all aliases.
-     *
-     * @param string|null $alias Alias to get config for, null for complete config.
-     * @return array The config data.
-     */
-    public function getConfig(?string $alias = null): array;
 
     /**
      * Stores a list of options to be used when instantiating an object
      * with a matching alias.
      *
-     * @param string|array $alias Name of the alias or array to completely
-     *   overwrite current config.
+     * @param string|null $alias Name of the alias
      * @param array|null $options list of options for the alias
-     * @return $this
-     * @throws \RuntimeException When you attempt to configure an existing
-     *   table instance.
+     * @return array The config data.
      */
-    public function setConfig($alias, $options = null);
+    public function config($alias = null, $options = null);
 
     /**
      * Get a table instance from the registry.
@@ -52,7 +39,7 @@ interface LocatorInterface
      * @param array $options The options you want to build the table with.
      * @return \Cake\ORM\Table
      */
-    public function get(string $alias, array $options = []): Table;
+    public function get($alias, array $options = []);
 
     /**
      * Check to see if an instance exists in the registry.
@@ -60,7 +47,7 @@ interface LocatorInterface
      * @param string $alias The alias to check for.
      * @return bool
      */
-    public function exists(string $alias): bool;
+    public function exists($alias);
 
     /**
      * Set an instance.
@@ -69,14 +56,14 @@ interface LocatorInterface
      * @param \Cake\ORM\Table $object The table to set.
      * @return \Cake\ORM\Table
      */
-    public function set(string $alias, Table $object): Table;
+    public function set($alias, Table $object);
 
     /**
      * Clears the registry of configuration and instances.
      *
      * @return void
      */
-    public function clear(): void;
+    public function clear();
 
     /**
      * Removes an instance from the registry.
@@ -84,5 +71,5 @@ interface LocatorInterface
      * @param string $alias The alias to remove.
      * @return void
      */
-    public function remove(string $alias): void;
+    public function remove($alias);
 }

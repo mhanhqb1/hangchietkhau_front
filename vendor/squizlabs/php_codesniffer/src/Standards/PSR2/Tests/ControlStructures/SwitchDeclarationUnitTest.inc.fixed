@@ -126,7 +126,7 @@ switch ($foo) {
         // some comment
         echo 'bar';
         break;
-    case 'baz': // phpcs:ignore Standard.Category.Sniff
+    case 'baz': // other comment
         echo 'baz';
         break;
     case 'boo':
@@ -265,12 +265,3 @@ switch ($sContext)
         do_something();
     }
 }
-
-$foo = $foo ?
-    function () {
-        switch ($a) {
-            case 'a':
-                break;
-        }
-    } :
-    null;

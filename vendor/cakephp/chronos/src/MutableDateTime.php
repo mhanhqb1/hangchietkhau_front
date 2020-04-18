@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
@@ -31,11 +29,10 @@ use InvalidArgumentException;
  * @property-read int $hour
  * @property-read int $minute
  * @property-read int $second
- * @property-read int $micro
- * @property-read int $microsecond
  * @property-read int $timestamp seconds since the Unix Epoch
- * @property-read \DateTimeZone|string $timezone the current timezone
- * @property-read \DateTimeZone|string $tz alias of timezone
+ * @property-read DateTimeZone $timezone the current timezone
+ * @property-read DateTimeZone $tz alias of timezone
+ * @property-read int $micro
  * @property-read int $dayOfWeek 1 (for Monday) through 7 (for Sunday)
  * @property-read int $dayOfYear 0 through 365
  * @property-read int $weekOfMonth 1 through 5
@@ -48,8 +45,8 @@ use InvalidArgumentException;
  * @property-read bool $dst daylight savings time indicator, true if DST, false otherwise
  * @property-read bool $local checks if the timezone is local, true if local, false otherwise
  * @property-read bool $utc checks if the timezone is UTC, true if UTC, false otherwise
- * @property-read string $timezoneName
- * @property-read string $tzName
+ * @property-read string  $timezoneName
+ * @property-read string  $tzName
  */
 class MutableDateTime extends DateTime implements ChronosInterface
 {
@@ -76,7 +73,7 @@ class MutableDateTime extends DateTime implements ChronosInterface
      * Please see the testing aids section (specifically static::setTestNow())
      * for more on the possibility of this constructor returning a test instance.
      *
-     * @param string|int|null $time Fixed or relative time
+     * @param string|null $time Fixed or relative time
      * @param \DateTimeZone|string|null $tz The timezone for the instance
      */
     public function __construct($time = 'now', $tz = null)
@@ -85,12 +82,8 @@ class MutableDateTime extends DateTime implements ChronosInterface
             $tz = $tz instanceof DateTimeZone ? $tz : new DateTimeZone($tz);
         }
 
-        $testNow = Chronos::getTestNow();
-        if ($testNow === null) {
-            if ($time instanceof \DateTimeInterface) {
-                $time = $time->format('Y-m-d H:i:s.u');
-            }
-            parent::__construct($time ?? 'now', $tz);
+        if (static::$testNow === null) {
+            parent::__construct($time === null ? 'now' : $time, $tz);
 
             return;
         }
@@ -102,26 +95,25 @@ class MutableDateTime extends DateTime implements ChronosInterface
             return;
         }
 
-        $testNow = clone $testNow;
-        $relativetime = static::isTimeExpression($time);
-        if (!$relativetime && $tz !== $testNow->getTimezone()) {
-            $testNow = $testNow->setTimezone($tz ?? date_default_timezone_get());
-        }
-
+        $testInstance = clone static::getTestNow();
         if ($relative) {
-            $testNow = $testNow->modify($time);
+            $testInstance = $testInstance->modify($time);
         }
 
-        $time = $testNow->format('Y-m-d H:i:s.u');
+        if ($tz !== $testInstance->getTimezone()) {
+            $testInstance = $testInstance->setTimezone($tz === null ? date_default_timezone_get() : $tz);
+        }
+
+        $time = $testInstance->format('Y-m-d H:i:s.u');
         parent::__construct($time, $tz);
     }
 
     /**
      * Create a new immutable instance from current mutable instance.
      *
-     * @return \Cake\Chronos\Chronos
+     * @return Chronos
      */
-    public function toImmutable(): Chronos
+    public function toImmutable()
     {
         return Chronos::instance($this);
     }
@@ -134,7 +126,7 @@ class MutableDateTime extends DateTime implements ChronosInterface
      * @throws \InvalidArgumentException
      * @return void
      */
-    public function __set(string $name, $value): void
+    public function __set($name, $value)
     {
         switch ($name) {
             case 'year':
@@ -176,16 +168,42 @@ class MutableDateTime extends DateTime implements ChronosInterface
     }
 
     /**
+     * Overloading original modify method to handling modification with DST change
+     *
+     * For example, i have the date 2014-03-30 00:00:00 in Europe/London (new Carbon('2014-03-30 00:00:00,
+     *   'Europe/London')), then if i want to increase date by 1 day, i expect 2014-03-31 00:00:00, but if want to
+     *   increase date by 24 hours, then i expect 2014-03-31 01:00:00, because in this timezone there will be that time
+     *   after 24 hours (timezone offset changes because of Daylight correction). The same for minutes and seconds.
+     *
+     * @param string $modify argument for php DateTime::modify method
+     *
+     * @return static
+     */
+    public function modify($modify)
+    {
+        if (!preg_match('/(sec|second|min|minute|hour)s?/i', $modify)) {
+            return parent::modify($modify);
+        }
+
+        $timezone = $this->getTimezone();
+        $this->setTimezone('UTC');
+        parent::modify($modify);
+        $this->setTimezone($timezone);
+
+        return $this;
+    }
+
+    /**
      * Return properties for debugging.
      *
      * @return array
      */
-    public function __debugInfo(): array
+    public function __debugInfo()
     {
         $properties = [
-            'hasFixedNow' => static::hasTestNow(),
             'time' => $this->format('Y-m-d H:i:s.u'),
             'timezone' => $this->getTimezone()->getName(),
+            'hasFixedNow' => isset(self::$testNow)
         ];
 
         return $properties;

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -54,7 +52,7 @@ class Entity implements EntityInterface, InvalidPropertyInterface
             'markClean' => false,
             'markNew' => null,
             'guard' => false,
-            'source' => null,
+            'source' => null
         ];
 
         if (!empty($options['source'])) {
@@ -62,11 +60,11 @@ class Entity implements EntityInterface, InvalidPropertyInterface
         }
 
         if ($options['markNew'] !== null) {
-            $this->setNew($options['markNew']);
+            $this->isNew($options['markNew']);
         }
 
         if (!empty($properties) && $options['markClean'] && !$options['useSetters']) {
-            $this->_fields = $properties;
+            $this->_properties = $properties;
 
             return;
         }
@@ -74,7 +72,7 @@ class Entity implements EntityInterface, InvalidPropertyInterface
         if (!empty($properties)) {
             $this->set($properties, [
                 'setter' => $options['useSetters'],
-                'guard' => $options['guard'],
+                'guard' => $options['guard']
             ]);
         }
 

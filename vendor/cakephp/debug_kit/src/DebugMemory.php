@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -19,9 +17,11 @@ use Cake\Error\Debugger;
 
 /**
  * Contains methods for Profiling memory usage.
+ *
  */
 class DebugMemory
 {
+
     /**
      * An array of recorded memory use points.
      *

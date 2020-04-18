@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -14,13 +12,18 @@ declare(strict_types=1);
  */
 namespace Cake\View\Exception;
 
+use Cake\Core\Exception\Exception;
+
 /**
  * Used when an element file cannot be found.
  */
-class MissingElementException extends MissingTemplateException
+class MissingElementException extends Exception
 {
+
     /**
+     * Message template
+     *
      * @var string
      */
-    protected $type = 'Element';
+    protected $_messageTemplate = 'Element file "%s" is missing.';
 }

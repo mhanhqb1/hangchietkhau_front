@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,7 +15,6 @@ declare(strict_types=1);
 namespace Cake\Database;
 
 use Cake\Database\Expression\FunctionExpression;
-use InvalidArgumentException;
 
 /**
  * Contains methods related to generating FunctionExpression objects
@@ -26,6 +23,7 @@ use InvalidArgumentException;
  */
 class FunctionsBuilder
 {
+
     /**
      * Returns a new instance of a FunctionExpression. This is used for generating
      * arbitrary function calls in the final SQL string.
@@ -36,12 +34,8 @@ class FunctionsBuilder
      * @param string $return The return type of the function expression
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    protected function _build(
-        string $name,
-        array $params = [],
-        array $types = [],
-        string $return = 'string'
-    ): FunctionExpression {
+    protected function _build($name, $params = [], $types = [], $return = 'string')
+    {
         return new FunctionExpression($name, $params, $types, $return);
     }
 
@@ -50,17 +44,13 @@ class FunctionsBuilder
      * argument.
      *
      * @param string $name name of the function to build
-     * @param string|\Cake\Database\ExpressionInterface $expression the function argument
+     * @param mixed $expression the function argument
      * @param array $types list of types to bind to the arguments
      * @param string $return The return type for the function
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    protected function _literalArgumentFunction(
-        string $name,
-        $expression,
-        $types = [],
-        $return = 'string'
-    ): FunctionExpression {
+    protected function _literalArgumentFunction($name, $expression, $types = [], $return = 'string')
+    {
         if (!is_string($expression)) {
             $expression = [$expression];
         } else {
@@ -71,23 +61,13 @@ class FunctionsBuilder
     }
 
     /**
-     * Returns a FunctionExpression representing a call to SQL RAND function.
-     *
-     * @return \Cake\Database\Expression\FunctionExpression
-     */
-    public function rand(): FunctionExpression
-    {
-        return $this->_build('RAND', [], [], 'float');
-    }
-
-    /**
      * Returns a FunctionExpression representing a call to SQL SUM function.
      *
-     * @param string|\Cake\Database\ExpressionInterface $expression the function argument
+     * @param mixed $expression the function argument
      * @param array $types list of types to bind to the arguments
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    public function sum($expression, $types = []): FunctionExpression
+    public function sum($expression, $types = [])
     {
         $returnType = 'float';
         if (current($types) === 'integer') {
@@ -100,11 +80,11 @@ class FunctionsBuilder
     /**
      * Returns a FunctionExpression representing a call to SQL AVG function.
      *
-     * @param string|\Cake\Database\ExpressionInterface $expression the function argument
+     * @param mixed $expression the function argument
      * @param array $types list of types to bind to the arguments
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    public function avg($expression, $types = []): FunctionExpression
+    public function avg($expression, $types = [])
     {
         return $this->_literalArgumentFunction('AVG', $expression, $types, 'float');
     }
@@ -112,11 +92,11 @@ class FunctionsBuilder
     /**
      * Returns a FunctionExpression representing a call to SQL MAX function.
      *
-     * @param string|\Cake\Database\ExpressionInterface $expression the function argument
+     * @param mixed $expression the function argument
      * @param array $types list of types to bind to the arguments
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    public function max($expression, $types = []): FunctionExpression
+    public function max($expression, $types = [])
     {
         return $this->_literalArgumentFunction('MAX', $expression, $types, current($types) ?: 'string');
     }
@@ -124,11 +104,11 @@ class FunctionsBuilder
     /**
      * Returns a FunctionExpression representing a call to SQL MIN function.
      *
-     * @param string|\Cake\Database\ExpressionInterface $expression the function argument
+     * @param mixed $expression the function argument
      * @param array $types list of types to bind to the arguments
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    public function min($expression, $types = []): FunctionExpression
+    public function min($expression, $types = [])
     {
         return $this->_literalArgumentFunction('MIN', $expression, $types, current($types) ?: 'string');
     }
@@ -136,11 +116,11 @@ class FunctionsBuilder
     /**
      * Returns a FunctionExpression representing a call to SQL COUNT function.
      *
-     * @param string|\Cake\Database\ExpressionInterface $expression the function argument
+     * @param mixed $expression the function argument
      * @param array $types list of types to bind to the arguments
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    public function count($expression, $types = []): FunctionExpression
+    public function count($expression, $types = [])
     {
         return $this->_literalArgumentFunction('COUNT', $expression, $types, 'integer');
     }
@@ -152,7 +132,7 @@ class FunctionsBuilder
      * @param array $types list of types to bind to the arguments
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    public function concat(array $args, array $types = []): FunctionExpression
+    public function concat($args, $types = [])
     {
         return $this->_build('CONCAT', $args, $types, 'string');
     }
@@ -164,7 +144,7 @@ class FunctionsBuilder
      * @param array $types list of types to bind to the arguments
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    public function coalesce(array $args, array $types = []): FunctionExpression
+    public function coalesce($args, $types = [])
     {
         return $this->_build('COALESCE', $args, $types, current($types) ?: 'string');
     }
@@ -177,7 +157,7 @@ class FunctionsBuilder
      * @param array $types list of types to bind to the arguments
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    public function dateDiff(array $args, array $types = []): FunctionExpression
+    public function dateDiff($args, $types = [])
     {
         return $this->_build('DATEDIFF', $args, $types, 'integer');
     }
@@ -186,24 +166,24 @@ class FunctionsBuilder
      * Returns the specified date part from the SQL expression.
      *
      * @param string $part Part of the date to return.
-     * @param string|\Cake\Database\ExpressionInterface $expression Expression to obtain the date part from.
+     * @param string $expression Expression to obtain the date part from.
      * @param array $types list of types to bind to the arguments
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    public function datePart(string $part, $expression, array $types = []): FunctionExpression
+    public function datePart($part, $expression, $types = [])
     {
-        return $this->extract($part, $expression, $types);
+        return $this->extract($part, $expression);
     }
 
     /**
      * Returns the specified date part from the SQL expression.
      *
      * @param string $part Part of the date to return.
-     * @param string|\Cake\Database\ExpressionInterface $expression Expression to obtain the date part from.
+     * @param string $expression Expression to obtain the date part from.
      * @param array $types list of types to bind to the arguments
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    public function extract(string $part, $expression, array $types = []): FunctionExpression
+    public function extract($part, $expression, $types = [])
     {
         $expression = $this->_literalArgumentFunction('EXTRACT', $expression, $types, 'integer');
         $expression->setConjunction(' FROM')->add([$part => 'literal'], [], true);
@@ -214,13 +194,13 @@ class FunctionsBuilder
     /**
      * Add the time unit to the date expression
      *
-     * @param string|\Cake\Database\ExpressionInterface $expression Expression to obtain the date part from.
-     * @param string|int $value Value to be added. Use negative to subtract.
+     * @param string $expression Expression to obtain the date part from.
+     * @param string $value Value to be added. Use negative to substract.
      * @param string $unit Unit of the value e.g. hour or day.
      * @param array $types list of types to bind to the arguments
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    public function dateAdd($expression, $value, string $unit, array $types = []): FunctionExpression
+    public function dateAdd($expression, $value, $unit, $types = [])
     {
         if (!is_numeric($value)) {
             $value = 0;
@@ -236,11 +216,11 @@ class FunctionsBuilder
      * Returns a FunctionExpression representing a call to SQL WEEKDAY function.
      * 1 - Sunday, 2 - Monday, 3 - Tuesday...
      *
-     * @param string|\Cake\Database\ExpressionInterface $expression the function argument
+     * @param mixed $expression the function argument
      * @param array $types list of types to bind to the arguments
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    public function dayOfWeek($expression, $types = []): FunctionExpression
+    public function dayOfWeek($expression, $types = [])
     {
         return $this->_literalArgumentFunction('DAYOFWEEK', $expression, $types, 'integer');
     }
@@ -249,11 +229,11 @@ class FunctionsBuilder
      * Returns a FunctionExpression representing a call to SQL WEEKDAY function.
      * 1 - Sunday, 2 - Monday, 3 - Tuesday...
      *
-     * @param string|\Cake\Database\ExpressionInterface $expression the function argument
+     * @param mixed $expression the function argument
      * @param array $types list of types to bind to the arguments
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    public function weekday($expression, $types = []): FunctionExpression
+    public function weekday($expression, $types = [])
     {
         return $this->dayOfWeek($expression, $types);
     }
@@ -266,7 +246,7 @@ class FunctionsBuilder
      * @param string $type (datetime|date|time)
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    public function now(string $type = 'datetime'): FunctionExpression
+    public function now($type = 'datetime')
     {
         if ($type === 'datetime') {
             return $this->_build('NOW')->setReturnType('datetime');
@@ -277,8 +257,6 @@ class FunctionsBuilder
         if ($type === 'time') {
             return $this->_build('CURRENT_TIME')->setReturnType('time');
         }
-
-        throw new InvalidArgumentException('Invalid argument for FunctionsBuilder::now(): ' . $type);
     }
 
     /**
@@ -290,7 +268,7 @@ class FunctionsBuilder
      * params, and the third one the return type of the function
      * @return \Cake\Database\Expression\FunctionExpression
      */
-    public function __call(string $name, array $args): FunctionExpression
+    public function __call($name, $args)
     {
         switch (count($args)) {
             case 0:

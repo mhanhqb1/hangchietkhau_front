@@ -26,41 +26,36 @@ class OtherArticlesFixture implements FixtureInterface
 {
     public $table = 'other_articles';
 
-    public function create(ConnectionInterface $db): bool
+    public function create(ConnectionInterface $db)
     {
-        return true;
     }
 
-    public function drop(ConnectionInterface $db): bool
+    public function drop(ConnectionInterface $db)
     {
-        return true;
     }
 
     public function insert(ConnectionInterface $db)
     {
     }
 
-    public function createConstraints(ConnectionInterface $db): bool
+    public function createConstraints(ConnectionInterface $db)
     {
-        return true;
     }
 
-    public function dropConstraints(ConnectionInterface $db): bool
+    public function dropConstraints(ConnectionInterface $db)
     {
-        return true;
     }
 
-    public function truncate(ConnectionInterface $db): bool
+    public function truncate(ConnectionInterface $db)
     {
-        return true;
     }
 
-    public function connection(): string
+    public function connection()
     {
         return 'other';
     }
 
-    public function sourceName(): string
+    public function sourceName()
     {
         return 'other_articles';
     }

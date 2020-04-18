@@ -10,10 +10,32 @@
 
 namespace PHP_CodeSniffer\Standards\Generic\Tests\PHP;
 
+use PHP_CodeSniffer\Config;
 use PHP_CodeSniffer\Tests\Standards\AbstractSniffUnitTest;
 
 class SyntaxUnitTest extends AbstractSniffUnitTest
 {
+
+
+    /**
+     * Should this test be skipped for some reason.
+     *
+     * @return void
+     */
+    protected function shouldSkipTest()
+    {
+        if (defined('PHP_BINARY') === true) {
+            return false;
+        }
+
+        $phpPath = Config::getExecutablePath('php');
+        if ($phpPath === null) {
+            return true;
+        }
+
+        return false;
+
+    }//end shouldSkipTest()
 
 
     /**
@@ -26,7 +48,7 @@ class SyntaxUnitTest extends AbstractSniffUnitTest
      */
     public function getErrorList()
     {
-        return [3 => 1];
+        return array(3 => 1);
 
     }//end getErrorList()
 
@@ -41,7 +63,7 @@ class SyntaxUnitTest extends AbstractSniffUnitTest
      */
     public function getWarningList()
     {
-        return [];
+        return array();
 
     }//end getWarningList()
 

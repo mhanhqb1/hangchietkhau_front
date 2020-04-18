@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -26,6 +24,7 @@ namespace Cake\ORM;
  */
 class EagerLoadable
 {
+
     /**
      * The name of the association to load.
      *
@@ -36,14 +35,14 @@ class EagerLoadable
     /**
      * A list of other associations to load from this level.
      *
-     * @var \Cake\ORM\EagerLoadable[]
+     * @var \Cake\Orm\EagerLoadable[]
      */
     protected $_associations = [];
 
     /**
      * The Association class instance to use for loading the records.
      *
-     * @var \Cake\ORM\Association|null
+     * @var \Cake\ORM\Association
      */
     protected $_instance;
 
@@ -75,7 +74,7 @@ class EagerLoadable
      *
      * The property path of `country` will be `author.company`
      *
-     * @var string|null
+     * @var string
      */
     protected $_propertyPath;
 
@@ -90,7 +89,7 @@ class EagerLoadable
      * Whether or not this level was meant for a "matching" fetch
      * operation
      *
-     * @var bool|null
+     * @var bool
      */
     protected $_forMatching;
 
@@ -106,7 +105,7 @@ class EagerLoadable
      *
      * The target property of `country` will be just `country`
      *
-     * @var string|null
+     * @var string
      */
     protected $_targetProperty;
 
@@ -128,12 +127,12 @@ class EagerLoadable
      * @param string $name The Association name.
      * @param array $config The list of properties to set.
      */
-    public function __construct(string $name, array $config = [])
+    public function __construct($name, array $config = [])
     {
         $this->_name = $name;
         $allowed = [
             'associations', 'instance', 'config', 'canBeJoined',
-            'aliasPath', 'propertyPath', 'forMatching', 'targetProperty',
+            'aliasPath', 'propertyPath', 'forMatching', 'targetProperty'
         ];
         foreach ($allowed as $property) {
             if (isset($config[$property])) {
@@ -149,7 +148,7 @@ class EagerLoadable
      * @param \Cake\ORM\EagerLoadable $association The association to load.
      * @return void
      */
-    public function addAssociation(string $name, EagerLoadable $association): void
+    public function addAssociation($name, EagerLoadable $association)
     {
         $this->_associations[$name] = $association;
     }
@@ -157,9 +156,9 @@ class EagerLoadable
     /**
      * Returns the Association class instance to use for loading the records.
      *
-     * @return \Cake\ORM\EagerLoadable[]
+     * @return array
      */
-    public function associations(): array
+    public function associations()
     {
         return $this->_associations;
     }
@@ -167,15 +166,10 @@ class EagerLoadable
     /**
      * Gets the Association class instance to use for loading the records.
      *
-     * @return \Cake\ORM\Association
-     * @throws \RuntimeException
+     * @return \Cake\ORM\Association|null
      */
-    public function instance(): Association
+    public function instance()
     {
-        if ($this->_instance === null) {
-            throw new \RuntimeException('No instance set.');
-        }
-
         return $this->_instance;
     }
 
@@ -183,9 +177,9 @@ class EagerLoadable
      * Gets a dot separated string representing the path of associations
      * that should be followed to fetch this level.
      *
-     * @return string
+     * @return string|null
      */
-    public function aliasPath(): string
+    public function aliasPath()
     {
         return $this->_aliasPath;
     }
@@ -204,7 +198,7 @@ class EagerLoadable
      *
      * @return string|null
      */
-    public function propertyPath(): ?string
+    public function propertyPath()
     {
         return $this->_propertyPath;
     }
@@ -215,7 +209,7 @@ class EagerLoadable
      * @param bool $possible The value to set.
      * @return $this
      */
-    public function setCanBeJoined(bool $possible)
+    public function setCanBeJoined($possible)
     {
         $this->_canBeJoined = (bool)$possible;
 
@@ -225,10 +219,18 @@ class EagerLoadable
     /**
      * Gets whether or not this level can be fetched using a join.
      *
+     * If called with arguments it sets the value.
+     * As of 3.4.0 the setter part is deprecated, use setCanBeJoined() instead.
+     *
+     * @param bool|null $possible The value to set.
      * @return bool
      */
-    public function canBeJoined(): bool
+    public function canBeJoined($possible = null)
     {
+        if ($possible !== null) {
+            $this->setCanBeJoined($possible);
+        }
+
         return $this->_canBeJoined;
     }
 
@@ -252,9 +254,29 @@ class EagerLoadable
      *
      * @return array
      */
-    public function getConfig(): array
+    public function getConfig()
     {
         return $this->_config;
+    }
+
+    /**
+     * Sets the list of options to pass to the association object for loading
+     * the records.
+     *
+     * If called with no arguments it returns the current
+     * value.
+     *
+     * @deprecated 3.4.0 Use setConfig()/getConfig() instead.
+     * @param array|null $config The value to set.
+     * @return array
+     */
+    public function config(array $config = null)
+    {
+        if ($config !== null) {
+            $this->setConfig($config);
+        }
+
+        return $this->getConfig();
     }
 
     /**
@@ -263,7 +285,7 @@ class EagerLoadable
      *
      * @return bool|null
      */
-    public function forMatching(): ?bool
+    public function forMatching()
     {
         return $this->_forMatching;
     }
@@ -282,7 +304,7 @@ class EagerLoadable
      *
      * @return string|null
      */
-    public function targetProperty(): ?string
+    public function targetProperty()
     {
         return $this->_targetProperty;
     }
@@ -293,7 +315,7 @@ class EagerLoadable
      *
      * @return array
      */
-    public function asContainArray(): array
+    public function asContainArray()
     {
         $associations = [];
         foreach ($this->_associations as $assoc) {
@@ -307,8 +329,8 @@ class EagerLoadable
         return [
             $this->_name => [
                 'associations' => $associations,
-                'config' => $config,
-            ],
+                'config' => $config
+            ]
         ];
     }
 }

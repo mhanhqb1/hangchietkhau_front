@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -24,6 +22,7 @@ use Cake\Utility\Inflector;
  */
 class InflectedRoute extends Route
 {
+
     /**
      * Flag for tracking whether or not the defaults have been inflected.
      *
@@ -40,13 +39,13 @@ class InflectedRoute extends Route
      *
      * @param string $url The URL to parse
      * @param string $method The HTTP method being matched.
-     * @return array|null An array of request parameters, or null on failure.
+     * @return array|false An array of request parameters, or false on failure.
      */
-    public function parse(string $url, string $method = ''): ?array
+    public function parse($url, $method = '')
     {
         $params = parent::parse($url, $method);
         if (!$params) {
-            return null;
+            return false;
         }
         if (!empty($params['controller'])) {
             $params['controller'] = Inflector::camelize($params['controller']);
@@ -55,7 +54,7 @@ class InflectedRoute extends Route
             if (strpos($params['plugin'], '/') === false) {
                 $params['plugin'] = Inflector::camelize($params['plugin']);
             } else {
-                [$vendor, $plugin] = explode('/', $params['plugin'], 2);
+                list($vendor, $plugin) = explode('/', $params['plugin'], 2);
                 $params['plugin'] = Inflector::camelize($vendor) . '/' . Inflector::camelize($plugin);
             }
         }
@@ -71,9 +70,9 @@ class InflectedRoute extends Route
      * @param array $context An array of the current request context.
      *   Contains information such as the current host, scheme, port, and base
      *   directory.
-     * @return string|null Either a string URL for the parameters if they match or null.
+     * @return string|false Either a string URL for the parameters if they match or false.
      */
-    public function match(array $url, array $context = []): ?string
+    public function match(array $url, array $context = [])
     {
         $url = $this->_underscore($url);
         if (!$this->_inflectedDefaults) {
@@ -90,7 +89,7 @@ class InflectedRoute extends Route
      * @param array $url An array of URL keys.
      * @return array
      */
-    protected function _underscore(array $url): array
+    protected function _underscore($url)
     {
         if (!empty($url['controller'])) {
             $url['controller'] = Inflector::underscore($url['controller']);

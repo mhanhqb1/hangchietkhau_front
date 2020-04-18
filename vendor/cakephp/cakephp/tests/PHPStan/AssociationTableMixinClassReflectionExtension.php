@@ -1,19 +1,18 @@
-<?php
-declare(strict_types=1);
+<?php declare(strict_types = 1);
 
 namespace Cake\PHPStan;
 
 use Cake\ORM\Association;
 use Cake\ORM\Table;
 use PHPStan\Broker\Broker;
-use PHPStan\Reflection\BrokerAwareExtension;
+use PHPStan\Reflection\BrokerAwareClassReflectionExtension;
 use PHPStan\Reflection\ClassReflection;
 use PHPStan\Reflection\MethodReflection;
 use PHPStan\Reflection\MethodsClassReflectionExtension;
 use PHPStan\Reflection\PropertiesClassReflectionExtension;
 use PHPStan\Reflection\PropertyReflection;
 
-class AssociationTableMixinClassReflectionExtension implements PropertiesClassReflectionExtension, MethodsClassReflectionExtension, BrokerAwareExtension
+class AssociationTableMixinClassReflectionExtension implements PropertiesClassReflectionExtension, MethodsClassReflectionExtension, BrokerAwareClassReflectionExtension
 {
     /**
      * @var \PHPStan\Broker\Broker
@@ -24,7 +23,7 @@ class AssociationTableMixinClassReflectionExtension implements PropertiesClassRe
      * @param Broker $broker Class reflection broker
      * @return void
      */
-    public function setBroker(Broker $broker): void
+    public function setBroker(Broker $broker)
     {
         $this->broker = $broker;
     }
@@ -44,11 +43,6 @@ class AssociationTableMixinClassReflectionExtension implements PropertiesClassRe
      */
     public function hasMethod(ClassReflection $classReflection, string $methodName): bool
     {
-        // magic findBy* method
-        if ($classReflection->isSubclassOf(Table::class) && preg_match('/^find(?:\w+)?By/', $methodName) > 0) {
-            return true;
-        }
-
         if (!$classReflection->isSubclassOf(Association::class)) {
             return false;
         }
@@ -63,12 +57,7 @@ class AssociationTableMixinClassReflectionExtension implements PropertiesClassRe
      */
     public function getMethod(ClassReflection $classReflection, string $methodName): MethodReflection
     {
-        // magic findBy* method
-        if ($classReflection->isSubclassOf(Table::class) && preg_match('/^find(?:\w+)?By/', $methodName) > 0) {
-            return new TableFindByPropertyMethodReflection($methodName, $classReflection);
-        }
-
-        return $this->getTableReflection()->getNativeMethod($methodName);
+        return $this->getTableReflection()->getMethod($methodName);
     }
 
     /**
@@ -92,6 +81,6 @@ class AssociationTableMixinClassReflectionExtension implements PropertiesClassRe
      */
     public function getProperty(ClassReflection $classReflection, string $propertyName): PropertyReflection
     {
-        return $this->getTableReflection()->getNativeProperty($propertyName);
+        return $this->getTableReflection()->getProperty($propertyName);
     }
 }

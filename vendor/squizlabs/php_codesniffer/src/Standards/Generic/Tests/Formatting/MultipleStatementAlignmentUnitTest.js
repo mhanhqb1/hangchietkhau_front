@@ -83,7 +83,7 @@ var buttonWidget = WidgetStore.get(buttonid);
 var spinButtonid = [this.id, '-positionFormats-spinButton'].join('');
 var spinButtonWidget = WidgetStore.get(spinButtonid);
 var position = spinButtonWidget.getValue();
-var posFormatsList = WidgetStore.get([self.id, '-positionFormats-list'].join(''));
+var posForamatsList = WidgetStore.get([self.id, '-positionFormats-list'].join(''));
 
 dfx.stripTags = function(content, allowedTags)
 {
@@ -108,11 +108,3 @@ function() {
     if (condition)
         foo = .4
 }
-
-x = x << y;
-x  <<= y;
-x = x >> y;
-x >>= y;
-
-x = x << y;
-x >>>= y;

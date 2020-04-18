@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -24,13 +22,18 @@ use Cake\Console\ConsoleIo;
 class LegacyCommandRunner
 {
     /**
+     * @var \Cake\Console\ConsoleIo
+     */
+    protected $_io;
+
+    /**
      * Mimics functionality of Cake\Console\CommandRunner
      *
      * @param array $argv Argument array
-     * @param \Cake\Console\ConsoleIo $io A ConsoleIo instance.
+     * @param ConsoleIo $io ConsoleIo
      * @return int
      */
-    public function run(array $argv, ?ConsoleIo $io = null): int
+    public function run(array $argv, ConsoleIo $io = null)
     {
         $dispatcher = new LegacyShellDispatcher($argv, true, $io);
 

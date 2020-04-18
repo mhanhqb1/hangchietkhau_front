@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
@@ -17,6 +15,7 @@ use Phinx\Migration\AbstractMigration as BaseAbstractMigration;
 
 class AbstractMigration extends BaseAbstractMigration
 {
+
     /**
      * Whether the tables created in this migration
      * should auto-create an `id` field or not
@@ -30,15 +29,11 @@ class AbstractMigration extends BaseAbstractMigration
     public $autoId = true;
 
     /**
-     * Returns an instance of the Table class.
+     * {@inheritdoc}
      *
-     * You can use this class to create and manipulate tables.
-     *
-     * @param string $tableName Table Name
-     * @param array $options Options
      * @return \Migrations\Table
      */
-    public function table($tableName, $options = [])
+    public function table($tableName, $options = array())
     {
         if ($this->autoId === false) {
             $options['id'] = false;

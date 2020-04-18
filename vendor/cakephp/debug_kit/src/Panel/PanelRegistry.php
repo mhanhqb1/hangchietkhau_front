@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -16,14 +14,13 @@ namespace DebugKit\Panel;
 
 use Cake\Core\App;
 use Cake\Core\ObjectRegistry;
-use Cake\Event\EventDispatcherInterface;
 use Cake\Event\EventDispatcherTrait;
 use Cake\Event\EventManager;
 
 /**
  * Registry object for panels.
  */
-class PanelRegistry extends ObjectRegistry implements EventDispatcherInterface
+class PanelRegistry extends ObjectRegistry
 {
     use EventDispatcherTrait;
 
@@ -35,7 +32,7 @@ class PanelRegistry extends ObjectRegistry implements EventDispatcherInterface
      */
     public function __construct(EventManager $events)
     {
-        $this->setEventManager($events);
+        $this->eventManager($events);
     }
 
     /**
@@ -44,9 +41,9 @@ class PanelRegistry extends ObjectRegistry implements EventDispatcherInterface
      * Part of the template method for Cake\Utility\ObjectRegistry::load()
      *
      * @param string $class Partial class name to resolve.
-     * @return string|null Either the correct class name, null if the class is not found.
+     * @return string|false Either the correct class name or false.
      */
-    protected function _resolveClassName(string $class): ?string
+    protected function _resolveClassName($class)
     {
         return App::className($class, 'Panel', 'Panel');
     }
@@ -61,9 +58,9 @@ class PanelRegistry extends ObjectRegistry implements EventDispatcherInterface
      * @return void
      * @throws \RuntimeException
      */
-    protected function _throwMissingClassError(string $class, ?string $plugin): void
+    protected function _throwMissingClassError($class, $plugin)
     {
-        throw new \RuntimeException(__d('debug_kit', "Unable to find ''{0}'' panel.", $class));
+        throw new \RuntimeException("Unable to find '$class' panel.");
     }
 
     /**
@@ -75,12 +72,11 @@ class PanelRegistry extends ObjectRegistry implements EventDispatcherInterface
      * @param string $alias The alias of the panel.
      * @param array $config An array of config to use for the panel.
      * @return \DebugKit\DebugPanel The constructed panel class.
-     * @psalm-param class-string $class
      */
-    protected function _create($class, string $alias, array $config)
+    protected function _create($class, $alias, $config)
     {
         $instance = new $class($this, $config);
-        $this->getEventManager()->on($instance);
+        $this->eventManager()->on($instance);
 
         return $instance;
     }

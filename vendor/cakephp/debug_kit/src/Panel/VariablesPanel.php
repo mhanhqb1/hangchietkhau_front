@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -16,7 +14,7 @@ namespace DebugKit\Panel;
 
 use Cake\Collection\Collection;
 use Cake\Datasource\EntityInterface;
-use Cake\Event\EventInterface;
+use Cake\Event\Event;
 use Cake\Form\Form;
 use Cake\ORM\Query;
 use Cake\ORM\ResultSet;
@@ -31,20 +29,23 @@ use SimpleXMLElement;
 
 /**
  * Provides debug information on the View variables.
+ *
  */
 class VariablesPanel extends DebugPanel
 {
+
     /**
      * Extracts nested validation errors
      *
-     * @param \Cake\Datasource\EntityInterface $entity Entity to extract
+     * @param EntityInterface $entity Entity to extract
+     *
      * @return array
      */
     protected function _getErrors(EntityInterface $entity)
     {
-        $errors = $entity->getErrors();
+        $errors = $entity->errors();
 
-        foreach ($entity->getVisible() as $property) {
+        foreach ($entity->visibleProperties() as $property) {
             $v = $entity[$property];
             if ($v instanceof EntityInterface) {
                 $errors[$property] = $this->_getErrors($v);
@@ -61,46 +62,18 @@ class VariablesPanel extends DebugPanel
     }
 
     /**
-     * Safely retrieves debug information from an object
-     * and applies a callback.
-     *
-     * @param callable $walker The walker to apply on the debug info array.
-     * @param object $item The item whose debug info to retrieve.
-     * @return array|string
-     */
-    protected function _walkDebugInfo(callable $walker, $item)
-    {
-        try {
-            $info = $item->__debugInfo();
-        } catch (\Exception $exception) {
-            return __d(
-                'debug_kit',
-                'Could not retrieve debug info - {0}. Error: {1} in {2}, line {3}',
-                get_class($item),
-                $exception->getMessage(),
-                $exception->getFile(),
-                $exception->getLine()
-            );
-        }
-
-        return array_map($walker, $info);
-    }
-
-    /**
      * Shutdown event
      *
-     * @param \Cake\Event\EventInterface $event The event
+     * @param \Cake\Event\Event $event The event
      * @return void
      */
-    public function shutdown(EventInterface $event)
+    public function shutdown(Event $event)
     {
-        /** @var \Cake\Controller\Controller $controller */
-        $controller = $event->getSubject();
+        $controller = $event->subject();
         $errors = [];
 
         $walker = function (&$item) use (&$walker) {
-            if (
-                $item instanceof Collection ||
+            if ($item instanceof Collection ||
                 $item instanceof Query ||
                 $item instanceof ResultSet
             ) {
@@ -108,15 +81,14 @@ class VariablesPanel extends DebugPanel
                     $item = $item->toArray();
                 } catch (\Cake\Database\Exception $e) {
                     //Likely issue is unbuffered query; fall back to __debugInfo
-                    $item = $this->_walkDebugInfo($walker, $item);
+                    $item = array_map($walker, $item->__debugInfo());
                 } catch (RuntimeException $e) {
                     // Likely a non-select query.
-                    $item = $this->_walkDebugInfo($walker, $item);
+                    $item = array_map($walker, $item->__debugInfo());
                 } catch (InvalidArgumentException $e) {
-                    $item = $this->_walkDebugInfo($walker, $item);
+                    $item = array_map($walker, $item->__debugInfo());
                 }
-            } elseif (
-                $item instanceof Closure ||
+            } elseif ($item instanceof Closure ||
                 $item instanceof PDO ||
                 $item instanceof SimpleXMLElement
             ) {
@@ -129,21 +101,15 @@ class VariablesPanel extends DebugPanel
                     $item->getFile(),
                     $item->getLine()
                 );
-            } elseif (is_object($item)) {
-                if (method_exists($item, '__debugInfo')) {
-                    // Convert objects into using __debugInfo.
-                    $item = $this->_walkDebugInfo($walker, $item);
-                } else {
-                    $item = $this->trySerialize($item);
-                }
-            } elseif (is_resource($item)) {
-                $item = sprintf('[%s] %s', get_resource_type($item), $item);
+            } elseif (is_object($item) && method_exists($item, '__debugInfo')) {
+                // Convert objects into using __debugInfo.
+                $item = array_map($walker, $item->__debugInfo());
             }
 
-            return $this->trySerialize($item);
+            return $item;
         };
         // Copy so viewVars is not mutated.
-        $vars = $controller->viewBuilder()->getVars();
+        $vars = $controller->viewVars;
         array_walk_recursive($vars, $walker);
 
         foreach ($vars as $k => $v) {
@@ -151,51 +117,17 @@ class VariablesPanel extends DebugPanel
             if ($v instanceof EntityInterface) {
                 $errors[$k] = $this->_getErrors($v);
             } elseif ($v instanceof Form) {
-                $formErrors = $v->getErrors();
-                if ($formErrors) {
-                    $errors[$k] = $formErrors;
+                $formError = $v->errors();
+                if (!empty($formError)) {
+                    $errors[$k] = $formError;
                 }
             }
         }
 
         $this->_data = [
             'content' => $vars,
-            'errors' => $errors,
+            'errors' => $errors
         ];
-    }
-
-    /**
-     * Try to serialize an item, provide an error message if not possible
-     *
-     * @param mixed $item Item to check
-     * @return mixed The $item if it is serializable, error message if not
-     */
-    protected function trySerialize($item)
-    {
-        try {
-            serialize($item);
-
-            return $item;
-        } catch (\Exception $e) {
-            if (is_object($item)) {
-                return __d(
-                    'debug_kit',
-                    'Unserializable object - {0}. Error: {1} in {2}, line {3}',
-                    get_class($item),
-                    $e->getMessage(),
-                    $e->getFile(),
-                    $e->getLine()
-                );
-            }
-
-            return __d(
-                'debug_kit',
-                'Unserializable Error: {1} in {2}, line {3}',
-                $e->getMessage(),
-                $e->getFile(),
-                $e->getLine()
-            );
-        }
     }
 
     /**

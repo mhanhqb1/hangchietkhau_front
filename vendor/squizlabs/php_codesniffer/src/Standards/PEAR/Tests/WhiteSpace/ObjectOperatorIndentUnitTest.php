@@ -25,26 +25,17 @@ class ObjectOperatorIndentUnitTest extends AbstractSniffUnitTest
      */
     public function getErrorList()
     {
-        return [
-            3   => 2,
-            6   => 1,
-            15  => 1,
-            27  => 1,
-            37  => 1,
-            38  => 1,
-            48  => 1,
-            49  => 1,
-            50  => 1,
-            65  => 1,
-            69  => 1,
-            73  => 1,
-            79  => 1,
-            80  => 1,
-            81  => 1,
-            82  => 1,
-            95  => 1,
-            103 => 1,
-        ];
+        return array(
+                3  => 2,
+                6  => 1,
+                15 => 1,
+                27 => 1,
+                37 => 1,
+                38 => 1,
+                48 => 1,
+                49 => 1,
+                50 => 1,
+               );
 
     }//end getErrorList()
 
@@ -59,7 +50,7 @@ class ObjectOperatorIndentUnitTest extends AbstractSniffUnitTest
      */
     public function getWarningList()
     {
-        return [];
+        return array();
 
     }//end getWarningList()
 

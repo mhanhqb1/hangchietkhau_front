@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -18,18 +16,13 @@ namespace Cake\Database\Expression;
 
 use Cake\Database\ExpressionInterface;
 use Cake\Database\ValueBinder;
-use Closure;
 
 /**
- * Represents a single identifier name in the database.
- *
- * Identifier values are unsafe with user supplied data.
- * Values will be quoted when identifier quoting is enabled.
- *
- * @see \Cake\Database\Query::identifier()
+ * Represents a single identifier name in the database
  */
 class IdentifierExpression implements ExpressionInterface
 {
+
     /**
      * Holds the identifier string
      *
@@ -42,7 +35,7 @@ class IdentifierExpression implements ExpressionInterface
      *
      * @param string $identifier The identifier this expression represents
      */
-    public function __construct(string $identifier)
+    public function __construct($identifier)
     {
         $this->_identifier = $identifier;
     }
@@ -53,7 +46,7 @@ class IdentifierExpression implements ExpressionInterface
      * @param string $identifier The identifier
      * @return void
      */
-    public function setIdentifier(string $identifier): void
+    public function setIdentifier($identifier)
     {
         $this->_identifier = $identifier;
     }
@@ -63,7 +56,7 @@ class IdentifierExpression implements ExpressionInterface
      *
      * @return string
      */
-    public function getIdentifier(): string
+    public function getIdentifier()
     {
         return $this->_identifier;
     }
@@ -74,7 +67,7 @@ class IdentifierExpression implements ExpressionInterface
      * @param \Cake\Database\ValueBinder $generator Placeholder generator object
      * @return string
      */
-    public function sql(ValueBinder $generator): string
+    public function sql(ValueBinder $generator)
     {
         return $this->_identifier;
     }
@@ -83,11 +76,10 @@ class IdentifierExpression implements ExpressionInterface
      * This method is a no-op, this is a leaf type of expression,
      * hence there is nothing to traverse
      *
-     * @param \Closure $callable The callable to traverse with.
-     * @return $this
+     * @param callable $callable The callable to traverse with.
+     * @return void
      */
-    public function traverse(Closure $callable)
+    public function traverse(callable $callable)
     {
-        return $this;
     }
 }

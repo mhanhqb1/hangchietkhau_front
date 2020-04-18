@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
@@ -13,10 +11,13 @@ declare(strict_types=1);
  */
 namespace Migrations;
 
+use Cake\Core\Plugin;
 use Cake\Datasource\ConnectionManager;
 use Migrations\Util\UtilTrait;
 use Phinx\Config\Config;
+use Symfony\Component\Console\Input\InputArgument;
 use Symfony\Component\Console\Input\InputInterface;
+use Symfony\Component\Console\Output\OutputInterface;
 
 /**
  * Contains a set of methods designed as overrides for
@@ -26,12 +27,13 @@ use Symfony\Component\Console\Input\InputInterface;
  */
 trait ConfigurationTrait
 {
+
     use UtilTrait;
 
     /**
      * The configuration object that phinx uses for connecting to the database
      *
-     * @var \Phinx\Config\Config|null
+     * @var \Phinx\Config\Config
      */
     protected $configuration;
 
@@ -45,27 +47,15 @@ trait ConfigurationTrait
     /**
      * The console input instance
      *
-     * @var \Symfony\Component\Console\Input\InputInterface|null
+     * @var \Symfony\Component\Console\Input\Input
      */
     protected $input;
-
-    /**
-     * @return \Symfony\Component\Console\Input\InputInterface
-     */
-    protected function input(): InputInterface
-    {
-        if ($this->input === null) {
-            throw new \RuntimeException('Input not set');
-        }
-
-        return $this->input;
-    }
 
     /**
      * Overrides the original method from phinx in order to return a tailored
      * Config object containing the connection details for the database.
      *
-     * @param bool $forceRefresh Refresh config.
+     * @param bool $forceRefresh
      * @return \Phinx\Config\Config
      */
     public function getConfig($forceRefresh = false)
@@ -74,9 +64,9 @@ trait ConfigurationTrait
             return $this->configuration;
         }
 
-        $migrationsPath = $this->getOperationsPath($this->input());
-        $seedsPath = $this->getOperationsPath($this->input(), 'Seeds');
-        $plugin = $this->getPlugin($this->input());
+        $migrationsPath = $this->getOperationsPath($this->input);
+        $seedsPath = $this->getOperationsPath($this->input, 'Seeds');
+        $plugin = $this->getPlugin($this->input);
 
         if (!is_dir($migrationsPath)) {
             mkdir($migrationsPath, 0777, true);
@@ -88,19 +78,19 @@ trait ConfigurationTrait
 
         $phinxTable = $this->getPhinxTable($plugin);
 
-        $connection = $this->getConnectionName($this->input());
+        $connection = $this->getConnectionName($this->input);
 
-        $connectionConfig = ConnectionManager::getConfig($connection);
+        $connectionConfig = ConnectionManager::config($connection);
         $adapterName = $this->getAdapterName($connectionConfig['driver']);
 
-        $templatePath = dirname(__DIR__) . DS . 'templates' . DS;
+        $templatePath = Plugin::path('Migrations') . 'src' . DS . 'Template' . DS;
         $config = [
             'paths' => [
                 'migrations' => $migrationsPath,
                 'seeds' => $seedsPath,
             ],
             'templates' => [
-                'file' => $templatePath . 'Phinx' . DS . 'create.php.template',
+                'file' => $templatePath . 'Phinx' . DS . 'create.php.template'
             ],
             'migration_base_class' => 'Migrations\AbstractMigration',
             'environments' => [
@@ -108,16 +98,15 @@ trait ConfigurationTrait
                 'default_database' => 'default',
                 'default' => [
                     'adapter' => $adapterName,
-                    'host' => $connectionConfig['host'] ?? null,
-                    'user' => $connectionConfig['username'] ?? null,
-                    'pass' => $connectionConfig['password'] ?? null,
-                    'port' => $connectionConfig['port'] ?? null,
+                    'host' => isset($connectionConfig['host']) ? $connectionConfig['host'] : null,
+                    'user' => isset($connectionConfig['username']) ? $connectionConfig['username'] : null,
+                    'pass' => isset($connectionConfig['password']) ? $connectionConfig['password'] : null,
+                    'port' => isset($connectionConfig['port']) ? $connectionConfig['port'] : null,
                     'name' => $connectionConfig['database'],
-                    'charset' => $connectionConfig['encoding'] ?? null,
-                    'unix_socket' => $connectionConfig['unix_socket'] ?? null,
-                    'suffix' => '',
-                ],
-            ],
+                    'charset' => isset($connectionConfig['encoding']) ? $connectionConfig['encoding'] : null,
+                    'unix_socket' => isset($connectionConfig['unix_socket']) ? $connectionConfig['unix_socket'] : null,
+                ]
+            ]
         ];
 
         if ($adapterName === 'pgsql') {
@@ -181,7 +170,6 @@ trait ConfigurationTrait
         if ($input->getOption('connection')) {
             $connection = $input->getOption('connection');
         }
-
         return $connection;
     }
 }

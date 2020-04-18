@@ -68,7 +68,7 @@ class Notifysend implements Report
 
         $showOk = Config::getConfigData('notifysend_showok');
         if ($showOk !== null) {
-            $this->showOk = (bool) $showOk;
+            $this->showOk = (boolean) $showOk;
         }
 
         $this->version = str_replace(

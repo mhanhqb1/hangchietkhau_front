@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -26,6 +24,7 @@ use Cake\View\Helper;
  */
 class SimpleGraphHelper extends Helper
 {
+
     /**
      * Default settings to be applied to each Simple Graph
      *
@@ -49,23 +48,24 @@ class SimpleGraphHelper extends Helper
      *
      * @param float $value Value to be graphed
      * @param int $offset how much indentation
-     * @param array $options Graph options
+     * @param array|\Graph $options Graph options
      * @return string Html graph
      */
     public function bar($value, $offset, $options = [])
     {
         $settings = array_merge($this->_defaultSettings, $options);
-        $max = $settings['max'];
-        $width = $settings['width'];
-        $valueType = $settings['valueType'];
+        /* @var int $max */
+        /* @var int $width */
+        /* @var string $valueType */
+        extract($settings);
 
-        $graphValue = $value / $max * $width;
+        $graphValue = ($value / $max) * $width;
         $graphValue = max(round($graphValue), 1);
 
         if ($valueType === 'percentage') {
             $graphOffset = 0;
         } else {
-            $graphOffset = $offset / $max * $width;
+            $graphOffset = ($offset / $max) * $width;
             $graphOffset = round($graphOffset);
         }
 

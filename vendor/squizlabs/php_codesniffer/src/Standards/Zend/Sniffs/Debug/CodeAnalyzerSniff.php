@@ -26,7 +26,7 @@ class CodeAnalyzerSniff implements Sniff
      */
     public function register()
     {
-        return [T_OPEN_TAG];
+        return array(T_OPEN_TAG);
 
     }//end register()
 
@@ -39,12 +39,11 @@ class CodeAnalyzerSniff implements Sniff
      *                                               the token was found.
      *
      * @return int
-     * @throws \PHP_CodeSniffer\Exceptions\RuntimeException If ZendCodeAnalyzer could not be run.
      */
     public function process(File $phpcsFile, $stackPtr)
     {
         $analyzerPath = Config::getExecutablePath('zend_ca');
-        if ($analyzerPath === null) {
+        if (is_null($analyzerPath) === true) {
             return;
         }
 
@@ -57,11 +56,11 @@ class CodeAnalyzerSniff implements Sniff
 
         // There is the possibility to pass "--ide" as an option to the analyzer.
         // This would result in an output format which would be easier to parse.
-        // The problem here is that no cleartext error messages are returned; only
+        // The problem here is that no cleartext error messages are returnwd; only
         // error-code-labels. So for a start we go for cleartext output.
         $exitCode = exec($cmd, $output, $retval);
 
-        // Variable $exitCode is the last line of $output if no error occurs, on
+        // Variable $exitCode is the last line of $output if no error occures, on
         // error it is numeric. Try to handle various error conditions and
         // provide useful error reporting.
         if (is_numeric($exitCode) === true && $exitCode > 0) {

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,7 +14,7 @@ declare(strict_types=1);
  */
 namespace Cake\Controller;
 
-use Cake\Event\EventInterface;
+use Cake\Event\Event;
 
 /**
  * Error Handling Controller
@@ -25,12 +23,13 @@ use Cake\Event\EventInterface;
  */
 class ErrorController extends Controller
 {
+
     /**
      * Initialization hook method.
      *
      * @return void
      */
-    public function initialize(): void
+    public function initialize()
     {
         $this->loadComponent('RequestHandler');
     }
@@ -38,22 +37,11 @@ class ErrorController extends Controller
     /**
      * beforeRender callback.
      *
-     * @param \Cake\Event\EventInterface $event Event.
-     * @return \Cake\Http\Response|null|void
+     * @param \Cake\Event\Event $event Event.
+     * @return void
      */
-    public function beforeRender(EventInterface $event)
+    public function beforeRender(Event $event)
     {
-        $builder = $this->viewBuilder();
-        $templatePath = 'Error';
-
-        if (
-            $this->request->getParam('prefix') &&
-            in_array($builder->getTemplate(), ['error400', 'error500'], true)
-        ) {
-            $parts = explode(DIRECTORY_SEPARATOR, (string)$builder->getTemplatePath(), -1);
-            $templatePath = implode(DIRECTORY_SEPARATOR, $parts) . DIRECTORY_SEPARATOR . 'Error';
-        }
-
-        $builder->setTemplatePath($templatePath);
+        $this->viewBuilder()->setTemplatePath('Error');
     }
 }

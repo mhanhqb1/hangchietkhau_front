@@ -13,12 +13,13 @@
 
 namespace PHP_CodeSniffer\Standards\Generic\Sniffs\CodeAnalysis;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Util\Tokens;
 
 class AssignmentInConditionSniff implements Sniff
 {
+
 
     /**
      * Assignment tokens to trigger on.
@@ -27,14 +28,14 @@ class AssignmentInConditionSniff implements Sniff
      *
      * @var array
      */
-    protected $assignmentTokens = [];
+    protected $assignmentTokens = array();
 
     /**
      * The tokens that indicate the start of a condition.
      *
      * @var array
      */
-    protected $conditionStartTokens = [];
+    protected $conditionStartTokens = array();
 
 
     /**
@@ -53,14 +54,14 @@ class AssignmentInConditionSniff implements Sniff
 
         $this->conditionStartTokens = $starters;
 
-        return [
-            T_IF,
-            T_ELSEIF,
-            T_FOR,
-            T_SWITCH,
-            T_CASE,
-            T_WHILE,
-        ];
+        return array(
+                T_IF,
+                T_ELSEIF,
+                T_FOR,
+                T_SWITCH,
+                T_CASE,
+                T_WHILE,
+               );
 
     }//end register()
 
@@ -149,15 +150,10 @@ class AssignmentInConditionSniff implements Sniff
             }
 
             if ($hasVariable === true) {
-                $errorCode = 'Found';
-                if ($token['code'] === T_WHILE) {
-                    $errorCode = 'FoundInWhileCondition';
-                }
-
                 $phpcsFile->addWarning(
                     'Variable assignment found within a condition. Did you mean to do a comparison ?',
                     $hasAssignment,
-                    $errorCode
+                    'Found'
                 );
             }
 

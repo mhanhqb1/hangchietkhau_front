@@ -25,14 +25,10 @@ class LowercasePHPFunctionsUnitTest extends AbstractSniffUnitTest
      */
     public function getErrorList()
     {
-        return [
-            2  => 1,
-            4  => 1,
-            27 => 1,
-            33 => 1,
-            35 => 1,
-            36 => 1,
-        ];
+        return array(
+                2 => 1,
+                4 => 1,
+               );
 
     }//end getErrorList()
 
@@ -47,7 +43,7 @@ class LowercasePHPFunctionsUnitTest extends AbstractSniffUnitTest
      */
     public function getWarningList()
     {
-        return [];
+        return array();
 
     }//end getWarningList()
 

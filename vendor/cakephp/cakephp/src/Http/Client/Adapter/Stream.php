@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -15,13 +13,10 @@ declare(strict_types=1);
  */
 namespace Cake\Http\Client\Adapter;
 
-use Cake\Http\Client\AdapterInterface;
-use Cake\Http\Client\Exception\ClientException;
-use Cake\Http\Client\Exception\NetworkException;
-use Cake\Http\Client\Exception\RequestException;
+use Cake\Core\Exception\Exception;
+use Cake\Http\Client\Request;
 use Cake\Http\Client\Response;
-use Composer\CaBundle\CaBundle;
-use Psr\Http\Message\RequestInterface;
+use Cake\Network\Exception\HttpException;
 
 /**
  * Implements sending Cake\Http\Client\Request
@@ -29,8 +24,9 @@ use Psr\Http\Message\RequestInterface;
  *
  * This approach and implementation is partly inspired by Aura.Http
  */
-class Stream implements AdapterInterface
+class Stream
 {
+
     /**
      * Context resource used by the stream API.
      *
@@ -43,14 +39,14 @@ class Stream implements AdapterInterface
      *
      * @var array
      */
-    protected $_contextOptions = [];
+    protected $_contextOptions;
 
     /**
      * Array of options/content for the SSL stream context.
      *
      * @var array
      */
-    protected $_sslContextOptions = [];
+    protected $_sslContextOptions;
 
     /**
      * The stream resource.
@@ -67,9 +63,13 @@ class Stream implements AdapterInterface
     protected $_connectionErrors = [];
 
     /**
-     * @inheritDoc
+     * Send a request and get a response back.
+     *
+     * @param \Cake\Http\Client\Request $request The request object to send.
+     * @param array $options Array of options for the stream.
+     * @return array Array of populated Response objects
      */
-    public function send(RequestInterface $request, array $options): array
+    public function send(Request $request, array $options)
     {
         $this->_stream = null;
         $this->_context = null;
@@ -90,9 +90,9 @@ class Stream implements AdapterInterface
      *
      * @param array $headers The list of headers from the request(s)
      * @param string $content The response content.
-     * @return \Cake\Http\Client\Response[] The list of responses from the request(s)
+     * @return array The list of responses from the request(s)
      */
-    public function createResponses(array $headers, string $content): array
+    public function createResponses($headers, $content)
     {
         $indexes = $responses = [];
         foreach ($headers as $i => $header) {
@@ -102,11 +102,10 @@ class Stream implements AdapterInterface
         }
         $last = count($indexes) - 1;
         foreach ($indexes as $i => $start) {
-            /** @psalm-suppress InvalidOperand */
             $end = isset($indexes[$i + 1]) ? $indexes[$i + 1] - $start : null;
             $headerSlice = array_slice($headers, $start, $end);
-            $body = $i === $last ? $content : '';
-            $responses[] = $this->_buildResponse($headerSlice, $body);
+            $body = $i == $last ? $content : '';
+            $responses[] = new Response($headerSlice, $body);
         }
 
         return $responses;
@@ -115,18 +114,18 @@ class Stream implements AdapterInterface
     /**
      * Build the stream context out of the request object.
      *
-     * @param \Psr\Http\Message\RequestInterface $request The request to build context from.
+     * @param \Cake\Http\Client\Request $request The request to build context from.
      * @param array $options Additional request options.
      * @return void
      */
-    protected function _buildContext(RequestInterface $request, array $options): void
+    protected function _buildContext(Request $request, $options)
     {
         $this->_buildContent($request, $options);
         $this->_buildHeaders($request, $options);
         $this->_buildOptions($request, $options);
 
         $url = $request->getUri();
-        $scheme = parse_url((string)$url, PHP_URL_SCHEME);
+        $scheme = parse_url($url, PHP_URL_SCHEME);
         if ($scheme === 'https') {
             $this->_buildSslContext($request, $options);
         }
@@ -141,11 +140,11 @@ class Stream implements AdapterInterface
      *
      * Creates cookies & headers.
      *
-     * @param \Psr\Http\Message\RequestInterface $request The request being sent.
+     * @param \Cake\Http\Client\Request $request The request being sent.
      * @param array $options Array of options to use.
      * @return void
      */
-    protected function _buildHeaders(RequestInterface $request, array $options): void
+    protected function _buildHeaders(Request $request, $options)
     {
         $headers = [];
         foreach ($request->getHeaders() as $name => $values) {
@@ -160,11 +159,11 @@ class Stream implements AdapterInterface
      * If the $request->body() is a string, it will be used as is.
      * Array data will be processed with Cake\Http\Client\FormData
      *
-     * @param \Psr\Http\Message\RequestInterface $request The request being sent.
+     * @param \Cake\Http\Client\Request $request The request being sent.
      * @param array $options Array of options to use.
      * @return void
      */
-    protected function _buildContent(RequestInterface $request, array $options): void
+    protected function _buildContent(Request $request, $options)
     {
         $body = $request->getBody();
         if (empty($body)) {
@@ -179,14 +178,14 @@ class Stream implements AdapterInterface
     /**
      * Build miscellaneous options for the request.
      *
-     * @param \Psr\Http\Message\RequestInterface $request The request being sent.
+     * @param \Cake\Http\Client\Request $request The request being sent.
      * @param array $options Array of options to use.
      * @return void
      */
-    protected function _buildOptions(RequestInterface $request, array $options): void
+    protected function _buildOptions(Request $request, $options)
     {
-        $this->_contextOptions['method'] = $request->getMethod();
-        $this->_contextOptions['protocol_version'] = $request->getProtocolVersion();
+        $this->_contextOptions['method'] = $request->method();
+        $this->_contextOptions['protocol_version'] = $request->version();
         $this->_contextOptions['ignore_errors'] = true;
 
         if (isset($options['timeout'])) {
@@ -204,11 +203,11 @@ class Stream implements AdapterInterface
     /**
      * Build SSL options for the request.
      *
-     * @param \Psr\Http\Message\RequestInterface $request The request being sent.
+     * @param \Cake\Http\Client\Request $request The request being sent.
      * @param array $options Array of options to use.
      * @return void
      */
-    protected function _buildSslContext(RequestInterface $request, array $options): void
+    protected function _buildSslContext(Request $request, $options)
     {
         $sslOptions = [
             'ssl_verify_peer',
@@ -220,11 +219,11 @@ class Stream implements AdapterInterface
             'ssl_passphrase',
         ];
         if (empty($options['ssl_cafile'])) {
-            $options['ssl_cafile'] = CaBundle::getBundledCaBundlePath();
+            $options['ssl_cafile'] = CORE_PATH . 'config' . DIRECTORY_SEPARATOR . 'cacert.pem';
         }
         if (!empty($options['ssl_verify_host'])) {
             $url = $request->getUri();
-            $host = parse_url((string)$url, PHP_URL_HOST);
+            $host = parse_url($url, PHP_URL_HOST);
             $this->_sslContextOptions['peer_name'] = $host;
         }
         foreach ($sslOptions as $key) {
@@ -238,11 +237,11 @@ class Stream implements AdapterInterface
     /**
      * Open the stream and send the request.
      *
-     * @param \Psr\Http\Message\RequestInterface $request The request object.
+     * @param \Cake\Http\Client\Request $request The request object.
      * @return array Array of populated Response objects
-     * @throws \Psr\Http\Client\NetworkExceptionInterface
+     * @throws \Cake\Network\Exception\HttpException
      */
-    protected function _send(RequestInterface $request): array
+    protected function _send(Request $request)
     {
         $deadline = false;
         if (isset($this->_contextOptions['timeout']) && $this->_contextOptions['timeout'] > 0) {
@@ -250,7 +249,7 @@ class Stream implements AdapterInterface
         }
 
         $url = $request->getUri();
-        $this->_open((string)$url, $request);
+        $this->_open($url);
         $content = '';
         $timedOut = false;
 
@@ -267,13 +266,11 @@ class Stream implements AdapterInterface
                 break;
             }
         }
-        /** @psalm-suppress PossiblyNullArgument */
         $meta = stream_get_meta_data($this->_stream);
-        /** @psalm-suppress InvalidPropertyAssignmentValue */
         fclose($this->_stream);
 
         if ($timedOut) {
-            throw new NetworkException('Connection timed out ' . $url, $request);
+            throw new HttpException('Connection timed out ' . $url, 504);
         }
 
         $headers = $meta['wrapper_data'];
@@ -285,46 +282,22 @@ class Stream implements AdapterInterface
     }
 
     /**
-     * Build a response object
-     *
-     * @param array $headers Unparsed headers.
-     * @param string $body The response body.
-     *
-     * @return \Cake\Http\Client\Response
-     */
-    protected function _buildResponse(array $headers, string $body): Response
-    {
-        return new Response($headers, $body);
-    }
-
-    /**
      * Open the socket and handle any connection errors.
      *
      * @param string $url The url to connect to.
-     * @param \Psr\Http\Message\RequestInterface $request The request object.
      * @return void
-     * @throws \Psr\Http\Client\RequestExceptionInterface
+     * @throws \Cake\Core\Exception\Exception
      */
-    protected function _open(string $url, RequestInterface $request): void
+    protected function _open($url)
     {
-        if (!(bool)ini_get('allow_url_fopen')) {
-            throw new ClientException('The PHP directive `allow_url_fopen` must be enabled.');
-        }
-
-        set_error_handler(function ($code, $message): bool {
+        set_error_handler(function ($code, $message) {
             $this->_connectionErrors[] = $message;
-
-            return true;
         });
-        try {
-            /** @psalm-suppress PossiblyNullArgument */
-            $this->_stream = fopen($url, 'rb', false, $this->_context);
-        } finally {
-            restore_error_handler();
-        }
+        $this->_stream = fopen($url, 'rb', false, $this->_context);
+        restore_error_handler();
 
         if (!$this->_stream || !empty($this->_connectionErrors)) {
-            throw new RequestException(implode("\n", $this->_connectionErrors), $request);
+            throw new Exception(implode("\n", $this->_connectionErrors));
         }
     }
 
@@ -335,8 +308,11 @@ class Stream implements AdapterInterface
      *
      * @return array
      */
-    public function contextOptions(): array
+    public function contextOptions()
     {
         return array_merge($this->_contextOptions, $this->_sslContextOptions);
     }
 }
+
+// @deprecated Add backwards compat alias.
+class_alias('Cake\Http\Client\Adapter\Stream', 'Cake\Network\Http\Adapter\Stream');

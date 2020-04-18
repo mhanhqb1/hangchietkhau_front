@@ -9,8 +9,8 @@
 
 namespace PHP_CodeSniffer\Standards\Generic\Sniffs\Classes;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
 
 class OpeningBraceSameLineSniff implements Sniff
 {
@@ -23,11 +23,11 @@ class OpeningBraceSameLineSniff implements Sniff
      */
     public function register()
     {
-        return [
-            T_CLASS,
-            T_INTERFACE,
-            T_TRAIT,
-        ];
+        return array(
+                T_CLASS,
+                T_INTERFACE,
+                T_TRAIT,
+               );
 
     }//end register()
 
@@ -45,7 +45,7 @@ class OpeningBraceSameLineSniff implements Sniff
     {
         $tokens          = $phpcsFile->getTokens();
         $scopeIdentifier = $phpcsFile->findNext(T_STRING, ($stackPtr + 1));
-        $errorData       = [strtolower($tokens[$stackPtr]['content']).' '.$tokens[$scopeIdentifier]['content']];
+        $errorData       = array(strtolower($tokens[$stackPtr]['content']).' '.$tokens[$scopeIdentifier]['content']);
 
         if (isset($tokens[$stackPtr]['scope_opener']) === false) {
             $error = 'Possible parse error: %s missing opening or closing brace';
@@ -101,12 +101,12 @@ class OpeningBraceSameLineSniff implements Sniff
         } else if ($tokens[($openingBrace - 1)]['content'] === "\t") {
             $length = '\t';
         } else {
-            $length = $tokens[($openingBrace - 1)]['length'];
+            $length = strlen($tokens[($openingBrace - 1)]['content']);
         }
 
         if ($length !== 1) {
             $error = 'Expected 1 space before opening brace; found %s';
-            $data  = [$length];
+            $data  = array($length);
             $fix   = $phpcsFile->addFixableError($error, $openingBrace, 'SpaceBeforeBrace', $data);
             if ($fix === true) {
                 if ($length === 0 || $length === '\t') {

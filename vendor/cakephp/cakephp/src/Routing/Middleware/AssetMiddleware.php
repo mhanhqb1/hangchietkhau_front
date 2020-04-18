@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,14 +15,12 @@ declare(strict_types=1);
 namespace Cake\Routing\Middleware;
 
 use Cake\Core\Plugin;
-use Cake\Http\Response;
+use Cake\Filesystem\File;
 use Cake\Utility\Inflector;
-use Laminas\Diactoros\Stream;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\MiddlewareInterface;
-use Psr\Http\Server\RequestHandlerInterface;
-use SplFileInfo;
+use Zend\Diactoros\Response;
+use Zend\Diactoros\Stream;
 
 /**
  * Handles serving plugin assets in development mode.
@@ -33,7 +29,7 @@ use SplFileInfo;
  * has sub-optimal performance when compared to serving files
  * with a real webserver.
  */
-class AssetMiddleware implements MiddlewareInterface
+class AssetMiddleware
 {
     /**
      * The amount of time to cache the asset.
@@ -41,6 +37,26 @@ class AssetMiddleware implements MiddlewareInterface
      * @var string
      */
     protected $cacheTime = '+1 day';
+
+    /**
+     * A extension to content type mapping for plain text types.
+     *
+     * Because finfo doesn't give useful information for plain text types,
+     * we have to handle that here.
+     *
+     * @var array
+     */
+    protected $typeMap = [
+        'css' => 'text/css',
+        'json' => 'application/json',
+        'js' => 'application/javascript',
+        'ico' => 'image/x-icon',
+        'eot' => 'application/vnd.ms-fontobject',
+        'svg' => 'image/svg+xml',
+        'html' => 'text/html',
+        'rss' => 'application/rss+xml',
+        'xml' => 'application/xml',
+    ];
 
     /**
      * Constructor.
@@ -52,70 +68,71 @@ class AssetMiddleware implements MiddlewareInterface
         if (!empty($options['cacheTime'])) {
             $this->cacheTime = $options['cacheTime'];
         }
+        if (!empty($options['types'])) {
+            $this->typeMap = array_merge($this->typeMap, $options['types']);
+        }
     }
 
     /**
      * Serve assets if the path matches one.
      *
      * @param \Psr\Http\Message\ServerRequestInterface $request The request.
-     * @param \Psr\Http\Server\RequestHandlerInterface $handler The request handler.
-     * @return \Psr\Http\Message\ResponseInterface A response.
+     * @param \Psr\Http\Message\ResponseInterface $response The response.
+     * @param callable $next Callback to invoke the next middleware.
+     * @return \Psr\Http\Message\ResponseInterface A response
      */
-    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    public function __invoke($request, $response, $next)
     {
         $url = $request->getUri()->getPath();
         if (strpos($url, '..') !== false || strpos($url, '.') === false) {
-            return $handler->handle($request);
+            return $next($request, $response);
         }
 
         if (strpos($url, '/.') !== false) {
-            return $handler->handle($request);
+            return $next($request, $response);
         }
 
         $assetFile = $this->_getAssetFile($url);
         if ($assetFile === null || !file_exists($assetFile)) {
-            return $handler->handle($request);
+            return $next($request, $response);
         }
 
-        $file = new SplFileInfo($assetFile);
-        $modifiedTime = $file->getMTime();
+        $file = new File($assetFile);
+        $modifiedTime = $file->lastChange();
         if ($this->isNotModified($request, $file)) {
-            return (new Response())
-                ->withStringBody('')
-                ->withStatus(304)
-                ->withHeader(
-                    'Last-Modified',
-                    date(DATE_RFC850, $modifiedTime)
-                );
+            $headers = $response->getHeaders();
+            $headers['Last-Modified'] = date(DATE_RFC850, $modifiedTime);
+
+            return new Response('php://memory', 304, $headers);
         }
 
-        return $this->deliverAsset($request, $file);
+        return $this->deliverAsset($request, $response, $file);
     }
 
     /**
      * Check the not modified header.
      *
      * @param \Psr\Http\Message\ServerRequestInterface $request The request to check.
-     * @param \SplFileInfo $file The file object to compare.
+     * @param \Cake\Filesystem\File $file The file object to compare.
      * @return bool
      */
-    protected function isNotModified(ServerRequestInterface $request, SplFileInfo $file): bool
+    protected function isNotModified($request, $file)
     {
         $modifiedSince = $request->getHeaderLine('If-Modified-Since');
         if (!$modifiedSince) {
             return false;
         }
 
-        return strtotime($modifiedSince) === $file->getMTime();
+        return strtotime($modifiedSince) === $file->lastChange();
     }
 
     /**
      * Builds asset file path based off url
      *
      * @param string $url Asset URL
-     * @return string|null Absolute path for asset file, null on failure
+     * @return string Absolute path for asset file
      */
-    protected function _getAssetFile(string $url): ?string
+    protected function _getAssetFile($url)
     {
         $parts = explode('/', ltrim($url, '/'));
         $pluginPart = [];
@@ -125,7 +142,7 @@ class AssetMiddleware implements MiddlewareInterface
             }
             $pluginPart[] = Inflector::camelize($parts[$i]);
             $plugin = implode('/', $pluginPart);
-            if ($plugin && Plugin::isLoaded($plugin)) {
+            if ($plugin && Plugin::loaded($plugin)) {
                 $parts = array_slice($parts, $i + 1);
                 $fileFragment = implode(DIRECTORY_SEPARATOR, $parts);
                 $pluginWebroot = Plugin::path($plugin) . 'webroot' . DIRECTORY_SEPARATOR;
@@ -134,32 +151,47 @@ class AssetMiddleware implements MiddlewareInterface
             }
         }
 
-        return null;
+        return '';
     }
 
     /**
      * Sends an asset file to the client
      *
      * @param \Psr\Http\Message\ServerRequestInterface $request The request object to use.
-     * @param \SplFileInfo $file The file wrapper for the file.
-     * @return \Cake\Http\Response The response with the file & headers.
+     * @param \Psr\Http\Message\ResponseInterface $response The response object to use.
+     * @param \Cake\Filesystem\File $file The file wrapper for the file.
+     * @return \Psr\Http\Message\ResponseInterface The response with the file & headers.
      */
-    protected function deliverAsset(ServerRequestInterface $request, SplFileInfo $file): Response
+    protected function deliverAsset(ServerRequestInterface $request, ResponseInterface $response, $file)
     {
-        $stream = new Stream(fopen($file->getPathname(), 'rb'));
-
-        $response = new Response(['stream' => $stream]);
-
-        $contentType = $response->getMimeType($file->getExtension()) ?: 'application/octet-stream';
-        $modified = $file->getMTime();
+        $contentType = $this->getType($file);
+        $modified = $file->lastChange();
         $expire = strtotime($this->cacheTime);
         $maxAge = $expire - time();
 
-        return $response
+        $stream = new Stream(fopen($file->path, 'rb'));
+
+        return $response->withBody($stream)
             ->withHeader('Content-Type', $contentType)
             ->withHeader('Cache-Control', 'public,max-age=' . $maxAge)
             ->withHeader('Date', gmdate('D, j M Y G:i:s \G\M\T', time()))
             ->withHeader('Last-Modified', gmdate('D, j M Y G:i:s \G\M\T', $modified))
             ->withHeader('Expires', gmdate('D, j M Y G:i:s \G\M\T', $expire));
+    }
+
+    /**
+     * Return the type from a File object
+     *
+     * @param File $file The file from which you get the type
+     * @return string
+     */
+    protected function getType($file)
+    {
+        $extension = $file->ext();
+        if (isset($this->typeMap[$extension])) {
+            return $this->typeMap[$extension];
+        }
+
+        return $file->mime() ?: 'application/octet-stream';
     }
 }

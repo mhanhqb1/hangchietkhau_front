@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -19,6 +17,7 @@ namespace DebugKit\Mailer;
  */
 abstract class AbstractResult
 {
+
     /**
      * The list of headers included in the email
      *

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -25,22 +23,24 @@ use RuntimeException;
  * An object registry for cache engines.
  *
  * Used by Cake\Cache\Cache to load and manage cache engines.
- *
- * @extends \Cake\Core\ObjectRegistry<\Cake\Cache\CacheEngine>
  */
 class CacheRegistry extends ObjectRegistry
 {
+
     /**
      * Resolve a cache engine classname.
      *
      * Part of the template method for Cake\Core\ObjectRegistry::load()
      *
      * @param string $class Partial classname to resolve.
-     * @return string|null Either the correct classname or null.
-     * @psalm-return class-string|null
+     * @return string|false Either the correct classname or false.
      */
-    protected function _resolveClassName(string $class): ?string
+    protected function _resolveClassName($class)
     {
+        if (is_object($class)) {
+            return $class;
+        }
+
         return App::className($class, 'Cache/Engine', 'Engine');
     }
 
@@ -50,11 +50,11 @@ class CacheRegistry extends ObjectRegistry
      * Part of the template method for Cake\Core\ObjectRegistry::load()
      *
      * @param string $class The classname that is missing.
-     * @param string|null $plugin The plugin the cache is missing in.
+     * @param string $plugin The plugin the cache is missing in.
      * @return void
      * @throws \BadMethodCallException
      */
-    protected function _throwMissingClassError(string $class, ?string $plugin): void
+    protected function _throwMissingClassError($class, $plugin)
     {
         throw new BadMethodCallException(sprintf('Cache engine %s is not available.', $class));
     }
@@ -70,14 +70,16 @@ class CacheRegistry extends ObjectRegistry
      * @return \Cake\Cache\CacheEngine The constructed CacheEngine class.
      * @throws \RuntimeException when an object doesn't implement the correct interface.
      */
-    protected function _create($class, string $alias, array $config): CacheEngine
+    protected function _create($class, $alias, $config)
     {
         if (is_object($class)) {
             $instance = $class;
-        } else {
+        }
+
+        unset($config['className']);
+        if (!isset($instance)) {
             $instance = new $class($config);
         }
-        unset($config['className']);
 
         if (!($instance instanceof CacheEngine)) {
             throw new RuntimeException(
@@ -91,6 +93,11 @@ class CacheRegistry extends ObjectRegistry
             );
         }
 
+        $config = $instance->getConfig();
+        if ($config['probability'] && time() % $config['probability'] === 0) {
+            $instance->gc();
+        }
+
         return $instance;
     }
 
@@ -98,12 +105,10 @@ class CacheRegistry extends ObjectRegistry
      * Remove a single adapter from the registry.
      *
      * @param string $name The adapter name.
-     * @return $this
+     * @return void
      */
-    public function unload(string $name)
+    public function unload($name)
     {
         unset($this->_loaded[$name]);
-
-        return $this;
     }
 }

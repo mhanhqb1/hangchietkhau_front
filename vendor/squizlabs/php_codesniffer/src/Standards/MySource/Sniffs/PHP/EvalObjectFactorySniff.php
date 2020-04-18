@@ -24,7 +24,7 @@ class EvalObjectFactorySniff implements Sniff
      */
     public function register()
     {
-        return [T_EVAL];
+        return array(T_EVAL);
 
     }//end register()
 
@@ -50,8 +50,8 @@ class EvalObjectFactorySniff implements Sniff
         $openBracket  = $phpcsFile->findNext(T_OPEN_PARENTHESIS, ($stackPtr + 1));
         $closeBracket = $tokens[$openBracket]['parenthesis_closer'];
 
-        $strings = [];
-        $vars    = [];
+        $strings = array();
+        $vars    = array();
 
         for ($i = ($openBracket + 1); $i < $closeBracket; $i++) {
             if (isset(Tokens::$stringTokens[$tokens[$i]['code']]) === true) {
@@ -99,7 +99,7 @@ class EvalObjectFactorySniff implements Sniff
 
         foreach ($strings as $string) {
             // If the string has "new" in it, it is not allowed.
-            // We don't bother checking if the word "new" is printed to screen
+            // We don't bother checking if the word "new" is echo'd
             // because that is unlikely to happen. We assume the use
             // of "new" is for object instantiation.
             if (strstr($string, ' new ') !== false) {

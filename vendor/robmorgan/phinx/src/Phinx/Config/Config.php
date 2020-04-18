@@ -1,17 +1,34 @@
 <?php
-
 /**
- * MIT License
- * For full license information, please view the LICENSE file that was distributed with this source code.
+ * Phinx
+ *
+ * (The MIT license)
+ * Copyright (c) 2015 Rob Morgan
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated * documentation files (the "Software"), to
+ * deal in the Software without restriction, including without limitation the
+ * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or
+ * sell copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in
+ * all copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+ * IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+ * FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+ * AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+ * LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+ * FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS
+ * IN THE SOFTWARE.
+ *
+ * @package    Phinx
+ * @subpackage Phinx\Config
  */
-
 namespace Phinx\Config;
 
-use Closure;
-use InvalidArgumentException;
-use RuntimeException;
 use Symfony\Component\Yaml\Yaml;
-use UnexpectedValueException;
 
 /**
  * Phinx configuration class.
@@ -19,24 +36,22 @@ use UnexpectedValueException;
  * @package Phinx
  * @author Rob Morgan
  */
-class Config implements ConfigInterface, NamespaceAwareInterface
+class Config implements ConfigInterface
 {
-    use NamespaceAwareTrait;
-
     /**
      * The value that identifies a version order by creation time.
      */
-    public const VERSION_ORDER_CREATION_TIME = 'creation';
+    const VERSION_ORDER_CREATION_TIME = 'creation';
 
     /**
      * The value that identifies a version order by execution time.
      */
-    public const VERSION_ORDER_EXECUTION_TIME = 'execution';
+    const VERSION_ORDER_EXECUTION_TIME = 'execution';
 
     /**
      * @var array
      */
-    protected $values = [];
+    private $values = array();
 
     /**
      * @var string
@@ -44,7 +59,7 @@ class Config implements ConfigInterface, NamespaceAwareInterface
     protected $configFilePath;
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     public function __construct(array $configArray, $configFilePath = null)
     {
@@ -55,65 +70,49 @@ class Config implements ConfigInterface, NamespaceAwareInterface
     /**
      * Create a new instance of the config class using a Yaml file path.
      *
-     * @param string $configFilePath Path to the Yaml File
-     *
+     * @param  string $configFilePath Path to the Yaml File
      * @throws \RuntimeException
-     *
-     * @return \Phinx\Config\Config
+     * @return Config
      */
     public static function fromYaml($configFilePath)
     {
-        if (!class_exists('Symfony\\Component\\Yaml\\Yaml', true)) {
-            throw new RuntimeException('Missing yaml parser, symfony/yaml package is not installed.');
-        }
-
         $configFile = file_get_contents($configFilePath);
         $configArray = Yaml::parse($configFile);
 
         if (!is_array($configArray)) {
-            throw new RuntimeException(sprintf(
+            throw new \RuntimeException(sprintf(
                 'File \'%s\' must be valid YAML',
                 $configFilePath
             ));
         }
-
         return new static($configArray, $configFilePath);
     }
 
     /**
      * Create a new instance of the config class using a JSON file path.
      *
-     * @param string $configFilePath Path to the JSON File
-     *
+     * @param  string $configFilePath Path to the JSON File
      * @throws \RuntimeException
-     *
-     * @return \Phinx\Config\Config
+     * @return Config
      */
     public static function fromJson($configFilePath)
     {
-        if (!function_exists('json_decode')) {
-            throw new RuntimeException("Need to install JSON PHP extension to use JSON config");
-        }
-
         $configArray = json_decode(file_get_contents($configFilePath), true);
         if (!is_array($configArray)) {
-            throw new RuntimeException(sprintf(
+            throw new \RuntimeException(sprintf(
                 'File \'%s\' must be valid JSON',
                 $configFilePath
             ));
         }
-
         return new static($configArray, $configFilePath);
     }
 
     /**
      * Create a new instance of the config class using a PHP file path.
      *
-     * @param string $configFilePath Path to the PHP File
-     *
+     * @param  string $configFilePath Path to the PHP File
      * @throws \RuntimeException
-     *
-     * @return \Phinx\Config\Config
+     * @return Config
      */
     public static function fromPhp($configFilePath)
     {
@@ -125,7 +124,7 @@ class Config implements ConfigInterface, NamespaceAwareInterface
         ob_end_clean();
 
         if (!is_array($configArray)) {
-            throw new RuntimeException(sprintf(
+            throw new \RuntimeException(sprintf(
                 'PHP file \'%s\' must return an array',
                 $configFilePath
             ));
@@ -135,12 +134,12 @@ class Config implements ConfigInterface, NamespaceAwareInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     public function getEnvironments()
     {
         if (isset($this->values) && isset($this->values['environments'])) {
-            $environments = [];
+            $environments = array();
             foreach ($this->values['environments'] as $key => $value) {
                 if (is_array($value)) {
                     $environments[$key] = $value;
@@ -154,7 +153,7 @@ class Config implements ConfigInterface, NamespaceAwareInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     public function getEnvironment($name)
     {
@@ -166,22 +165,22 @@ class Config implements ConfigInterface, NamespaceAwareInterface
                     $this->values['environments']['default_migration_table'];
             }
 
-            return $this->parseAgnosticDsn($environments[$name]);
+            return $environments[$name];
         }
 
         return null;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     public function hasEnvironment($name)
     {
-        return ($this->getEnvironment($name) !== null);
+        return (null !== $this->getEnvironment($name));
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     public function getDefaultEnvironment()
     {
@@ -192,58 +191,43 @@ class Config implements ConfigInterface, NamespaceAwareInterface
                 return $env;
             }
 
-            throw new RuntimeException(sprintf(
+            throw new \RuntimeException(sprintf(
                 'The environment configuration (read from $PHINX_ENVIRONMENT) for \'%s\' is missing',
                 $env
             ));
         }
 
-        // deprecated: to be removed 0.13
-        if (isset($this->values['environments']['default_database'])) {
-            $this->values['environments']['default_environment'] = $this->values['environments']['default_database'];
-        }
-
-        // if the user has configured a default environment then use it,
+        // if the user has configured a default database then use it,
         // providing it actually exists!
-        if (isset($this->values['environments']['default_environment'])) {
-            if ($this->getEnvironment($this->values['environments']['default_environment'])) {
-                return $this->values['environments']['default_environment'];
+        if (isset($this->values['environments']['default_database'])) {
+            if ($this->getEnvironment($this->values['environments']['default_database'])) {
+                return $this->values['environments']['default_database'];
             }
 
-            throw new RuntimeException(sprintf(
+            throw new \RuntimeException(sprintf(
                 'The environment configuration for \'%s\' is missing',
-                $this->values['environments']['default_environment']
+                $this->values['environments']['default_database']
             ));
         }
 
         // else default to the first available one
         if (is_array($this->getEnvironments()) && count($this->getEnvironments()) > 0) {
             $names = array_keys($this->getEnvironments());
-
             return $names[0];
         }
 
-        throw new RuntimeException('Could not find a default environment');
+        throw new \RuntimeException('Could not find a default environment');
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
-    public function getAlias($alias)
-    {
+    public function getAlias($alias){
         return !empty($this->values['aliases'][$alias]) ? $this->values['aliases'][$alias] : null;
     }
 
     /**
-     * @inheritDoc
-     */
-    public function getAliases()
-    {
-        return !empty($this->values['aliases']) ? $this->values['aliases'] : [];
-    }
-
-    /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     public function getConfigFilePath()
     {
@@ -251,18 +235,16 @@ class Config implements ConfigInterface, NamespaceAwareInterface
     }
 
     /**
-     * @inheritDoc
-     *
-     * @throws \UnexpectedValueException
+     * {@inheritdoc}
      */
     public function getMigrationPaths()
     {
         if (!isset($this->values['paths']['migrations'])) {
-            throw new UnexpectedValueException('Migrations path missing from config file');
+            throw new \UnexpectedValueException('Migrations path missing from config file');
         }
 
         if (is_string($this->values['paths']['migrations'])) {
-            $this->values['paths']['migrations'] = [$this->values['paths']['migrations']];
+            $this->values['paths']['migrations'] = array($this->values['paths']['migrations']);
         }
 
         return $this->values['paths']['migrations'];
@@ -271,8 +253,7 @@ class Config implements ConfigInterface, NamespaceAwareInterface
     /**
      * Gets the base class name for migrations.
      *
-     * @param bool $dropNamespace Return the base migration class name without the namespace.
-     *
+     * @param boolean $dropNamespace Return the base migration class name without the namespace.
      * @return string
      */
     public function getMigrationBaseClassName($dropNamespace = true)
@@ -283,18 +264,16 @@ class Config implements ConfigInterface, NamespaceAwareInterface
     }
 
     /**
-     * @inheritDoc
-     *
-     * @throws \UnexpectedValueException
+     * {@inheritdoc}
      */
     public function getSeedPaths()
     {
         if (!isset($this->values['paths']['seeds'])) {
-            throw new UnexpectedValueException('Seeds path missing from config file');
+            throw new \UnexpectedValueException('Seeds path missing from config file');
         }
 
         if (is_string($this->values['paths']['seeds'])) {
-            $this->values['paths']['seeds'] = [$this->values['paths']['seeds']];
+            $this->values['paths']['seeds'] = array($this->values['paths']['seeds']);
         }
 
         return $this->values['paths']['seeds'];
@@ -305,40 +284,28 @@ class Config implements ConfigInterface, NamespaceAwareInterface
      *
      * @return string|false
      */
-    public function getTemplateFile()
-    {
+     public function getTemplateFile()
+     {
         if (!isset($this->values['templates']['file'])) {
             return false;
         }
 
         return $this->values['templates']['file'];
-    }
+     }
 
     /**
      * Get the template class name.
      *
      * @return string|false
      */
-    public function getTemplateClass()
-    {
+     public function getTemplateClass()
+     {
         if (!isset($this->values['templates']['class'])) {
             return false;
         }
 
         return $this->values['templates']['class'];
-    }
-
-    /**
-     * {@inheritdoc}
-     */
-    public function getDataDomain()
-    {
-        if (!isset($this->values['data_domain'])) {
-            return [];
-        }
-
-        return $this->values['data_domain'];
-    }
+     }
 
     /**
      * Get the version order.
@@ -357,7 +324,7 @@ class Config implements ConfigInterface, NamespaceAwareInterface
     /**
      * Is version order creation time?
      *
-     * @return bool
+     * @return boolean
      */
     public function isVersionOrderCreationTime()
     {
@@ -366,36 +333,21 @@ class Config implements ConfigInterface, NamespaceAwareInterface
         return $versionOrder == self::VERSION_ORDER_CREATION_TIME;
     }
 
-    /**
-     * Get the bootstrap file path
-     *
-     * @return string|false
-     */
-    public function getBootstrapFile()
-    {
-        if (!isset($this->values['paths']['bootstrap'])) {
-            return false;
-        }
-
-        return $this->values['paths']['bootstrap'];
-    }
+    
 
     /**
      * Replace tokens in the specified array.
      *
      * @param array $arr Array to replace
-     *
      * @return array
      */
     protected function replaceTokens(array $arr)
     {
         // Get environment variables
-        // Depending on configuration of server / OS and variables_order directive,
-        // environment variables either end up in $_SERVER (most likely) or $_ENV,
-        // so we search through both
-        $tokens = [];
-        foreach (array_merge($_ENV, $_SERVER) as $varname => $varvalue) {
-            if (strpos($varname, 'PHINX_') === 0) {
+        // $_ENV is empty because variables_order does not include it normally
+        $tokens = array();
+        foreach ($_SERVER as $varname => $varvalue) {
+            if (0 === strpos($varname, 'PHINX_')) {
                 $tokens['%%' . $varname . '%%'] = $varvalue;
             }
         }
@@ -412,13 +364,12 @@ class Config implements ConfigInterface, NamespaceAwareInterface
      * Recurse an array for the specified tokens and replace them.
      *
      * @param array $arr Array to recurse
-     * @param string[] $tokens Array of tokens to search for
-     *
+     * @param array $tokens Array of tokens to search for
      * @return array
      */
     protected function recurseArrayForTokens($arr, $tokens)
     {
-        $out = [];
+        $out = array();
         foreach ($arr as $name => $value) {
             if (is_array($value)) {
                 $out[$name] = $this->recurseArrayForTokens($value, $tokens);
@@ -433,39 +384,11 @@ class Config implements ConfigInterface, NamespaceAwareInterface
             }
             $out[$name] = $value;
         }
-
         return $out;
     }
 
     /**
-     * Parse a database-agnostic DSN into individual options.
-     *
-     * @param array $options Options
-     *
-     * @return array
-     */
-    protected function parseAgnosticDsn(array $options)
-    {
-        if (isset($options['dsn']) && is_string($options['dsn'])) {
-            $regex = '#^(?P<adapter>[^\\:]+)\\://(?:(?P<user>[^\\:@]+)(?:\\:(?P<pass>[^@]*))?@)?' .
-                '(?P<host>[^\\:@/]+)(?:\\:(?P<port>[1-9]\\d*))?/(?P<name>[^\?]+)(?:\?(?P<query>.*))?$#';
-            if (preg_match($regex, trim($options['dsn']), $parsedOptions)) {
-                $additionalOpts = [];
-                if (isset($parsedOptions['query'])) {
-                    parse_str($parsedOptions['query'], $additionalOpts);
-                }
-                $validOptions = ['adapter', 'user', 'pass', 'host', 'port', 'name'];
-                $parsedOptions = array_filter(array_intersect_key($parsedOptions, array_flip($validOptions)));
-                $options = array_merge($additionalOpts, $parsedOptions, $options);
-                unset($options['dsn']);
-            }
-        }
-
-        return $options;
-    }
-
-    /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     public function offsetSet($id, $value)
     {
@@ -473,21 +396,19 @@ class Config implements ConfigInterface, NamespaceAwareInterface
     }
 
     /**
-     * @inheritDoc
-     *
-     * @throws \InvalidArgumentException
+     * {@inheritdoc}
      */
     public function offsetGet($id)
     {
         if (!array_key_exists($id, $this->values)) {
-            throw new InvalidArgumentException(sprintf('Identifier "%s" is not defined.', $id));
+            throw new \InvalidArgumentException(sprintf('Identifier "%s" is not defined.', $id));
         }
 
-        return $this->values[$id] instanceof Closure ? $this->values[$id]($this) : $this->values[$id];
+        return $this->values[$id] instanceof \Closure ? $this->values[$id]($this) : $this->values[$id];
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     public function offsetExists($id)
     {
@@ -495,7 +416,7 @@ class Config implements ConfigInterface, NamespaceAwareInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     public function offsetUnset($id)
     {

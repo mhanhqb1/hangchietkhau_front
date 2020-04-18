@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -18,7 +16,6 @@ namespace Cake\Database\Log;
 
 use Cake\Database\Statement\StatementDecorator;
 use Exception;
-use Psr\Log\LoggerInterface;
 
 /**
  * Statement decorator used to
@@ -27,10 +24,11 @@ use Psr\Log\LoggerInterface;
  */
 class LoggingStatement extends StatementDecorator
 {
+
     /**
      * Logger instance responsible for actually doing the logging task
      *
-     * @var \Psr\Log\LoggerInterface
+     * @var \Cake\Database\Log\QueryLogger|null
      */
     protected $_logger;
 
@@ -49,7 +47,7 @@ class LoggingStatement extends StatementDecorator
      * @return bool True on success, false otherwise
      * @throws \Exception Re-throws any exception raised during query execution.
      */
-    public function execute(?array $params = null): bool
+    public function execute($params = null)
     {
         $t = microtime(true);
         $query = new LoggedQuery();
@@ -57,7 +55,6 @@ class LoggingStatement extends StatementDecorator
         try {
             $result = parent::execute($params);
         } catch (Exception $e) {
-            /** @psalm-suppress UndefinedPropertyAssignment */
             $e->queryString = $this->queryString;
             $query->error = $e;
             $this->_log($query, $params, $t);
@@ -75,16 +72,16 @@ class LoggingStatement extends StatementDecorator
      * to the logging system.
      *
      * @param \Cake\Database\Log\LoggedQuery $query The query to log.
-     * @param array|null $params List of values to be bound to query.
+     * @param array $params List of values to be bound to query.
      * @param float $startTime The microtime when the query was executed.
      * @return void
      */
-    protected function _log(LoggedQuery $query, ?array $params, float $startTime): void
+    protected function _log($query, $params, $startTime)
     {
-        $query->took = (int)round((microtime(true) - $startTime) * 1000, 0);
+        $query->took = round((microtime(true) - $startTime) * 1000, 0);
         $query->params = $params ?: $this->_compiledParams;
         $query->query = $this->queryString;
-        $this->getLogger()->debug((string)$query, ['query' => $query]);
+        $this->getLogger()->log($query);
     }
 
     /**
@@ -96,10 +93,9 @@ class LoggingStatement extends StatementDecorator
      * @param string|int|null $type PDO type or name of configured Type class
      * @return void
      */
-    public function bindValue($column, $value, $type = 'string'): void
+    public function bindValue($column, $value, $type = 'string')
     {
         parent::bindValue($column, $value, $type);
-
         if ($type === null) {
             $type = 'string';
         }
@@ -110,12 +106,29 @@ class LoggingStatement extends StatementDecorator
     }
 
     /**
+     * Sets the logger object instance. When called with no arguments
+     * it returns the currently setup logger instance
+     *
+     * @deprecated 3.5.0 Use getLogger() and setLogger() instead.
+     * @param object|null $instance Logger object instance.
+     * @return object|null Logger instance
+     */
+    public function logger($instance = null)
+    {
+        if ($instance === null) {
+            return $this->getLogger();
+        }
+
+        return $this->_logger = $instance;
+    }
+
+    /**
      * Sets a logger
      *
-     * @param \Psr\Log\LoggerInterface $logger Logger object
+     * @param object $logger Logger object
      * @return void
      */
-    public function setLogger(LoggerInterface $logger): void
+    public function setLogger($logger)
     {
         $this->_logger = $logger;
     }
@@ -123,9 +136,9 @@ class LoggingStatement extends StatementDecorator
     /**
      * Gets the logger object
      *
-     * @return \Psr\Log\LoggerInterface logger instance
+     * @return object logger instance
      */
-    public function getLogger(): LoggerInterface
+    public function getLogger()
     {
         return $this->_logger;
     }

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -19,13 +17,13 @@ namespace Cake\Database\Expression;
 use Cake\Database\ExpressionInterface;
 use Cake\Database\Type\ExpressionTypeCasterTrait;
 use Cake\Database\ValueBinder;
-use Closure;
 
 /**
  * An expression object that represents a SQL BETWEEN snippet
  */
 class BetweenExpression implements ExpressionInterface, FieldInterface
 {
+
     use ExpressionTypeCasterTrait;
     use FieldTrait;
 
@@ -53,7 +51,7 @@ class BetweenExpression implements ExpressionInterface, FieldInterface
     /**
      * Constructor
      *
-     * @param string|\Cake\Database\ExpressionInterface $field The field name to compare for values inbetween the range.
+     * @param string|\Cake\Database\ExpressionInterface $field The field name to compare for values in between the range.
      * @param mixed $from The initial value of the range.
      * @param mixed $to The ending value in the comparison range.
      * @param string|null $type The data type name to bind the values with.
@@ -77,14 +75,13 @@ class BetweenExpression implements ExpressionInterface, FieldInterface
      * @param \Cake\Database\ValueBinder $generator Placeholder generator object
      * @return string
      */
-    public function sql(ValueBinder $generator): string
+    public function sql(ValueBinder $generator)
     {
         $parts = [
             'from' => $this->_from,
-            'to' => $this->_to,
+            'to' => $this->_to
         ];
 
-        /** @var string|\Cake\Database\ExpressionInterface $field */
         $field = $this->_field;
         if ($field instanceof ExpressionInterface) {
             $field = $field->sql($generator);
@@ -102,17 +99,16 @@ class BetweenExpression implements ExpressionInterface, FieldInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     *
      */
-    public function traverse(Closure $callable)
+    public function traverse(callable $callable)
     {
         foreach ([$this->_field, $this->_from, $this->_to] as $part) {
             if ($part instanceof ExpressionInterface) {
                 $callable($part);
             }
         }
-
-        return $this;
     }
 
     /**
@@ -123,7 +119,7 @@ class BetweenExpression implements ExpressionInterface, FieldInterface
      * @param string $type The type of $value
      * @return string generated placeholder
      */
-    protected function _bindValue($value, $generator, $type): string
+    protected function _bindValue($value, $generator, $type)
     {
         $placeholder = $generator->placeholder('c');
         $generator->bind($placeholder, $value, $type);

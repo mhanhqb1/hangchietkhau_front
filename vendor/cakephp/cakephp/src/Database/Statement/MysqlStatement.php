@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -25,15 +23,16 @@ use PDO;
  */
 class MysqlStatement extends PDOStatement
 {
+
     use BufferResultsTrait;
 
     /**
      * {@inheritDoc}
      *
      */
-    public function execute(?array $params = null): bool
+    public function execute($params = null)
     {
-        $connection = $this->_driver->getConnection();
+        $connection = $this->_driver->connection();
 
         try {
             $connection->setAttribute(PDO::MYSQL_ATTR_USE_BUFFERED_QUERY, $this->_bufferResults);

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,7 +14,6 @@ declare(strict_types=1);
  */
 namespace Cake\Database\Log;
 
-use Cake\Log\Engine\BaseLog;
 use Cake\Log\Log;
 
 /**
@@ -25,29 +22,73 @@ use Cake\Log\Log;
  *
  * @internal
  */
-class QueryLogger extends BaseLog
+class QueryLogger
 {
-    /**
-     * Constructor.
-     *
-     * @param array $config Configuration array
-     */
-    public function __construct(array $config = [])
-    {
-        $this->_defaultConfig['scopes'] = ['queriesLog'];
 
-        parent::__construct($config);
+    /**
+     * Writes a LoggedQuery into a log
+     *
+     * @param \Cake\Database\Log\LoggedQuery $query to be written in log
+     * @return void
+     */
+    public function log(LoggedQuery $query)
+    {
+        if (!empty($query->params)) {
+            $query->query = $this->_interpolate($query);
+        }
+        $this->_log($query);
     }
 
     /**
-     * @inheritDoc
+     * Wrapper function for the logger object, useful for unit testing
+     * or for overriding in subclasses.
+     *
+     * @param \Cake\Database\Log\LoggedQuery $query to be written in log
+     * @return void
      */
-    public function log($level, $message, array $context = [])
+    protected function _log($query)
     {
-        Log::write(
-            'debug',
-            (string)$context['query'],
-            ['scope' => $this->scopes() ?: ['queriesLog']]
-        );
+        Log::write('debug', $query, ['queriesLog']);
+    }
+
+    /**
+     * Helper function used to replace query placeholders by the real
+     * params used to execute the query
+     *
+     * @param \Cake\Database\Log\LoggedQuery $query The query to log
+     * @return string
+     */
+    protected function _interpolate($query)
+    {
+        $params = array_map(function ($p) {
+            if ($p === null) {
+                return 'NULL';
+            }
+            if (is_bool($p)) {
+                return $p ? '1' : '0';
+            }
+
+            if (is_string($p)) {
+                $replacements = [
+                    '$' => '\\$',
+                    '\\' => '\\\\\\\\',
+                    "'" => "''",
+                ];
+
+                $p = strtr($p, $replacements);
+
+                return "'$p'";
+            }
+
+            return $p;
+        }, $query->params);
+
+        $keys = [];
+        $limit = is_int(key($params)) ? 1 : -1;
+        foreach ($params as $key => $param) {
+            $keys[] = is_string($key) ? "/:$key\b/" : '/[?]/';
+        }
+
+        return preg_replace($keys, $params, $query->query, $limit);
     }
 }

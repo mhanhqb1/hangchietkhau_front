@@ -34,7 +34,7 @@ interface Sniff
      *           );
      * </code>
      *
-     * @return mixed[]
+     * @return int[]
      * @see    Tokens.php
      */
     public function register();

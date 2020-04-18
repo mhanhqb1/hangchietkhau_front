@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
@@ -22,6 +20,7 @@ use Symfony\Component\Console\Input\InputInterface;
  */
 class CakeManager extends Manager
 {
+
     public $maxNameLength = 0;
 
     /**
@@ -54,22 +53,22 @@ class CakeManager extends Manager
     /**
      * Prints the specified environment's migration status.
      *
-     * @param string $environment Environment name.
-     * @param null|string $format Format (`json` or `array`).
-     * @return array|string Array of migrations or json string.
+     * @param string $environment
+     * @param null|string $format
+     * @return array Array of migrations
      */
     public function printStatus($environment, $format = null)
     {
         $migrations = [];
         $isJson = $format === 'json';
-        if (count($this->getMigrations('default'))) {
+        if (count($this->getMigrations())) {
             $env = $this->getEnvironment($environment);
             $versions = $env->getVersionLog();
             $this->maxNameLength = $versions ? max(array_map(function ($version) {
                 return strlen($version['migration_name']);
             }, $versions)) : 0;
 
-            foreach ($this->getMigrations('default') as $migration) {
+            foreach ($this->getMigrations() as $migration) {
                 if (array_key_exists($migration->getVersion(), $versions)) {
                     $status = 'up';
                     unset($versions[$migration->getVersion()]);
@@ -81,7 +80,7 @@ class CakeManager extends Manager
                 $migrationParams = [
                     'status' => $status,
                     'id' => $migration->getVersion(),
-                    'name' => $migration->getName(),
+                    'name' => $migration->getName()
                 ];
 
                 $migrations[$version] = $migrationParams;
@@ -92,13 +91,13 @@ class CakeManager extends Manager
                 $migrationParams = [
                     'status' => 'up',
                     'id' => $version,
-                    'name' => $missing['migration_name'],
+                    'name' => $missing['migration_name']
                 ];
 
                 if (!$isJson) {
-                    $migrationParams = [
-                        'missing' => true,
-                    ] + $migrationParams;
+                    $migrationParams = array_merge($migrationParams, [
+                        'missing' => true
+                    ]);
                 }
 
                 $migrations[$version] = $migrationParams;
@@ -116,11 +115,11 @@ class CakeManager extends Manager
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
-    public function migrateToDateTime($environment, \DateTime $dateTime, $fake = false)
+    public function migrateToDateTime($environment, \DateTime $dateTime)
     {
-        $versions = array_keys($this->getMigrations('default'));
+        $versions = array_keys($this->getMigrations());
         $dateString = $dateTime->format('Ymdhis');
         $versionToMigrate = null;
         foreach ($versions as $version) {
@@ -133,18 +132,17 @@ class CakeManager extends Manager
             $this->getOutput()->writeln(
                 'No migrations to run'
             );
-
             return;
         }
 
         $this->getOutput()->writeln(
             'Migrating to version ' . $versionToMigrate
         );
-        $this->migrate($environment, $versionToMigrate, $fake);
+        $this->migrate($environment, $versionToMigrate);
     }
 
     /**
-     * @inheritDoc
+     * {@inheritdoc}
      */
     public function rollbackToDateTime($environment, \DateTime $dateTime, $force = false)
     {
@@ -156,14 +154,12 @@ class CakeManager extends Manager
 
         if (empty($versions) || $dateString > $versions[0]) {
             $this->getOutput()->writeln('No migrations to rollback');
-
             return;
         }
 
         if ($dateString < end($versions)) {
             $this->getOutput()->writeln('Rolling back all migrations');
             $this->rollback($environment, 0);
-
             return;
         }
 
@@ -216,12 +212,11 @@ class CakeManager extends Manager
         $migrationFile = $migrationFile[0];
         $className = $this->getMigrationClassName($migrationFile);
         require_once $migrationFile;
-        $Migration = new $className('default', $version);
+        $Migration = new $className($version);
 
         $time = date('Y-m-d H:i:s', time());
 
         $adapter->migrated($Migration, 'up', $time, $time);
-
         return true;
     }
 
@@ -236,12 +231,12 @@ class CakeManager extends Manager
      */
     public function getVersionsToMark($input)
     {
-        $migrations = $this->getMigrations('default');
+        $migrations = $this->getMigrations();
         $versions = array_keys($migrations);
 
         $versionArg = $input->getArgument('version');
         $targetArg = $input->getOption('target');
-        $hasAllVersion = in_array($versionArg, ['all', '*'], true);
+        $hasAllVersion = in_array($versionArg, ['all', '*']);
         if ((empty($versionArg) && empty($targetArg)) || $hasAllVersion) {
             return $versions;
         }
@@ -277,13 +272,12 @@ class CakeManager extends Manager
      * the command output
      * @return void
      */
-    public function markVersionsAsMigrated($path, array $versions, $output)
+    public function markVersionsAsMigrated($path, $versions, $output)
     {
         $adapter = $this->getEnvironment('default')->getAdapter();
 
         if (empty($versions)) {
             $output->writeln('<info>No migrations were found. Nothing to mark as migrated.</info>');
-
             return;
         }
 
@@ -309,7 +303,6 @@ class CakeManager extends Manager
                     )
                 );
                 $output->writeln('<error>All marked migrations during this process were unmarked.</error>');
-
                 return;
             }
         }
@@ -339,24 +332,19 @@ class CakeManager extends Manager
      * Sets the InputInterface the Manager is dealing with for the current shell call
      *
      * @param \Symfony\Component\Console\Input\InputInterface $input Instance of InputInterface
-     * @return $this
+     * @return void
      */
     public function setInput(InputInterface $input)
     {
         $this->input = $input;
-
-        return $this;
     }
 
     /**
-     * Gets an array of database seeders.
-     *
      * Overload the basic behavior to add an instance of the InputInterface the shell call is
      * using in order to gives the ability to the AbstractSeed::call() method to propagate options
      * to the other MigrationsDispatcher it is generating.
      *
-     * @throws \InvalidArgumentException
-     * @return \Phinx\Seed\AbstractSeed[]
+     * {@inheritdoc}
      */
     public function getSeeds()
     {

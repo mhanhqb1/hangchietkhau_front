@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -16,16 +14,15 @@ declare(strict_types=1);
 namespace Cake\Http\Cookie;
 
 use ArrayIterator;
+use Cake\Http\Client\Response as ClientResponse;
 use Countable;
 use DateTimeImmutable;
 use DateTimeZone;
-use Exception;
 use InvalidArgumentException;
 use IteratorAggregate;
 use Psr\Http\Message\RequestInterface;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Traversable;
 
 /**
  * Cookie Collection
@@ -35,6 +32,7 @@ use Traversable;
  */
 class CookieCollection implements IteratorAggregate, Countable
 {
+
     /**
      * Cookie objects
      *
@@ -45,7 +43,7 @@ class CookieCollection implements IteratorAggregate, Countable
     /**
      * Constructor
      *
-     * @param \Cake\Http\Cookie\CookieInterface[] $cookies Array of cookie objects
+     * @param array $cookies Array of cookie objects
      */
     public function __construct(array $cookies = [])
     {
@@ -59,19 +57,11 @@ class CookieCollection implements IteratorAggregate, Countable
      * Create a Cookie Collection from an array of Set-Cookie Headers
      *
      * @param array $header The array of set-cookie header values.
-     * @param array $defaults The defaults attributes.
      * @return static
      */
-    public static function createFromHeader(array $header, array $defaults = [])
+    public static function createFromHeader(array $header)
     {
-        $cookies = [];
-        foreach ($header as $value) {
-            try {
-                $cookies[] = Cookie::createFromHeaderString($value, $defaults);
-            } catch (Exception $e) {
-                // Don't blow up on invalid cookies
-            }
-        }
+        $cookies = static::parseSetCookieHeader($header);
 
         return new static($cookies);
     }
@@ -98,7 +88,7 @@ class CookieCollection implements IteratorAggregate, Countable
      *
      * @return int
      */
-    public function count(): int
+    public function count()
     {
         return count($this->cookies);
     }
@@ -125,10 +115,9 @@ class CookieCollection implements IteratorAggregate, Countable
      * Get the first cookie by name.
      *
      * @param string $name The name of the cookie.
-     * @return \Cake\Http\Cookie\CookieInterface
-     * @throws \InvalidArgumentException If cookie not found.
+     * @return \Cake\Http\Cookie\CookieInterface|null
      */
-    public function get(string $name): CookieInterface
+    public function get($name)
     {
         $key = mb_strtolower($name);
         foreach ($this->cookies as $cookie) {
@@ -137,12 +126,7 @@ class CookieCollection implements IteratorAggregate, Countable
             }
         }
 
-        throw new InvalidArgumentException(
-            sprintf(
-                'Cookie %s not found. Use has() to check first for existence.',
-                $name
-            )
-        );
+        return null;
     }
 
     /**
@@ -151,7 +135,7 @@ class CookieCollection implements IteratorAggregate, Countable
      * @param string $name The cookie name to check.
      * @return bool True if the cookie exists, otherwise false.
      */
-    public function has(string $name): bool
+    public function has($name)
     {
         $key = mb_strtolower($name);
         foreach ($this->cookies as $cookie) {
@@ -171,7 +155,7 @@ class CookieCollection implements IteratorAggregate, Countable
      * @param string $name The name of the cookie to remove.
      * @return static
      */
-    public function remove(string $name)
+    public function remove($name)
     {
         $new = clone $this;
         $key = mb_strtolower($name);
@@ -187,11 +171,11 @@ class CookieCollection implements IteratorAggregate, Countable
     /**
      * Checks if only valid cookie objects are in the array
      *
-     * @param \Cake\Http\Cookie\CookieInterface[] $cookies Array of cookie objects
+     * @param array $cookies Array of cookie objects
      * @return void
      * @throws \InvalidArgumentException
      */
-    protected function checkCookies(array $cookies): void
+    protected function checkCookies(array $cookies)
     {
         foreach ($cookies as $index => $cookie) {
             if (!$cookie instanceof CookieInterface) {
@@ -199,7 +183,7 @@ class CookieCollection implements IteratorAggregate, Countable
                     sprintf(
                         'Expected `%s[]` as $cookies but instead got `%s` at index %d',
                         static::class,
-                        getTypeName($cookie),
+                        is_object($cookie) ? get_class($cookie) : gettype($cookie),
                         $index
                     )
                 );
@@ -210,10 +194,9 @@ class CookieCollection implements IteratorAggregate, Countable
     /**
      * Gets the iterator
      *
-     * @return \Cake\Http\Cookie\CookieInterface[]
-     * @psalm-return \Traversable<string, \Cake\Http\Cookie\CookieInterface>
+     * @return \ArrayIterator
      */
-    public function getIterator(): Traversable
+    public function getIterator()
     {
         return new ArrayIterator($this->cookies);
     }
@@ -230,7 +213,7 @@ class CookieCollection implements IteratorAggregate, Countable
      *   is useful when you have cookie data from outside the collection you want to send.
      * @return \Psr\Http\Message\RequestInterface An updated request.
      */
-    public function addToRequest(RequestInterface $request, array $extraCookies = []): RequestInterface
+    public function addToRequest(RequestInterface $request, array $extraCookies = [])
     {
         $uri = $request->getUri();
         $cookies = $this->findMatchingCookies(
@@ -241,17 +224,8 @@ class CookieCollection implements IteratorAggregate, Countable
         $cookies = array_merge($cookies, $extraCookies);
         $cookiePairs = [];
         foreach ($cookies as $key => $value) {
-            $cookie = sprintf("%s=%s", rawurlencode($key), rawurlencode($value));
-            $size = strlen($cookie);
-            if ($size > 4096) {
-                triggerWarning(sprintf(
-                    'The cookie `%s` exceeds the recommended maximum cookie length of 4096 bytes.',
-                    $key
-                ));
-            }
-            $cookiePairs[] = $cookie;
+            $cookiePairs[] = sprintf("%s=%s", rawurlencode($key), rawurlencode($value));
         }
-
         if (empty($cookiePairs)) {
             return $request;
         }
@@ -267,7 +241,7 @@ class CookieCollection implements IteratorAggregate, Countable
      * @param string $path The path to match
      * @return array An array of cookie name/value pairs
      */
-    protected function findMatchingCookies(string $scheme, string $host, string $path): array
+    protected function findMatchingCookies($scheme, $host, $path)
     {
         $out = [];
         $now = new DateTimeImmutable('now', new DateTimeZone('UTC'));
@@ -312,10 +286,8 @@ class CookieCollection implements IteratorAggregate, Countable
         $host = $uri->getHost();
         $path = $uri->getPath() ?: '/';
 
-        $cookies = static::createFromHeader(
-            $response->getHeader('Set-Cookie'),
-            ['domain' => $host, 'path' => $path]
-        );
+        $cookies = static::parseSetCookieHeader($response->getHeader('Set-Cookie'));
+        $cookies = $this->setRequestDefaults($cookies, $host, $path);
         $new = clone $this;
         foreach ($cookies as $cookie) {
             $new->cookies[$cookie->getId()] = $cookie;
@@ -326,24 +298,107 @@ class CookieCollection implements IteratorAggregate, Countable
     }
 
     /**
+     * Apply path and host to the set of cookies if they are not set.
+     *
+     * @param array $cookies An array of cookies to update.
+     * @param string $host The host to set.
+     * @param string $path The path to set.
+     * @return array An array of updated cookies.
+     */
+    protected function setRequestDefaults(array $cookies, $host, $path)
+    {
+        $out = [];
+        foreach ($cookies as $name => $cookie) {
+            if (!$cookie->getDomain()) {
+                $cookie = $cookie->withDomain($host);
+            }
+            if (!$cookie->getPath()) {
+                $cookie = $cookie->withPath($path);
+            }
+            $out[] = $cookie;
+        }
+
+        return $out;
+    }
+
+    /**
+     * Parse Set-Cookie headers into array
+     *
+     * @param array $values List of Set-Cookie Header values.
+     * @return \Cake\Http\Cookie\Cookie[] An array of cookie objects
+     */
+    protected static function parseSetCookieHeader($values)
+    {
+        $cookies = [];
+        foreach ($values as $value) {
+            $value = rtrim($value, ';');
+            $parts = preg_split('/\;[ \t]*/', $value);
+
+            $name = false;
+            $cookie = [
+                'value' => '',
+                'path' => '',
+                'domain' => '',
+                'secure' => false,
+                'httponly' => false,
+                'expires' => null,
+                'max-age' => null
+            ];
+            foreach ($parts as $i => $part) {
+                if (strpos($part, '=') !== false) {
+                    list($key, $value) = explode('=', $part, 2);
+                } else {
+                    $key = $part;
+                    $value = true;
+                }
+                if ($i === 0) {
+                    $name = $key;
+                    $cookie['value'] = urldecode($value);
+                    continue;
+                }
+                $key = strtolower($key);
+                if (array_key_exists($key, $cookie) && !strlen($cookie[$key])) {
+                    $cookie[$key] = $value;
+                }
+            }
+            $expires = null;
+            if ($cookie['max-age'] !== null) {
+                $expires = new DateTimeImmutable('@' . (time() + $cookie['max-age']));
+            } elseif ($cookie['expires']) {
+                $expires = new DateTimeImmutable('@' . strtotime($cookie['expires']));
+            }
+
+            $cookies[] = new Cookie(
+                $name,
+                $cookie['value'],
+                $expires,
+                $cookie['path'],
+                $cookie['domain'],
+                $cookie['secure'],
+                $cookie['httponly']
+            );
+        }
+
+        return $cookies;
+    }
+
+    /**
      * Remove expired cookies from the collection.
      *
      * @param string $host The host to check for expired cookies on.
      * @param string $path The path to check for expired cookies on.
      * @return void
      */
-    protected function removeExpiredCookies(string $host, string $path): void
+    protected function removeExpiredCookies($host, $path)
     {
         $time = new DateTimeImmutable('now', new DateTimeZone('UTC'));
         $hostPattern = '/' . preg_quote($host, '/') . '$/';
 
         foreach ($this->cookies as $i => $cookie) {
-            if (!$cookie->isExpired($time)) {
-                continue;
-            }
+            $expired = $cookie->isExpired($time);
             $pathMatches = strpos($path, $cookie->getPath()) === 0;
             $hostMatches = preg_match($hostPattern, $cookie->getDomain());
-            if ($pathMatches && $hostMatches) {
+            if ($pathMatches && $hostMatches && $expired) {
                 unset($this->cookies[$i]);
             }
         }

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -26,8 +24,9 @@ use PDOException;
  * Used to access information about the tables,
  * and other data in a database.
  */
-class Collection implements CollectionInterface
+class Collection
 {
+
     /**
      * Connection object
      *
@@ -56,11 +55,11 @@ class Collection implements CollectionInterface
     /**
      * Get the list of tables available in the current connection.
      *
-     * @return string[] The list of tables in the connected database/schema.
+     * @return array The list of tables in the connected database/schema.
      */
-    public function listTables(): array
+    public function listTables()
     {
-        [$sql, $params] = $this->_dialect->listTablesSql($this->_connection->config());
+        list($sql, $params) = $this->_dialect->listTablesSql($this->_connection->config());
         $result = [];
         $statement = $this->_connection->execute($sql, $params);
         while ($row = $statement->fetch()) {
@@ -73,8 +72,6 @@ class Collection implements CollectionInterface
 
     /**
      * Get the column metadata for a table.
-     *
-     * The name can include a database schema name in the form 'schema.table'.
      *
      * Caching will be applied if `cacheMetadata` key is present in the Connection
      * configuration options. Defaults to _cake_model_ when true.
@@ -89,13 +86,13 @@ class Collection implements CollectionInterface
      * @return \Cake\Database\Schema\TableSchema Object with column metadata.
      * @throws \Cake\Database\Exception when table cannot be described.
      */
-    public function describe(string $name, array $options = []): TableSchemaInterface
+    public function describe($name, array $options = [])
     {
         $config = $this->_connection->config();
         if (strpos($name, '.')) {
-            [$config['schema'], $name] = explode('.', $name);
+            list($config['schema'], $name) = explode('.', $name);
         }
-        $table = $this->_connection->getDriver()->newTableSchema($name);
+        $table = new TableSchema($name);
 
         $this->_reflect('Column', $name, $config, $table);
         if (count($table->columns()) === 0) {
@@ -115,24 +112,16 @@ class Collection implements CollectionInterface
      * @param string $stage The stage name.
      * @param string $name The table name.
      * @param array $config The config data.
-     * @param \Cake\Database\Schema\TableSchema $schema The table schema instance.
+     * @param \Cake\Database\Schema\TableSchema $schema The table instance
      * @return void
      * @throws \Cake\Database\Exception on query failure.
-     * @uses \Cake\Database\Schema\BaseSchema::describeColumnSql
-     * @uses \Cake\Database\Schema\BaseSchema::describeIndexSql
-     * @uses \Cake\Database\Schema\BaseSchema::describeForeignKeySql
-     * @uses \Cake\Database\Schema\BaseSchema::describeOptionsSql
-     * @uses \Cake\Database\Schema\BaseSchema::convertColumnDescription
-     * @uses \Cake\Database\Schema\BaseSchema::convertIndexDescription
-     * @uses \Cake\Database\Schema\BaseSchema::convertForeignKeyDescription
-     * @uses \Cake\Database\Schema\BaseSchema::convertOptionsDescription
      */
-    protected function _reflect(string $stage, string $name, array $config, TableSchema $schema): void
+    protected function _reflect($stage, $name, $config, $schema)
     {
         $describeMethod = "describe{$stage}Sql";
         $convertMethod = "convert{$stage}Description";
 
-        [$sql, $params] = $this->_dialect->{$describeMethod}($name, $config);
+        list($sql, $params) = $this->_dialect->{$describeMethod}($name, $config);
         if (empty($sql)) {
             return;
         }
@@ -141,7 +130,6 @@ class Collection implements CollectionInterface
         } catch (PDOException $e) {
             throw new Exception($e->getMessage(), 500, $e);
         }
-        /** @psalm-suppress PossiblyFalseIterator */
         foreach ($statement->fetchAll('assoc') as $row) {
             $this->_dialect->{$convertMethod}($schema, $row);
         }

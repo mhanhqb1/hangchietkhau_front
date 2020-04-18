@@ -117,7 +117,7 @@ $this->listeners[] = $events->getSharedManager()->attach(
         'Zend\Mvc\Application', MvcEvent::EVENT_DISPATCH, [$this, 'selectLayout'], 100
 );
 
-// phpcs:set PSR2.Methods.FunctionCallSignature requiredSpacesBeforeClose 1
+// @codingStandardsChangeSetting PSR2.Methods.FunctionCallSignature requiredSpacesBeforeClose 1
 foo('Testing
     multiline text'
  );
@@ -141,7 +141,7 @@ foo('Testing
 // . $text2
  */
  );
-// phpcs:set PSR2.Methods.FunctionCallSignature requiredSpacesBeforeClose 0
+// @codingStandardsChangeSetting PSR2.Methods.FunctionCallSignature requiredSpacesBeforeClose 0
 
 foo('Testing
     multiline text'
@@ -210,35 +210,3 @@ $obj->{$x}(1,
   'a','b'
 )('c',
     'd');
-
-return trim(preg_replace_callback(
-            // sprintf replaces IGNORED_CHARS multiple times: for %s as well as %1$s (argument numbering)
-            // /[%s]*([^%1$s]+)/ results in /[IGNORED_CHARS]*([^IGNORED_CHARS]+)/
-                sprintf('/[%s]*([^%1$s]+)/', self::IGNORED_CHARS),
-                function (array $term) use ($mode): string {
-                    // query pieces have to bigger than one char, otherwise they are too expensive for the search
-                    if (mb_strlen($term[1], 'UTF-8') > 1) {
-                        // in boolean search mode '' (empty) means OR, '-' means NOT
-                        return sprintf('%s%s ', $mode === 'AND' ? '+' : '', self::extractUmlauts($term[1]));
-                    }
-
-                    return '';
-                },
-                $search
-            ));
-
-return trim(preg_replace_callback(
-// sprintf replaces IGNORED_CHARS multiple times: for %s as well as %1$s (argument numbering)
-// /[%s]*([^%1$s]+)/ results in /[IGNORED_CHARS]*([^IGNORED_CHARS]+)/
-sprintf('/[%s]*([^%1$s]+)/', self::IGNORED_CHARS),
-function (array $term) use ($mode): string {
-    // query pieces have to bigger than one char, otherwise they are too expensive for the search
-    if (mb_strlen($term[1], 'UTF-8') > 1) {
-        // in boolean search mode '' (empty) means OR, '-' means NOT
-        return sprintf('%s%s ', $mode === 'AND' ? '+' : '', self::extractUmlauts($term[1]));
-    }
-
-    return '';
-},
-$search
-));

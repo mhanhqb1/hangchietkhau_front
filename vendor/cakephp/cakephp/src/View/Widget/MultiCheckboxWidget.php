@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -18,33 +16,21 @@ namespace Cake\View\Widget;
 
 use Cake\View\Form\ContextInterface;
 use Cake\View\Helper\IdGeneratorTrait;
-use Cake\View\StringTemplate;
 
 /**
  * Input widget class for generating multiple checkboxes.
- *
- * This class is usually used internally by `Cake\View\Helper\FormHelper`,
- * it but can be used to generate standalone multiple checkboxes.
  */
-class MultiCheckboxWidget extends BasicWidget
+class MultiCheckboxWidget implements WidgetInterface
 {
+
     use IdGeneratorTrait;
 
     /**
-     * Data defaults.
+     * Template instance to use.
      *
-     * @var array
+     * @var \Cake\View\StringTemplate
      */
-    protected $defaults = [
-        'name' => '',
-        'escape' => true,
-        'options' => [],
-        'disabled' => null,
-        'val' => null,
-        'idPrefix' => null,
-        'templateVars' => [],
-        'label' => true,
-    ];
+    protected $_templates;
 
     /**
      * Label widget instance.
@@ -69,7 +55,7 @@ class MultiCheckboxWidget extends BasicWidget
      * @param \Cake\View\StringTemplate $templates Templates list.
      * @param \Cake\View\Widget\LabelWidget $label Label widget instance.
      */
-    public function __construct(StringTemplate $templates, LabelWidget $label)
+    public function __construct($templates, $label)
     {
         $this->_templates = $templates;
         $this->_label = $label;
@@ -117,10 +103,18 @@ class MultiCheckboxWidget extends BasicWidget
      * @param \Cake\View\Form\ContextInterface $context The current form context.
      * @return string
      */
-    public function render(array $data, ContextInterface $context): string
+    public function render(array $data, ContextInterface $context)
     {
-        $data += $this->mergeDefaults($data, $context);
-
+        $data += [
+            'name' => '',
+            'escape' => true,
+            'options' => [],
+            'disabled' => null,
+            'val' => null,
+            'idPrefix' => null,
+            'templateVars' => [],
+            'label' => true
+        ];
         $this->_idPrefix = $data['idPrefix'];
         $this->_clearIds();
 
@@ -132,9 +126,9 @@ class MultiCheckboxWidget extends BasicWidget
      *
      * @param array $data The data array defining the checkboxes.
      * @param \Cake\View\Form\ContextInterface $context The current form context.
-     * @return string[] An array of rendered inputs.
+     * @return array An array of rendered inputs.
      */
-    protected function _renderInputs(array $data, ContextInterface $context): array
+    protected function _renderInputs($data, $context)
     {
         $out = [];
         foreach ($data['options'] as $key => $val) {
@@ -143,7 +137,7 @@ class MultiCheckboxWidget extends BasicWidget
                 $inputs = $this->_renderInputs(['options' => $val] + $data, $context);
                 $title = $this->_templates->format('multicheckboxTitle', ['text' => $key]);
                 $out[] = $this->_templates->format('multicheckboxWrapper', [
-                    'content' => $title . implode('', $inputs),
+                    'content' => $title . implode('', $inputs)
                 ]);
                 continue;
             }
@@ -167,17 +161,10 @@ class MultiCheckboxWidget extends BasicWidget
             }
             $checkbox['name'] = $data['name'];
             $checkbox['escape'] = $data['escape'];
-            $checkbox['checked'] = $this->_isSelected((string)$checkbox['value'], $data['val']);
-            $checkbox['disabled'] = $this->_isDisabled((string)$checkbox['value'], $data['disabled']);
+            $checkbox['checked'] = $this->_isSelected($checkbox['value'], $data['val']);
+            $checkbox['disabled'] = $this->_isDisabled($checkbox['value'], $data['disabled']);
             if (empty($checkbox['id'])) {
-                if (isset($data['id'])) {
-                    $checkbox['id'] = $data['id'] . '-' . trim(
-                        $this->_idSuffix((string)$checkbox['value']),
-                        '-'
-                    );
-                } else {
-                    $checkbox['id'] = $this->_id($checkbox['name'], (string)$checkbox['value']);
-                }
+                $checkbox['id'] = $this->_id($checkbox['name'], $checkbox['value']);
             }
             $out[] = $this->_renderInput($checkbox + $data, $context);
         }
@@ -192,7 +179,7 @@ class MultiCheckboxWidget extends BasicWidget
      * @param \Cake\View\Form\ContextInterface $context Context object.
      * @return string
      */
-    protected function _renderInput(array $checkbox, ContextInterface $context): string
+    protected function _renderInput($checkbox, $context)
     {
         $input = $this->_templates->format('checkbox', [
             'name' => $checkbox['name'] . '[]',
@@ -201,24 +188,26 @@ class MultiCheckboxWidget extends BasicWidget
             'attrs' => $this->_templates->formatAttributes(
                 $checkbox,
                 ['name', 'value', 'text', 'options', 'label', 'val', 'type']
-            ),
+            )
         ]);
 
-        if ($checkbox['label'] === false && strpos($this->_templates->get('checkboxWrapper'), '{{input}}') === false) {
+        if ($checkbox['label'] === false && strpos($this->_templates->get('radioWrapper'), '{{input}}') === false) {
             $label = $input;
         } else {
-            $labelAttrs = is_array($checkbox['label']) ? $checkbox['label'] : [];
-            $labelAttrs += [
+            $labelAttrs = [
                 'for' => $checkbox['id'],
                 'escape' => $checkbox['escape'],
                 'text' => $checkbox['text'],
                 'templateVars' => $checkbox['templateVars'],
-                'input' => $input,
+                'input' => $input
             ];
 
+            if (is_array($checkbox['label'])) {
+                $labelAttrs += $checkbox['label'];
+            }
+
             if ($checkbox['checked']) {
-                $selectedClass = $this->_templates->format('selectedClass', []);
-                $labelAttrs = (array)$this->_templates->addClass($labelAttrs, $selectedClass);
+                $labelAttrs = $this->_templates->addClass($labelAttrs, 'selected');
             }
 
             $label = $this->_label->render($labelAttrs, $context);
@@ -227,7 +216,7 @@ class MultiCheckboxWidget extends BasicWidget
         return $this->_templates->format('checkboxWrapper', [
             'templateVars' => $checkbox['templateVars'],
             'label' => $label,
-            'input' => $input,
+            'input' => $input
         ]);
     }
 
@@ -238,27 +227,28 @@ class MultiCheckboxWidget extends BasicWidget
      * @param array|string|null $selected The selected values.
      * @return bool
      */
-    protected function _isSelected(string $key, $selected): bool
+    protected function _isSelected($key, $selected)
     {
         if ($selected === null) {
             return false;
         }
-        if (!is_array($selected)) {
-            return $key === (string)$selected;
+        $isArray = is_array($selected);
+        if (!$isArray) {
+            return (string)$key === (string)$selected;
         }
         $strict = !is_numeric($key);
 
-        return in_array($key, $selected, $strict);
+        return in_array((string)$key, $selected, $strict);
     }
 
     /**
      * Helper method for deciding what options are disabled.
      *
      * @param string $key The key to test.
-     * @param mixed $disabled The disabled values.
+     * @param array|bool|null $disabled The disabled values.
      * @return bool
      */
-    protected function _isDisabled(string $key, $disabled): bool
+    protected function _isDisabled($key, $disabled)
     {
         if ($disabled === null || $disabled === false) {
             return false;
@@ -268,6 +258,14 @@ class MultiCheckboxWidget extends BasicWidget
         }
         $strict = !is_numeric($key);
 
-        return in_array($key, $disabled, $strict);
+        return in_array((string)$key, $disabled, $strict);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function secureFields(array $data)
+    {
+        return [$data['name']];
     }
 }

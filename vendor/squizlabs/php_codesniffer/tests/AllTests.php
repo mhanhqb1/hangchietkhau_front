@@ -9,7 +9,8 @@
 
 namespace PHP_CodeSniffer\Tests;
 
-$GLOBALS['PHP_CODESNIFFER_PEAR'] = false;
+use PHP_CodeSniffer\Tests\TestSuite;
+use PHPUnit\TextUI\TestRunner;
 
 if (is_file(__DIR__.'/../autoload.php') === true) {
     include_once 'Core/AllTests.php';
@@ -17,29 +18,24 @@ if (is_file(__DIR__.'/../autoload.php') === true) {
 } else {
     include_once 'CodeSniffer/Core/AllTests.php';
     include_once 'CodeSniffer/Standards/AllSniffs.php';
-    include_once 'FileList.php';
-    $GLOBALS['PHP_CODESNIFFER_PEAR'] = true;
 }
 
-// PHPUnit 7 made the TestSuite run() method incompatible with
-// older PHPUnit versions due to return type hints, so maintain
-// two different suite objects.
-$phpunit7 = false;
-if (class_exists('\PHPUnit\Runner\Version') === true) {
-    $version = \PHPUnit\Runner\Version::id();
-    if ($version[0] === '7') {
-        $phpunit7 = true;
-    }
-}
-
-if ($phpunit7 === true) {
-    include_once 'TestSuite7.php';
-} else {
-    include_once 'TestSuite.php';
-}
+require_once 'TestSuite.php';
 
 class PHP_CodeSniffer_AllTests
 {
+
+
+    /**
+     * Prepare the test runner.
+     *
+     * @return void
+     */
+    public static function main()
+    {
+        TestRunner::run(self::suite());
+
+    }//end main()
 
 
     /**
@@ -49,8 +45,8 @@ class PHP_CodeSniffer_AllTests
      */
     public static function suite()
     {
-        $GLOBALS['PHP_CODESNIFFER_STANDARD_DIRS'] = [];
-        $GLOBALS['PHP_CODESNIFFER_TEST_DIRS']     = [];
+        $GLOBALS['PHP_CODESNIFFER_STANDARD_DIRS'] = array();
+        $GLOBALS['PHP_CODESNIFFER_TEST_DIRS']     = array();
 
         // Use a special PHP_CodeSniffer test suite so that we can
         // unset our autoload function after the run.

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -24,25 +22,31 @@ use Cake\Mailer\Exception\MissingMailerException;
  * onto properties of the host object.
  *
  * Example users of this trait are Cake\Controller\Controller and
- * Cake\Console\Command.
+ * Cake\Console\Shell.
  */
 trait MailerAwareTrait
 {
+
     /**
      * Returns a mailer instance.
      *
      * @param string $name Mailer's name.
-     * @param array|string|null $config Array of configs, or profile name string.
+     * @param \Cake\Mailer\Email|null $email Email instance.
      * @return \Cake\Mailer\Mailer
      * @throws \Cake\Mailer\Exception\MissingMailerException if undefined mailer class.
      */
-    protected function getMailer(string $name, $config = null): Mailer
+    protected function getMailer($name, Email $email = null)
     {
+        if ($email === null) {
+            $email = new Email();
+        }
+
         $className = App::className($name, 'Mailer', 'Mailer');
-        if ($className === null) {
+
+        if (empty($className)) {
             throw new MissingMailerException(compact('name'));
         }
 
-        return new $className($config);
+        return new $className($email);
     }
 }

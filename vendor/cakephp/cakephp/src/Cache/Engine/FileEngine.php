@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,10 +15,8 @@ declare(strict_types=1);
 namespace Cake\Cache\Engine;
 
 use Cake\Cache\CacheEngine;
-use Cake\Cache\InvalidArgumentException;
-use CallbackFilterIterator;
+use Cake\Utility\Inflector;
 use Exception;
-use FilesystemIterator;
 use LogicException;
 use RecursiveDirectoryIterator;
 use RecursiveIteratorIterator;
@@ -36,6 +32,7 @@ use SplFileObject;
  */
 class FileEngine extends CacheEngine
 {
+
     /**
      * Instance of SplFileObject class
      *
@@ -49,11 +46,13 @@ class FileEngine extends CacheEngine
      * - `duration` Specify how long items in this cache configuration last.
      * - `groups` List of groups or 'tags' associated to every key stored in this config.
      *    handy for deleting a complete group from cache.
+     * - `isWindows` Automatically populated with whether the host is windows or not
      * - `lock` Used by FileCache. Should files be locked before writing to them?
      * - `mask` The mask used for created files
      * - `path` Path to where cachefiles should be saved. Defaults to system's temp dir.
      * - `prefix` Prepended to all entries. Good for when you need to share a keyspace
      *    with either another cache config or another application.
+     * - `probability` Probability of hitting a cache gc cleanup. Setting to 0 will disable
      *    cache::gc from ever being called automatically.
      * - `serialize` Should cache objects be serialized first.
      *
@@ -62,11 +61,13 @@ class FileEngine extends CacheEngine
     protected $_defaultConfig = [
         'duration' => 3600,
         'groups' => [],
+        'isWindows' => false,
         'lock' => true,
         'mask' => 0664,
         'path' => null,
         'prefix' => 'cake_',
-        'serialize' => true,
+        'probability' => 100,
+        'serialize' => true
     ];
 
     /**
@@ -84,12 +85,15 @@ class FileEngine extends CacheEngine
      * @param array $config array of setting for the engine
      * @return bool True if the engine has been successfully initialized, false if not
      */
-    public function init(array $config = []): bool
+    public function init(array $config = [])
     {
         parent::init($config);
 
         if ($this->_config['path'] === null) {
             $this->_config['path'] = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'cake_cache' . DIRECTORY_SEPARATOR;
+        }
+        if (DIRECTORY_SEPARATOR === '\\') {
+            $this->_config['isWindows'] = true;
         }
         if (substr($this->_config['path'], -1) !== DIRECTORY_SEPARATOR) {
             $this->_config['path'] .= DIRECTORY_SEPARATOR;
@@ -102,16 +106,24 @@ class FileEngine extends CacheEngine
     }
 
     /**
+     * Garbage collection. Permanently remove all expired and deleted data
+     *
+     * @param int|null $expires [optional] An expires timestamp, invalidating all data before.
+     * @return bool True if garbage collection was successful, false on failure
+     */
+    public function gc($expires = null)
+    {
+        return $this->clear(true);
+    }
+
+    /**
      * Write data for key into cache
      *
      * @param string $key Identifier for the data
      * @param mixed $data Data to be cached
-     * @param \DateInterval|int|null $ttl Optional. The TTL value of this item. If no value is sent and
-     *   the driver supports TTL then the library may set a default value
-     *   for it or let the driver take care of that.
-     * @return bool True on success and false on failure.
+     * @return bool True if the data was successfully cached, false on failure
      */
-    public function set($key, $data, $ttl = null): bool
+    public function write($key, $data)
     {
         if ($data === '' || !$this->_init) {
             return false;
@@ -123,19 +135,28 @@ class FileEngine extends CacheEngine
             return false;
         }
 
-        if (!empty($this->_config['serialize'])) {
-            $data = serialize($data);
+        $lineBreak = "\n";
+
+        if ($this->_config['isWindows']) {
+            $lineBreak = "\r\n";
         }
 
-        $expires = time() + $this->duration($ttl);
-        $contents = implode([$expires, PHP_EOL, $data, PHP_EOL]);
+        if (!empty($this->_config['serialize'])) {
+            if ($this->_config['isWindows']) {
+                $data = str_replace('\\', '\\\\\\\\', serialize($data));
+            } else {
+                $data = serialize($data);
+            }
+        }
+
+        $duration = $this->_config['duration'];
+        $expires = time() + $duration;
+        $contents = implode([$expires, $lineBreak, $data, $lineBreak]);
 
         if ($this->_config['lock']) {
-            /** @psalm-suppress PossiblyNullReference */
             $this->_File->flock(LOCK_EX);
         }
 
-        /** @psalm-suppress PossiblyNullReference */
         $this->_File->rewind();
         $success = $this->_File->ftruncate(0) &&
             $this->_File->fwrite($contents) &&
@@ -153,40 +174,36 @@ class FileEngine extends CacheEngine
      * Read a key from the cache
      *
      * @param string $key Identifier for the data
-     * @param mixed $default Default value to return if the key does not exist.
-     * @return mixed The cached data, or default value if the data doesn't exist, has
+     * @return mixed The cached data, or false if the data doesn't exist, has
      *   expired, or if there was an error fetching it
      */
-    public function get($key, $default = null)
+    public function read($key)
     {
         $key = $this->_key($key);
 
         if (!$this->_init || $this->_setKey($key) === false) {
-            return $default;
+            return false;
         }
 
         if ($this->_config['lock']) {
-            /** @psalm-suppress PossiblyNullReference */
             $this->_File->flock(LOCK_SH);
         }
 
-        /** @psalm-suppress PossiblyNullReference */
         $this->_File->rewind();
         $time = time();
         $cachetime = (int)$this->_File->current();
 
-        if ($cachetime < $time) {
+        if ($cachetime < $time || ($time + $this->_config['duration']) < $cachetime) {
             if ($this->_config['lock']) {
                 $this->_File->flock(LOCK_UN);
             }
 
-            return $default;
+            return false;
         }
 
         $data = '';
         $this->_File->next();
         while ($this->_File->valid()) {
-            /** @psalm-suppress PossiblyInvalidOperand */
             $data .= $this->_File->current();
             $this->_File->next();
         }
@@ -198,6 +215,9 @@ class FileEngine extends CacheEngine
         $data = trim($data);
 
         if ($data !== '' && !empty($this->_config['serialize'])) {
+            if ($this->_config['isWindows']) {
+                $data = str_replace('\\\\\\\\', '\\', $data);
+            }
             $data = unserialize((string)$data);
         }
 
@@ -211,7 +231,7 @@ class FileEngine extends CacheEngine
      * @return bool True if the value was successfully deleted, false if it didn't
      *   exist or couldn't be removed
      */
-    public function delete($key): bool
+    public function delete($key)
     {
         $key = $this->_key($key);
 
@@ -219,33 +239,36 @@ class FileEngine extends CacheEngine
             return false;
         }
 
-        /** @psalm-suppress PossiblyNullReference */
         $path = $this->_File->getRealPath();
         $this->_File = null;
 
-        // phpcs:disable
+        //@codingStandardsIgnoreStart
         return @unlink($path);
-        // phpcs:enable
+        //@codingStandardsIgnoreEnd
     }
 
     /**
      * Delete all values from the cache
      *
+     * @param bool $check Optional - only delete expired cache items
      * @return bool True if the cache was successfully cleared, false otherwise
      */
-    public function clear(): bool
+    public function clear($check)
     {
         if (!$this->_init) {
             return false;
         }
         $this->_File = null;
 
-        $this->_clearDirectory($this->_config['path']);
+        $threshold = $now = false;
+        if ($check) {
+            $now = time();
+            $threshold = $now - $this->_config['duration'];
+        }
 
-        $directory = new RecursiveDirectoryIterator(
-            $this->_config['path'],
-            FilesystemIterator::SKIP_DOTS
-        );
+        $this->_clearDirectory($this->_config['path'], $now, $threshold);
+
+        $directory = new RecursiveDirectoryIterator($this->_config['path']);
         $contents = new RecursiveIteratorIterator(
             $directory,
             RecursiveIteratorIterator::SELF_FIRST
@@ -257,8 +280,8 @@ class FileEngine extends CacheEngine
             }
 
             $path = $path->getRealPath() . DIRECTORY_SEPARATOR;
-            if (!in_array($path, $cleared, true)) {
-                $this->_clearDirectory($path);
+            if (!in_array($path, $cleared)) {
+                $this->_clearDirectory($path, $now, $threshold);
                 $cleared[] = $path;
             }
         }
@@ -270,21 +293,18 @@ class FileEngine extends CacheEngine
      * Used to clear a directory of matching files.
      *
      * @param string $path The path to search.
+     * @param int $now The current timestamp
+     * @param int $threshold Any file not modified after this value will be deleted.
      * @return void
      */
-    protected function _clearDirectory(string $path): void
+    protected function _clearDirectory($path, $now, $threshold)
     {
         if (!is_dir($path)) {
             return;
         }
-
-        $dir = dir($path);
-        if (!$dir) {
-            return;
-        }
-
         $prefixLength = strlen($this->_config['prefix']);
 
+        $dir = dir($path);
         while (($entry = $dir->read()) !== false) {
             if (substr($entry, 0, $prefixLength) !== $this->_config['prefix']) {
                 continue;
@@ -296,17 +316,26 @@ class FileEngine extends CacheEngine
                 continue;
             }
 
+            if ($threshold) {
+                $mtime = $file->getMTime();
+                if ($mtime > $threshold) {
+                    continue;
+                }
+
+                $expires = (int)$file->current();
+                if ($expires > $now) {
+                    continue;
+                }
+            }
             if ($file->isFile()) {
                 $filePath = $file->getRealPath();
-                unset($file);
+                $file = null;
 
-                // phpcs:disable
+                //@codingStandardsIgnoreStart
                 @unlink($filePath);
-                // phpcs:enable
+                //@codingStandardsIgnoreEnd
             }
         }
-
-        $dir->close();
     }
 
     /**
@@ -314,10 +343,10 @@ class FileEngine extends CacheEngine
      *
      * @param string $key The key to decrement
      * @param int $offset The number to offset
-     * @return int|false
+     * @return void
      * @throws \LogicException
      */
-    public function decrement(string $key, int $offset = 1)
+    public function decrement($key, $offset = 1)
     {
         throw new LogicException('Files cannot be atomically decremented.');
     }
@@ -327,10 +356,10 @@ class FileEngine extends CacheEngine
      *
      * @param string $key The key to increment
      * @param int $offset The number to offset
-     * @return int|false
+     * @return void
      * @throws \LogicException
      */
-    public function increment(string $key, int $offset = 1)
+    public function increment($key, $offset = 1)
     {
         throw new LogicException('Files cannot be atomically incremented.');
     }
@@ -343,7 +372,7 @@ class FileEngine extends CacheEngine
      * @param bool $createKey Whether the key should be created if it doesn't exists, or not
      * @return bool true if the cache key could be set, false otherwise
      */
-    protected function _setKey(string $key, bool $createKey = false): bool
+    protected function _setKey($key, $createKey = false)
     {
         $groups = null;
         if ($this->_groupPrefix) {
@@ -351,20 +380,16 @@ class FileEngine extends CacheEngine
         }
         $dir = $this->_config['path'] . $groups;
 
-        if (!is_dir($dir)) {
-            mkdir($dir, 0775, true);
-        }
+        // @codingStandardsIgnoreStart
+        @mkdir($dir, 0775, true);
+        // @codingStandardsIgnoreEnd
 
         $path = new SplFileInfo($dir . $key);
 
         if (!$createKey && !$path->isFile()) {
             return false;
         }
-        if (
-            empty($this->_File) ||
-            $this->_File->getBasename() !== $key ||
-            $this->_File->valid() === false
-        ) {
+        if (empty($this->_File) || $this->_File->getBasename() !== $key) {
             $exists = file_exists($path->getPathname());
             try {
                 $this->_File = $path->openFile('c+');
@@ -388,19 +413,19 @@ class FileEngine extends CacheEngine
     }
 
     /**
-     * Determine if cache directory is writable
+     * Determine is cache directory is writable
      *
      * @return bool
      */
-    protected function _active(): bool
+    protected function _active()
     {
         $dir = new SplFileInfo($this->_config['path']);
         $path = $dir->getPathname();
         $success = true;
         if (!is_dir($path)) {
-            // phpcs:disable
+            //@codingStandardsIgnoreStart
             $success = @mkdir($path, 0775, true);
-            // phpcs:enable
+            //@codingStandardsIgnoreEnd
         }
 
         $isWritableDir = ($dir->isDir() && $dir->isWritable());
@@ -416,18 +441,22 @@ class FileEngine extends CacheEngine
     }
 
     /**
-     * @inheritDoc
+     * Generates a safe key for use with cache engine storage engines.
+     *
+     * @param string $key the key passed over
+     * @return mixed string $key or false
      */
-    protected function _key($key): string
+    public function key($key)
     {
-        $key = parent::_key($key);
-
-        if (preg_match('/[\/\\<>?:|*"]/', $key)) {
-            throw new InvalidArgumentException(
-                "Cache key `{$key}` contains invalid characters. " .
-                'You cannot use /, \\, <, >, ?, :, |, *, or " in cache keys.'
-            );
+        if (empty($key)) {
+            return false;
         }
+
+        $key = Inflector::underscore(str_replace(
+            [DIRECTORY_SEPARATOR, '/', '.', '<', '>', '?', ':', '|', '*', '"'],
+            '_',
+            (string)$key
+        ));
 
         return $key;
     }
@@ -438,43 +467,27 @@ class FileEngine extends CacheEngine
      * @param string $group The group to clear.
      * @return bool success
      */
-    public function clearGroup(string $group): bool
+    public function clearGroup($group)
     {
         $this->_File = null;
-
-        $prefix = (string)$this->_config['prefix'];
-
         $directoryIterator = new RecursiveDirectoryIterator($this->_config['path']);
         $contents = new RecursiveIteratorIterator(
             $directoryIterator,
             RecursiveIteratorIterator::CHILD_FIRST
         );
-        $filtered = new CallbackFilterIterator(
-            $contents,
-            function (SplFileInfo $current) use ($group, $prefix) {
-                if (!$current->isFile()) {
-                    return false;
-                }
-
-                $hasPrefix = $prefix === ''
-                    || strpos($current->getBasename(), $prefix) === 0;
-                if ($hasPrefix === false) {
-                    return false;
-                }
-
-                $pos = strpos(
-                    $current->getPathname(),
-                    DIRECTORY_SEPARATOR . $group . DIRECTORY_SEPARATOR
-                );
-
-                return $pos !== false;
+        foreach ($contents as $object) {
+            $containsGroup = strpos($object->getPathname(), DIRECTORY_SEPARATOR . $group . DIRECTORY_SEPARATOR) !== false;
+            $hasPrefix = true;
+            if (strlen($this->_config['prefix']) !== 0) {
+                $hasPrefix = strpos($object->getBasename(), $this->_config['prefix']) === 0;
             }
-        );
-        foreach ($filtered as $object) {
-            $path = $object->getPathname();
-            unset($object);
-            // phpcs:ignore
-            @unlink($path);
+            if ($object->isFile() && $containsGroup && $hasPrefix) {
+                $path = $object->getPathname();
+                $object = null;
+                //@codingStandardsIgnoreStart
+                @unlink($path);
+                //@codingStandardsIgnoreEnd
+            }
         }
 
         return true;

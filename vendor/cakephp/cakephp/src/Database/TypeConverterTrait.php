@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -21,19 +19,19 @@ namespace Cake\Database;
  */
 trait TypeConverterTrait
 {
+
     /**
      * Converts a give value to a suitable database value based on type
      * and return relevant internal statement type
      *
      * @param mixed $value The value to cast
-     * @param \Cake\Database\TypeInterface|string|int $type The type name or type instance to use.
+     * @param \Cake\Database\Type|string $type The type name or type instance to use.
      * @return array list containing converted value and internal type
-     * @pslam-return array{mixed, int}
      */
-    public function cast($value, $type = 'string'): array
+    public function cast($value, $type)
     {
         if (is_string($type)) {
-            $type = TypeFactory::build($type);
+            $type = Type::build($type);
         }
         if ($type instanceof TypeInterface) {
             $value = $type->toDatabase($value, $this->_driver);
@@ -53,7 +51,7 @@ trait TypeConverterTrait
      * @param array $types list or associative array of types
      * @return array
      */
-    public function matchTypes(array $columns, array $types): array
+    public function matchTypes($columns, $types)
     {
         if (!is_int(key($types))) {
             $positions = array_intersect_key(array_flip($columns), $types);

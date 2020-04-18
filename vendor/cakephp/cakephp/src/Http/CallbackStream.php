@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,12 +14,12 @@ declare(strict_types=1);
  */
 namespace Cake\Http;
 
-use Laminas\Diactoros\CallbackStream as BaseCallbackStream;
+use Zend\Diactoros\CallbackStream as BaseCallbackStream;
 
 /**
  * Implementation of PSR HTTP streams.
  *
- * This differs from Laminas\Diactoros\Callback stream in that
+ * This differs from Zend\Diactoros\Callback stream in that
  * it allows the use of `echo` inside the callback, and gracefully
  * handles the callback not returning a string.
  *
@@ -38,13 +36,10 @@ class CallbackStream extends BaseCallbackStream
      *
      * @return string
      */
-    public function getContents(): string
+    public function getContents()
     {
         $callback = $this->detach();
-        $result = '';
-        if (is_callable($callback)) {
-            $result = $callback();
-        }
+        $result = $callback ? $callback() : '';
         if (!is_string($result)) {
             return '';
         }

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,11 +15,10 @@ declare(strict_types=1);
 namespace Cake\Error;
 
 use Cake\Core\Configure;
-use Cake\Core\InstanceConfigTrait;
 use Cake\Log\Log;
 use Cake\Routing\Router;
-use Psr\Http\Message\ServerRequestInterface;
-use Throwable;
+use Error;
+use Exception;
 
 /**
  * Base error handler that provides logic common to the CLI + web
@@ -32,31 +29,13 @@ use Throwable;
  */
 abstract class BaseErrorHandler
 {
-    use InstanceConfigTrait;
 
     /**
      * Options to use for the Error handling.
      *
      * @var array
      */
-    protected $_defaultConfig = [
-        'log' => true,
-        'trace' => false,
-        'skipLog' => [],
-        'errorLogger' => ErrorLogger::class,
-    ];
-
-    /**
-     * @var bool
-     */
-    protected $_handled = false;
-
-    /**
-     * Exception logger instance.
-     *
-     * @var \Cake\Error\ErrorLogger|null
-     */
-    protected $logger;
+    protected $_options = [];
 
     /**
      * Display an error message in an environment specific way.
@@ -68,7 +47,7 @@ abstract class BaseErrorHandler
      * @param bool $debug Whether or not the app is in debug mode.
      * @return void
      */
-    abstract protected function _displayError(array $error, bool $debug): void;
+    abstract protected function _displayError($error, $debug);
 
     /**
      * Display an exception in an environment specific way.
@@ -76,30 +55,33 @@ abstract class BaseErrorHandler
      * Subclasses should implement this method to display an uncaught exception as
      * desired for the runtime they operate in.
      *
-     * @param \Throwable $exception The uncaught exception.
+     * @param \Exception $exception The uncaught exception.
      * @return void
      */
-    abstract protected function _displayException(Throwable $exception): void;
+    abstract protected function _displayException($exception);
 
     /**
      * Register the error and exception handlers.
      *
      * @return void
      */
-    public function register(): void
+    public function register()
     {
         $level = -1;
-        if (isset($this->_config['errorLevel'])) {
-            $level = $this->_config['errorLevel'];
+        if (isset($this->_options['errorLevel'])) {
+            $level = $this->_options['errorLevel'];
         }
         error_reporting($level);
         set_error_handler([$this, 'handleError'], $level);
-        set_exception_handler([$this, 'handleException']);
-        register_shutdown_function(function (): void {
-            if ((PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') && $this->_handled) {
+        set_exception_handler([$this, 'wrapAndHandleException']);
+        register_shutdown_function(function () {
+            if (PHP_SAPI === 'cli' || PHP_SAPI === 'phpdbg') {
                 return;
             }
-            $megabytes = $this->_config['extraFatalErrorMemory'] ?? 4;
+            $megabytes = Configure::read('Error.extraFatalErrorMemory');
+            if ($megabytes === null) {
+                $megabytes = 4;
+            }
             if ($megabytes > 0) {
                 $this->increaseMemoryLimit($megabytes * 1024);
             }
@@ -128,8 +110,8 @@ abstract class BaseErrorHandler
      * Set as the default error handler by CakePHP.
      *
      * Use config/error.php to customize or replace this error handler.
-     * This function will use Debugger to display errors when debug mode is on. And
-     * will log errors to Log, when debug mode is off.
+     * This function will use Debugger to display errors when debug > 0. And
+     * will log errors to Log, when debug == 0.
      *
      * You can use the 'errorLevel' option to set what type of errors will be handled.
      * Stack traces for errors can be enabled with the 'trace' option.
@@ -141,20 +123,13 @@ abstract class BaseErrorHandler
      * @param array|null $context Context
      * @return bool True if error was handled
      */
-    public function handleError(
-        int $code,
-        string $description,
-        ?string $file = null,
-        ?int $line = null,
-        ?array $context = null
-    ): bool {
+    public function handleError($code, $description, $file = null, $line = null, $context = null)
+    {
         if (error_reporting() === 0) {
             return false;
         }
-        $this->_handled = true;
-        [$error, $log] = static::mapErrorCode($code);
+        list($error, $log) = static::mapErrorCode($code);
         if ($log === LOG_ERR) {
-            /** @psalm-suppress PossiblyNullArgument */
             return $this->handleFatalError($code, $description, $file, $line);
         }
         $data = [
@@ -168,20 +143,10 @@ abstract class BaseErrorHandler
 
         $debug = Configure::read('debug');
         if ($debug) {
-            // By default trim 3 frames off for the public and protected methods
-            // used by ErrorHandler instances.
-            $start = 3;
-
-            // Can be used by error handlers that wrap other error handlers
-            // to coerce the generated stack trace to the correct point.
-            if (isset($context['_trace_frame_offset'])) {
-                $start += $context['_trace_frame_offset'];
-                unset($context['_trace_frame_offset']);
-            }
             $data += [
                 'context' => $context,
-                'start' => $start,
-                'path' => Debugger::trimPath((string)$file),
+                'start' => 3,
+                'path' => Debugger::trimPath($file)
             ];
         }
         $this->_displayError($data, $debug);
@@ -195,13 +160,14 @@ abstract class BaseErrorHandler
      * then, it wraps the passed object inside another Exception object
      * for backwards compatibility purposes.
      *
-     * @param \Throwable $exception The exception to handle
+     * @param \Exception|\Error $exception The exception to handle
      * @return void
-     * @deprecated 4.0.0 Unused method will be removed in 5.0
      */
-    public function wrapAndHandleException(Throwable $exception): void
+    public function wrapAndHandleException($exception)
     {
-        deprecationWarning('This method is no longer in use. Call handleException instead.');
+        if ($exception instanceof Error) {
+            $exception = new PHP7ErrorException($exception);
+        }
         $this->handleException($exception);
     }
 
@@ -211,17 +177,16 @@ abstract class BaseErrorHandler
      * Uses a template method provided by subclasses to display errors in an
      * environment appropriate way.
      *
-     * @param \Throwable $exception Exception instance.
+     * @param \Exception $exception Exception instance.
      * @return void
      * @throws \Exception When renderer class not found
      * @see https://secure.php.net/manual/en/function.set-exception-handler.php
      */
-    public function handleException(Throwable $exception): void
+    public function handleException(Exception $exception)
     {
         $this->_displayException($exception);
-        $this->logException($exception);
-        $code = $exception->getCode() ?: 1;
-        $this->_stop((int)$code);
+        $this->_logException($exception);
+        $this->_stop($exception->getCode() ?: 1);
     }
 
     /**
@@ -232,7 +197,7 @@ abstract class BaseErrorHandler
      * @param int $code Exit code.
      * @return void
      */
-    protected function _stop(int $code): void
+    protected function _stop($code)
     {
         // Do nothing.
     }
@@ -246,7 +211,7 @@ abstract class BaseErrorHandler
      * @param int $line Line that triggered the error
      * @return bool
      */
-    public function handleFatalError(int $code, string $description, string $file, int $line): bool
+    public function handleFatalError($code, $description, $file, $line)
     {
         $data = [
             'code' => $code,
@@ -269,7 +234,7 @@ abstract class BaseErrorHandler
      * @param int $additionalKb Number in kilobytes
      * @return void
      */
-    public function increaseMemoryLimit(int $additionalKb): void
+    public function increaseMemoryLimit($additionalKb)
     {
         $limit = ini_get('memory_limit');
         if (!strlen($limit) || $limit === '-1') {
@@ -295,11 +260,11 @@ abstract class BaseErrorHandler
     /**
      * Log an error.
      *
-     * @param int|string $level The level name of the log.
+     * @param string $level The level name of the log.
      * @param array $data Array of error data.
      * @return bool
      */
-    protected function _logError($level, array $data): bool
+    protected function _logError($level, $data)
     {
         $message = sprintf(
             '%s (%s): %s in [%s, line %s]',
@@ -309,16 +274,15 @@ abstract class BaseErrorHandler
             $data['file'],
             $data['line']
         );
-        if (!empty($this->_config['trace'])) {
-            /** @var string $trace */
+        if (!empty($this->_options['trace'])) {
             $trace = Debugger::trace([
                 'start' => 1,
-                'format' => 'log',
+                'format' => 'log'
             ]);
 
             $request = Router::getRequest();
             if ($request) {
-                $message .= $this->getLogger()->getRequestContext($request);
+                $message .= $this->_requestContext($request);
             }
             $message .= "\nTrace:\n" . $trace . "\n";
         }
@@ -328,35 +292,93 @@ abstract class BaseErrorHandler
     }
 
     /**
-     * Log an error for the exception if applicable.
+     * Handles exception logging
      *
-     * @param \Throwable $exception The exception to log a message for.
-     * @param \Psr\Http\Message\ServerRequestInterface $request The current request.
+     * @param \Exception $exception Exception instance.
      * @return bool
      */
-    public function logException(Throwable $exception, ?ServerRequestInterface $request = null): bool
+    protected function _logException(Exception $exception)
     {
-        if (empty($this->_config['log'])) {
+        $config = $this->_options;
+        $unwrapped = $exception instanceof PHP7ErrorException ?
+            $exception->getError() :
+            $exception;
+
+        if (empty($config['log'])) {
             return false;
         }
 
-        return $this->getLogger()->log($exception, $request ?? Router::getRequest());
+        if (!empty($config['skipLog'])) {
+            foreach ((array)$config['skipLog'] as $class) {
+                if ($unwrapped instanceof $class) {
+                    return false;
+                }
+            }
+        }
+
+        return Log::error($this->_getMessage($exception));
     }
 
     /**
-     * Get exception logger.
+     * Get the request context for an error/exception trace.
      *
-     * @return \Cake\Error\ErrorLogger
+     * @param \Cake\Http\ServerRequest $request The request to read from.
+     * @return string
      */
-    public function getLogger()
+    protected function _requestContext($request)
     {
-        if ($this->logger === null) {
-            /** @var \Cake\Error\ErrorLogger $logger */
-            $logger = new $this->_config['errorLogger']($this->_config);
-            $this->logger = $logger;
+        $message = "\nRequest URL: " . $request->getRequestTarget();
+
+        $referer = $request->getEnv('HTTP_REFERER');
+        if ($referer) {
+            $message .= "\nReferer URL: " . $referer;
+        }
+        $clientIp = $request->clientIp();
+        if ($clientIp && $clientIp !== '::1') {
+            $message .= "\nClient IP: " . $clientIp;
         }
 
-        return $this->logger;
+        return $message;
+    }
+
+    /**
+     * Generates a formatted error message
+     *
+     * @param \Exception $exception Exception instance
+     * @return string Formatted message
+     */
+    protected function _getMessage(Exception $exception)
+    {
+        $exception = $exception instanceof PHP7ErrorException ?
+            $exception->getError() :
+            $exception;
+        $config = $this->_options;
+        $message = sprintf(
+            '[%s] %s in %s on line %s',
+            get_class($exception),
+            $exception->getMessage(),
+            $exception->getFile(),
+            $exception->getLine()
+        );
+        $debug = Configure::read('debug');
+
+        if ($debug && method_exists($exception, 'getAttributes')) {
+            $attributes = $exception->getAttributes();
+            if ($attributes) {
+                $message .= "\nException Attributes: " . var_export($exception->getAttributes(), true);
+            }
+        }
+
+        $request = Router::getRequest();
+        if ($request) {
+            $message .= $this->_requestContext($request);
+        }
+
+        if (!empty($config['trace'])) {
+            $message .= "\nStack Trace:\n" . $exception->getTraceAsString() . "\n\n";
+        }
+
+        return $message;
     }
 
     /**
@@ -365,7 +387,7 @@ abstract class BaseErrorHandler
      * @param int $code Error code to map
      * @return array Array of error word, and log location.
      */
-    public static function mapErrorCode(int $code): array
+    public static function mapErrorCode($code)
     {
         $levelMap = [
             E_PARSE => 'error',

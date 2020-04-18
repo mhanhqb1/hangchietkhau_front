@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -14,15 +12,9 @@ declare(strict_types=1);
  */
 namespace Cake\Mailer;
 
-use BadMethodCallException;
-use Cake\Core\Exception\Exception;
-use Cake\Core\StaticConfigTrait;
 use Cake\Datasource\ModelAwareTrait;
 use Cake\Event\EventListenerInterface;
-use Cake\Log\Log;
 use Cake\Mailer\Exception\MissingActionException;
-use Cake\View\ViewBuilder;
-use InvalidArgumentException;
 
 /**
  * Mailer base class.
@@ -68,14 +60,14 @@ use InvalidArgumentException;
  * registration event:
  *
  * ```
- * public function implementedEvents(): array
+ * public function implementedEvents()
  * {
  *     return [
  *         'Model.afterSave' => 'onRegistration',
  *     ];
  * }
  *
- * public function onRegistration(EventInterface $event, EntityInterface $entity, ArrayObject $options)
+ * public function onRegistration(Event $event, Entity $entity, ArrayObject $options)
  * {
  *     if ($entity->isNew()) {
  *          $this->send('welcome', [$entity]);
@@ -87,198 +79,177 @@ use InvalidArgumentException;
  * Our mailer could either be registered in the application bootstrap, or
  * in the Table class' initialize() hook.
  *
- * @method $this setTo($email, $name = null)
+ * @method \Cake\Mailer\Email setTo($email, $name = null)
  * @method array getTo()
- * @method $this setFrom($email, $name = null)
+ * @method \Cake\Mailer\Email to($email = null, $name = null)
+ * @method \Cake\Mailer\Email setFrom($email, $name = null)
  * @method array getFrom()
- * @method $this setSender($email, $name = null)
+ * @method \Cake\Mailer\Email from($email = null, $name = null)
+ * @method \Cake\Mailer\Email setSender($email, $name = null)
  * @method array getSender()
- * @method $this setReplyTo($email, $name = null)
+ * @method \Cake\Mailer\Email sender($email = null, $name = null)
+ * @method \Cake\Mailer\Email setReplyTo($email, $name = null)
  * @method array getReplyTo()
- * @method $this setReadReceipt($email, $name = null)
+ * @method \Cake\Mailer\Email replyTo($email = null, $name = null)
+ * @method \Cake\Mailer\Email setReadReceipt($email, $name = null)
  * @method array getReadReceipt()
- * @method $this setReturnPath($email, $name = null)
+ * @method \Cake\Mailer\Email readReceipt($email = null, $name = null)
+ * @method \Cake\Mailer\Email setReturnPath($email, $name = null)
  * @method array getReturnPath()
- * @method $this addTo($email, $name = null)
- * @method $this setCc($email, $name = null)
+ * @method \Cake\Mailer\Email returnPath($email = null, $name = null)
+ * @method \Cake\Mailer\Email addTo($email, $name = null)
+ * @method \Cake\Mailer\Email setCc($email, $name = null)
  * @method array getCc()
- * @method $this addCc($email, $name = null)
- * @method $this setBcc($email, $name = null)
+ * @method \Cake\Mailer\Email cc($email = null, $name = null)
+ * @method \Cake\Mailer\Email addCc($email, $name = null)
+ * @method \Cake\Mailer\Email setBcc($email, $name = null)
  * @method array getBcc()
- * @method $this addBcc($email, $name = null)
- * @method $this setCharset($charset)
+ * @method \Cake\Mailer\Email bcc($email = null, $name = null)
+ * @method \Cake\Mailer\Email addBcc($email, $name = null)
+ * @method \Cake\Mailer\Email setCharset($charset)
  * @method string getCharset()
- * @method $this setHeaderCharset($charset)
+ * @method \Cake\Mailer\Email charset($charset = null)
+ * @method \Cake\Mailer\Email setHeaderCharset($charset)
  * @method string getHeaderCharset()
- * @method $this setSubject($subject)
+ * @method \Cake\Mailer\Email headerCharset($charset = null)
+ * @method \Cake\Mailer\Email setSubject($subject)
  * @method string getSubject()
- * @method $this setHeaders(array $headers)
- * @method $this addHeaders(array $headers)
- * @method $this getHeaders(array $include = [])
- * @method $this setEmailFormat($format)
+ * @method \Cake\Mailer\Email subject($subject = null)
+ * @method \Cake\Mailer\Email setHeaders(array $headers)
+ * @method \Cake\Mailer\Email addHeaders(array $headers)
+ * @method \Cake\Mailer\Email getHeaders(array $include = [])
+ * @method \Cake\Mailer\Email setTemplate($template)
+ * @method string getTemplate()
+ * @method \Cake\Mailer\Email setLayout($layout)
+ * @method string getLayout()
+ * @method \Cake\Mailer\Email template($template = false, $layout = false)
+ * @method \Cake\Mailer\Email setViewRenderer($viewClass)
+ * @method string getViewRenderer()
+ * @method \Cake\Mailer\Email viewRender($viewClass = null)
+ * @method \Cake\Mailer\Email setViewVars($viewVars)
+ * @method array getViewVars()
+ * @method \Cake\Mailer\Email viewVars($viewVars = null)
+ * @method \Cake\Mailer\Email setTheme($theme)
+ * @method string getTheme()
+ * @method \Cake\Mailer\Email theme($theme = null)
+ * @method \Cake\Mailer\Email setHelpers(array $helpers)
+ * @method array getHelpers()
+ * @method \Cake\Mailer\Email helpers($helpers = null)
+ * @method \Cake\Mailer\Email setEmailFormat($format)
  * @method string getEmailFormat()
- * @method $this setMessageId($message)
+ * @method \Cake\Mailer\Email emailFormat($format = null)
+ * @method \Cake\Mailer\Email setTransport($name)
+ * @method \Cake\Mailer\AbstractTransport getTransport()
+ * @method \Cake\Mailer\Email transport($name = null)
+ * @method \Cake\Mailer\Email setMessageId($message)
  * @method bool|string getMessageId()
- * @method $this setDomain($domain)
+ * @method \Cake\Mailer\Email messageId($message = null)
+ * @method \Cake\Mailer\Email setDomain($domain)
  * @method string getDomain()
- * @method $this setAttachments($attachments)
+ * @method \Cake\Mailer\Email domain($domain = null)
+ * @method \Cake\Mailer\Email setAttachments($attachments)
  * @method array getAttachments()
- * @method $this addAttachments($attachments)
- * @method string|array getBody(?string $type = null)
+ * @method \Cake\Mailer\Email attachments($attachments = null)
+ * @method \Cake\Mailer\Email addAttachments($attachments)
+ * @method \Cake\Mailer\Email message($type = null)
+ * @method \Cake\Mailer\Email setProfile($config)
+ * @method string|array getProfile()
+ * @method \Cake\Mailer\Email profile($config = null)
  */
-class Mailer implements EventListenerInterface
+abstract class Mailer implements EventListenerInterface
 {
+
     use ModelAwareTrait;
-    use StaticConfigTrait;
 
     /**
      * Mailer's name.
      *
      * @var string
      */
-    public static $name;
+    static public $name;
 
     /**
-     * The transport instance to use for sending mail.
+     * Email instance.
      *
-     * @var \Cake\Mailer\AbstractTransport|null
+     * @var \Cake\Mailer\Email
      */
-    protected $transport;
+    protected $_email;
 
     /**
-     * Message class name.
+     * Cloned Email instance for restoring instance after email is sent by
+     * mailer action.
      *
      * @var string
      */
-    protected $messageClass = Message::class;
+    protected $_clonedEmail;
 
     /**
-     * Message instance.
+     * Constructor.
      *
-     * @var \Cake\Mailer\Message
+     * @param \Cake\Mailer\Email|null $email Email instance.
      */
-    protected $message;
-
-    /**
-     * Email Renderer
-     *
-     * @var \Cake\Mailer\Renderer|null
-     */
-    protected $renderer;
-
-    /**
-     * Hold message, renderer and transport instance for restoring after runnning
-     * a mailer action.
-     *
-     * @var array
-     */
-    protected $clonedInstances = [
-        'message' => null,
-        'renderer' => null,
-        'transport' => null,
-    ];
-
-    /**
-     * Mailer driver class map.
-     *
-     * @var array
-     * @psalm-var array<string, class-string>
-     */
-    protected static $_dsnClassMap = [];
-
-    /**
-     * @var array|null
-     */
-    protected $logConfig = null;
-
-    /**
-     * Constructor
-     *
-     * @param array|string|null $config Array of configs, or string to load configs from app.php
-     */
-    public function __construct($config = null)
+    public function __construct(Email $email = null)
     {
-        $this->message = new $this->messageClass();
-
-        if ($config === null) {
-            $config = static::getConfig('default');
+        if ($email === null) {
+            $email = new Email();
         }
 
-        if ($config) {
-            $this->setProfile($config);
-        }
+        $this->_email = $email;
+        $this->_clonedEmail = clone $email;
     }
 
     /**
-     * Get the view builder.
+     * Returns the mailer's name.
+     *
+     * @return string
+     */
+    public function getName()
+    {
+        if (!static::$name) {
+            static::$name = str_replace(
+                'Mailer',
+                '',
+                implode('', array_slice(explode('\\', get_class($this)), -1))
+            );
+        }
+
+        return static::$name;
+    }
+
+    /**
+     * Sets layout to use.
+     *
+     * @deprecated 3.4.0 Use setLayout() which sets the layout on the email class instead.
+     * @param string $layout Name of the layout to use.
+     * @return $this
+     */
+    public function layout($layout)
+    {
+        $this->_email->viewBuilder()->setLayout($layout);
+
+        return $this;
+    }
+
+    /**
+     * Get Email instance's view builder.
      *
      * @return \Cake\View\ViewBuilder
      */
-    public function viewBuilder(): ViewBuilder
+    public function viewBuilder()
     {
-        return $this->getRenderer()->viewBuilder();
+        return $this->_email->viewBuilder();
     }
 
     /**
-     * Get email renderer.
-     *
-     * @return \Cake\Mailer\Renderer
-     */
-    public function getRenderer(): Renderer
-    {
-        if ($this->renderer === null) {
-            $this->renderer = new Renderer();
-        }
-
-        return $this->renderer;
-    }
-
-    /**
-     * Set email renderer.
-     *
-     * @param \Cake\Mailer\Renderer $renderer Render instance.
-     * @return $this
-     */
-    public function setRenderer(Renderer $renderer)
-    {
-        $this->renderer = $renderer;
-
-        return $this;
-    }
-
-    /**
-     * Get message instance.
-     *
-     * @return \Cake\Mailer\Message
-     */
-    public function getMessage(): Message
-    {
-        return $this->message;
-    }
-
-    /**
-     * Set message instance.
-     *
-     * @param \Cake\Mailer\Message $message Message instance.
-     * @return $this
-     */
-    public function setMessage(Message $message)
-    {
-        $this->message = $message;
-
-        return $this;
-    }
-
-    /**
-     * Magic method to forward method class to Message instance.
+     * Magic method to forward method class to Email instance.
      *
      * @param string $method Method name.
      * @param array $args Method arguments
-     * @return $this|mixed
+     * @return $this
      */
-    public function __call(string $method, array $args)
+    public function __call($method, $args)
     {
-        $result = $this->message->$method(...$args);
+        $result = $this->_email->$method(...$args);
         if (strpos($method, 'get') === 0) {
             return $result;
         }
@@ -292,23 +263,10 @@ class Mailer implements EventListenerInterface
      * @param string|array $key Variable name or hash of view variables.
      * @param mixed $value View variable value.
      * @return $this
-     * @deprecated 4.0.0 Use Mailer::setViewVars() instead.
      */
     public function set($key, $value = null)
     {
-        return $this->setViewVars($key, $value);
-    }
-
-    /**
-     * Sets email view vars.
-     *
-     * @param string|array $key Variable name or hash of view variables.
-     * @param mixed $value View variable value.
-     * @return $this
-     */
-    public function setViewVars($key, $value = null)
-    {
-        $this->getRenderer()->set($key, $value);
+        $this->_email->setViewVars(is_string($key) ? [$key => $value] : $key);
 
         return $this;
     }
@@ -316,284 +274,48 @@ class Mailer implements EventListenerInterface
     /**
      * Sends email.
      *
-     * @param string|null $action The name of the mailer action to trigger.
-     *   If no action is specified then all other method arguments will be ignored.
+     * @param string $action The name of the mailer action to trigger.
      * @param array $args Arguments to pass to the triggered mailer action.
      * @param array $headers Headers to set.
      * @return array
      * @throws \Cake\Mailer\Exception\MissingActionException
      * @throws \BadMethodCallException
-     * @psalm-return array{headers: string, message: string}
      */
-    public function send(?string $action = null, array $args = [], array $headers = []): array
+    public function send($action, $args = [], $headers = [])
     {
-        if ($action === null) {
-            return $this->deliver();
-        }
-
-        if (!method_exists($this, $action)) {
-            throw new MissingActionException([
-                'mailer' => static::class,
-                'action' => $action,
-            ]);
-        }
-
-        $this->clonedInstances['message'] = clone $this->message;
-        $this->clonedInstances['renderer'] = clone $this->getRenderer();
-        if ($this->transport !== null) {
-            $this->clonedInstances['transport'] = clone $this->transport;
-        }
-
-        $this->getMessage()->setHeaders($headers);
-        if (!$this->viewBuilder()->getTemplate()) {
-            $this->viewBuilder()->setTemplate($action);
-        }
-
         try {
+            if (!method_exists($this, $action)) {
+                throw new MissingActionException([
+                    'mailer' => $this->getName() . 'Mailer',
+                    'action' => $action,
+                ]);
+            }
+
+            $this->_email->setHeaders($headers);
+            if (!$this->_email->viewBuilder()->getTemplate()) {
+                $this->_email->viewBuilder()->setTemplate($action);
+            }
+
             $this->$action(...$args);
 
-            $result = $this->deliver();
+            $result = $this->_email->send();
         } finally {
-            $this->restore();
+            $this->reset();
         }
 
         return $result;
     }
 
     /**
-     * Render content and set message body.
-     *
-     * @param string $content Content.
-     * @return $this
-     */
-    public function render(string $content = '')
-    {
-        $content = $this->getRenderer()->render(
-            $content,
-            $this->message->getBodyTypes()
-        );
-
-        $this->message->setBody($content);
-
-        return $this;
-    }
-
-    /**
-     * Render content and send email using configured transport.
-     *
-     * @param string $content Content.
-     * @return array
-     * @psalm-return array{headers: string, message: string}
-     */
-    public function deliver(string $content = '')
-    {
-        $this->render($content);
-
-        $result = $this->getTransport()->send($this->message);
-        $this->logDelivery($result);
-
-        return $result;
-    }
-
-    /**
-     * Sets the configuration profile to use for this instance.
-     *
-     * @param string|array $config String with configuration name, or
-     *    an array with config.
-     * @return $this
-     */
-    public function setProfile($config)
-    {
-        if (is_string($config)) {
-            $name = $config;
-            $config = static::getConfig($name);
-            if (empty($config)) {
-                throw new InvalidArgumentException(sprintf('Unknown email configuration "%s".', $name));
-            }
-            unset($name);
-        }
-
-        $simpleMethods = [
-            'transport',
-        ];
-        foreach ($simpleMethods as $method) {
-            if (isset($config[$method])) {
-                $this->{'set' . ucfirst($method)}($config[$method]);
-                unset($config[$method]);
-            }
-        }
-
-        $viewBuilderMethods = [
-            'template', 'layout', 'theme',
-        ];
-        foreach ($viewBuilderMethods as $method) {
-            if (array_key_exists($method, $config)) {
-                $this->viewBuilder()->{'set' . ucfirst($method)}($config[$method]);
-                unset($config[$method]);
-            }
-        }
-
-        if (array_key_exists('helpers', $config)) {
-            $this->viewBuilder()->setHelpers($config['helpers'], false);
-            unset($config['helpers']);
-        }
-        if (array_key_exists('viewRenderer', $config)) {
-            $this->viewBuilder()->setClassName($config['viewRenderer']);
-            unset($config['viewRenderer']);
-        }
-        if (array_key_exists('viewVars', $config)) {
-            $this->viewBuilder()->setVars($config['viewVars']);
-            unset($config['viewVars']);
-        }
-
-        if (isset($config['log'])) {
-            $this->setLogConfig($config['log']);
-        }
-
-        $this->message->setConfig($config);
-
-        return $this;
-    }
-
-    /**
-     * Sets the transport.
-     *
-     * When setting the transport you can either use the name
-     * of a configured transport or supply a constructed transport.
-     *
-     * @param string|\Cake\Mailer\AbstractTransport $name Either the name of a configured
-     *   transport, or a transport instance.
-     * @return $this
-     * @throws \LogicException When the chosen transport lacks a send method.
-     * @throws \InvalidArgumentException When $name is neither a string nor an object.
-     */
-    public function setTransport($name)
-    {
-        if (is_string($name)) {
-            $transport = TransportFactory::get($name);
-        } elseif (is_object($name)) {
-            $transport = $name;
-            if (!$transport instanceof AbstractTransport) {
-                throw new Exception('Transport class must extend Cake\Mailer\AbstractTransport');
-            }
-        } else {
-            throw new InvalidArgumentException(sprintf(
-                'The value passed for the "$name" argument must be either a string, or an object, %s given.',
-                gettype($name)
-            ));
-        }
-
-        $this->transport = $transport;
-
-        return $this;
-    }
-
-    /**
-     * Gets the transport.
-     *
-     * @return \Cake\Mailer\AbstractTransport
-     */
-    public function getTransport(): AbstractTransport
-    {
-        if ($this->transport === null) {
-            throw new BadMethodCallException(
-                'Transport was not defined. '
-                . 'You must set on using setTransport() or set `transport` option in your mailer profile.'
-            );
-        }
-
-        return $this->transport;
-    }
-
-    /**
-     * Restore message, renderer, transport instances to state before an action was run.
+     * Reset email instance.
      *
      * @return $this
      */
-    protected function restore()
+    protected function reset()
     {
-        foreach (array_keys($this->clonedInstances) as $key) {
-            if ($this->clonedInstances[$key] === null) {
-                $this->{$key} = null;
-            } else {
-                $this->{$key} = clone $this->clonedInstances[$key];
-                $this->clonedInstances[$key] = null;
-            }
-        }
+        $this->_email = clone $this->_clonedEmail;
 
         return $this;
-    }
-
-    /**
-     * Reset all the internal variables to be able to send out a new email.
-     *
-     * @return $this
-     */
-    public function reset()
-    {
-        $this->message->reset();
-        $this->getRenderer()->reset();
-        $this->transport = null;
-        $this->clonedInstances = [
-            'message' => null,
-            'renderer' => null,
-            'transport' => null,
-        ];
-
-        return $this;
-    }
-
-    /**
-     * Log the email message delivery.
-     *
-     * @param array $contents The content with 'headers' and 'message' keys.
-     * @return void
-     * @psalm-param array{headers: string, message: string} $contents
-     */
-    protected function logDelivery(array $contents): void
-    {
-        if (empty($this->logConfig)) {
-            return;
-        }
-
-        Log::write(
-            $this->logConfig['level'],
-            PHP_EOL . $this->flatten($contents['headers']) . PHP_EOL . PHP_EOL . $this->flatten($contents['message']),
-            $this->logConfig['scope']
-        );
-    }
-
-    /**
-     * Set logging config.
-     *
-     * @param string|array|true $log Log config.
-     * @return void
-     */
-    protected function setLogConfig($log)
-    {
-        $config = [
-            'level' => 'debug',
-            'scope' => 'email',
-        ];
-        if ($log !== true) {
-            if (!is_array($log)) {
-                $log = ['level' => $log];
-            }
-            $config = $log + $config;
-        }
-
-        $this->logConfig = $config;
-    }
-
-    /**
-     * Converts given value to string
-     *
-     * @param string|array $value The value to convert
-     * @return string
-     */
-    protected function flatten($value): string
-    {
-        return is_array($value) ? implode(';', $value) : $value;
     }
 
     /**
@@ -601,7 +323,7 @@ class Mailer implements EventListenerInterface
      *
      * @return array
      */
-    public function implementedEvents(): array
+    public function implementedEvents()
     {
         return [];
     }

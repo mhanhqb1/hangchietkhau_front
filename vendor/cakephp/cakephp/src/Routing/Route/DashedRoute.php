@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -25,6 +23,7 @@ use Cake\Utility\Inflector;
  */
 class DashedRoute extends Route
 {
+
     /**
      * Flag for tracking whether or not the defaults have been inflected.
      *
@@ -41,13 +40,13 @@ class DashedRoute extends Route
      * @param string $plugin Plugin name
      * @return string
      */
-    protected function _camelizePlugin(string $plugin): string
+    protected function _camelizePlugin($plugin)
     {
         $plugin = str_replace('-', '_', $plugin);
         if (strpos($plugin, '/') === false) {
             return Inflector::camelize($plugin);
         }
-        [$vendor, $plugin] = explode('/', $plugin, 2);
+        list($vendor, $plugin) = explode('/', $plugin, 2);
 
         return Inflector::camelize($vendor) . '/' . Inflector::camelize($plugin);
     }
@@ -59,13 +58,13 @@ class DashedRoute extends Route
      *
      * @param string $url The URL to parse
      * @param string $method The HTTP method.
-     * @return array|null An array of request parameters, or null on failure.
+     * @return array|false An array of request parameters, or false on failure.
      */
-    public function parse(string $url, string $method = ''): ?array
+    public function parse($url, $method = '')
     {
         $params = parent::parse($url, $method);
         if (!$params) {
-            return null;
+            return false;
         }
         if (!empty($params['controller'])) {
             $params['controller'] = Inflector::camelize($params['controller'], '-');
@@ -92,9 +91,9 @@ class DashedRoute extends Route
      * @param array $context An array of the current request context.
      *   Contains information such as the current host, scheme, port, and base
      *   directory.
-     * @return string|null Either a string URL or null.
+     * @return bool|string Either false or a string URL.
      */
-    public function match(array $url, array $context = []): ?string
+    public function match(array $url, array $context = [])
     {
         $url = $this->_dasherize($url);
         if (!$this->_inflectedDefaults) {
@@ -111,7 +110,7 @@ class DashedRoute extends Route
      * @param array $url An array of URL keys.
      * @return array
      */
-    protected function _dasherize(array $url): array
+    protected function _dasherize($url)
     {
         foreach (['controller', 'plugin', 'action'] as $element) {
             if (!empty($url[$element])) {

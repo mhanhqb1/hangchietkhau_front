@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -21,6 +19,7 @@ namespace Cake\Auth;
  */
 class DefaultPasswordHasher extends AbstractPasswordHasher
 {
+
     /**
      * Default config for this object.
      *
@@ -35,20 +34,18 @@ class DefaultPasswordHasher extends AbstractPasswordHasher
      */
     protected $_defaultConfig = [
         'hashType' => PASSWORD_DEFAULT,
-        'hashOptions' => [],
+        'hashOptions' => []
     ];
 
     /**
      * Generates password hash.
      *
      * @param string $password Plain text password to hash.
-     * @return string|false Password hash or false on failure
-     * @psalm-suppress InvalidNullableReturnType
-     * @link https://book.cakephp.org/4/en/controllers/components/authentication.html#hashing-passwords
+     * @return bool|string Password hash or false on failure
+     * @link https://book.cakephp.org/3.0/en/controllers/components/authentication.html#hashing-passwords
      */
-    public function hash(string $password)
+    public function hash($password)
     {
-        /** @psalm-suppress NullableReturnStatement */
         return password_hash(
             $password,
             $this->_config['hashType'],
@@ -63,7 +60,7 @@ class DefaultPasswordHasher extends AbstractPasswordHasher
      * @param string $hashedPassword Existing hashed password.
      * @return bool True if hashes match else false.
      */
-    public function check(string $password, string $hashedPassword): bool
+    public function check($password, $hashedPassword)
     {
         return password_verify($password, $hashedPassword);
     }
@@ -75,7 +72,7 @@ class DefaultPasswordHasher extends AbstractPasswordHasher
      * @param string $password The password to verify
      * @return bool
      */
-    public function needsRehash(string $password): bool
+    public function needsRehash($password)
     {
         return password_needs_rehash($password, $this->_config['hashType'], $this->_config['hashOptions']);
     }

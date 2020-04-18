@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -23,6 +21,7 @@ namespace Cake\Database\Statement;
  */
 trait BufferResultsTrait
 {
+
     /**
      * Whether or not to buffer results in php
      *
@@ -36,7 +35,7 @@ trait BufferResultsTrait
      * @param bool $buffer Toggle buffering
      * @return $this
      */
-    public function bufferResults(bool $buffer)
+    public function bufferResults($buffer)
     {
         $this->_bufferResults = (bool)$buffer;
 

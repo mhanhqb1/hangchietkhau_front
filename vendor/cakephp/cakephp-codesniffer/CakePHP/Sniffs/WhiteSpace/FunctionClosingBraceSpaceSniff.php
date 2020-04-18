@@ -1,13 +1,15 @@
 <?php
 /**
- * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
- * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
+ * PHP Version 5
+ *
+ * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
+ * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
  * This file is originally written by Greg Sherwood and Marc McIntyre, but
  * modified for CakePHP.
  *
  * @copyright     2006 Squiz Pty Ltd (ABN 77 084 670 600)
- * @link          https://github.com/cakephp/cakephp-codesniffer
+ * @link          http://pear.php.net/package/PHP_CodeSniffer_CakePHP
  * @since         CakePHP CodeSniffer 0.1.1
  * @license       https://github.com/squizlabs/PHP_CodeSniffer/blob/master/licence.txt BSD Licence
  */
@@ -23,6 +25,7 @@ use PHP_CodeSniffer\Sniffs\Sniff;
 
 class FunctionClosingBraceSpaceSniff implements Sniff
 {
+
     /**
      * {@inheritDoc}
      */
@@ -44,16 +47,13 @@ class FunctionClosingBraceSpaceSniff implements Sniff
         }
 
         $closeBrace = $tokens[$stackPtr]['scope_closer'];
-        $prevContent = $phpcsFile->findPrevious(T_WHITESPACE, $closeBrace - 1, null, true);
+        $prevContent = $phpcsFile->findPrevious(T_WHITESPACE, ($closeBrace - 1), null, true);
 
         $braceLine = $tokens[$closeBrace]['line'];
         $prevLine = $tokens[$prevContent]['line'];
 
-        $found = $braceLine - $prevLine - 1;
-        if (
-            $phpcsFile->hasCondition($stackPtr, T_FUNCTION) === true
-            || isset($tokens[$stackPtr]['nested_parenthesis']) === true
-        ) {
+        $found = ($braceLine - $prevLine - 1);
+        if ($phpcsFile->hasCondition($stackPtr, T_FUNCTION) === true || isset($tokens[$stackPtr]['nested_parenthesis']) === true) {
             // Nested function.
             if ($found < 0) {
                 $error = 'Closing brace of nested function must be on a new line';

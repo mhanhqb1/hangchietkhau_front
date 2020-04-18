@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -24,18 +22,17 @@ interface PaginatorInterface
     /**
      * Handles pagination of datasource records.
      *
-     * @param \Cake\Datasource\RepositoryInterface|\Cake\Datasource\QueryInterface $object The repository or query
-     *   to paginate.
+     * @param mixed $object The repository or query to paginate.
      * @param array $params Request params
      * @param array $settings The settings/configuration used for pagination.
-     * @return \Cake\Datasource\ResultSetInterface Query results
+     * @return mixed Query results
      */
-    public function paginate(object $object, array $params = [], array $settings = []): ResultSetInterface;
+    public function paginate($object, array $params = [], array $settings = []);
 
     /**
      * Get paging params after pagination operation.
      *
      * @return array
      */
-    public function getPagingParams(): array;
+    public function getPagingParams();
 }

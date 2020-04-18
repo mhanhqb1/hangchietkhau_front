@@ -18,15 +18,17 @@ use Cake\TestSuite\Fixture\TestFixture;
 
 /**
  * OldProductsFixture
+ *
  */
 class OldProductsFixture extends TestFixture
 {
+
     /**
      * Fields
      *
      * @var array
      */
-    // phpcs:disable
+    // @codingStandardsIgnoreStart
     public $fields = [
         'id' => ['type' => 'integer', 'length' => 11, 'unsigned' => true, 'null' => false, 'default' => null, 'comment' => '', 'autoIncrement' => true, 'precision' => null],
         'created' => ['type' => 'datetime', 'length' => null, 'null' => false, 'default' => null, 'comment' => '', 'precision' => null],
@@ -40,7 +42,7 @@ class OldProductsFixture extends TestFixture
             'collation' => 'utf8_general_ci'
         ],
     ];
-    // phpcs:enable
+    // @codingStandardsIgnoreEnd
 
     /**
      * Records
@@ -51,7 +53,7 @@ class OldProductsFixture extends TestFixture
         [
             'created' => '2015-12-30 18:11:36',
             'modified' => '2015-12-30 18:11:36',
-            'name' => 'Lorem ipsum dolor sit amet',
+            'name' => 'Lorem ipsum dolor sit amet'
         ],
     ];
 }

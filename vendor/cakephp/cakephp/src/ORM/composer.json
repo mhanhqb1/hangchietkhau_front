@@ -23,18 +23,17 @@
         "source": "https://github.com/cakephp/orm"
     },
     "require": {
-        "php": ">=7.2.0",
-        "cakephp/collection": "^4.0",
-        "cakephp/core": "^4.0",
-        "cakephp/datasource": "^4.0",
-        "cakephp/database": "^4.0",
-        "cakephp/event": "^4.0",
-        "cakephp/utility": "^4.0",
-        "cakephp/validation": "^4.0"
+        "php": ">=5.6.0",
+        "cakephp/collection": "^3.0.0",
+        "cakephp/core": "^3.0.0",
+        "cakephp/datasource": "^3.1.2",
+        "cakephp/database": "^3.1.4",
+        "cakephp/event": "^3.0.0",
+        "cakephp/utility": "^3.0.0",
+        "cakephp/validation": "^3.0.0"
     },
     "suggest": {
-        "cakephp/cache": "If you decide to use Query caching.",
-        "cakephp/i18n": "If you are using Translate/TimestampBehavior or Chronos types."
+        "cakephp/i18n": "If you are using Translate / Timestamp Behavior."
     },
     "autoload": {
         "psr-4": {

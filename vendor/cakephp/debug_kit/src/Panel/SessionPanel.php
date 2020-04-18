@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -14,7 +12,8 @@ declare(strict_types=1);
  */
 namespace DebugKit\Panel;
 
-use Cake\Event\EventInterface;
+use Cake\Event\Event;
+use Cake\Network\Request;
 use DebugKit\DebugPanel;
 
 /**
@@ -22,18 +21,19 @@ use DebugKit\DebugPanel;
  */
 class SessionPanel extends DebugPanel
 {
+
     /**
      * shutdown callback
      *
-     * @param \Cake\Event\EventInterface $event The event
+     * @param \Cake\Event\Event $event The event
      * @return void
      */
-    public function shutdown(EventInterface $event)
+    public function shutdown(Event $event)
     {
-        /** @var \Cake\Http\ServerRequest $request */
-        $request = $event->getSubject()->getRequest();
+        /* @var Request $request */
+        $request = $event->subject()->request;
         if ($request) {
-            $this->_data = ['content' => $request->getSession()->read()];
+            $this->_data = ['content' => $request->session()->read()];
         }
     }
 }

@@ -9,24 +9,11 @@
 
 namespace PHP_CodeSniffer\Standards\Generic\Sniffs\PHP;
 
-use PHP_CodeSniffer\Files\File;
 use PHP_CodeSniffer\Sniffs\Sniff;
+use PHP_CodeSniffer\Files\File;
 
 class CharacterBeforePHPOpeningTagSniff implements Sniff
 {
-
-    /**
-     * List of supported BOM definitions.
-     *
-     * Use encoding names as keys and hex BOM representations as values.
-     *
-     * @var array
-     */
-    protected $bomDefinitions = [
-        'UTF-8'       => 'efbbbf',
-        'UTF-16 (BE)' => 'feff',
-        'UTF-16 (LE)' => 'fffe',
-    ];
 
 
     /**
@@ -36,7 +23,7 @@ class CharacterBeforePHPOpeningTagSniff implements Sniff
      */
     public function register()
     {
-        return [T_OPEN_TAG];
+        return array(T_OPEN_TAG);
 
     }//end register()
 
@@ -48,26 +35,16 @@ class CharacterBeforePHPOpeningTagSniff implements Sniff
      * @param int                         $stackPtr  The position of the current token in
      *                                               the stack passed in $tokens.
      *
-     * @return int
+     * @return void
      */
     public function process(File $phpcsFile, $stackPtr)
     {
         $expected = 0;
         if ($stackPtr > 0) {
-            // Allow a byte-order mark.
-            $tokens = $phpcsFile->getTokens();
-            foreach ($this->bomDefinitions as $bomName => $expectedBomHex) {
-                $bomByteLength = (strlen($expectedBomHex) / 2);
-                $htmlBomHex    = bin2hex(substr($tokens[0]['content'], 0, $bomByteLength));
-                if ($htmlBomHex === $expectedBomHex) {
-                    $expected++;
-                    break;
-                }
-            }
-
             // Allow a shebang line.
+            $tokens = $phpcsFile->getTokens();
             if (substr($tokens[0]['content'], 0, 2) === '#!') {
-                $expected++;
+                $expected = 1;
             }
         }
 

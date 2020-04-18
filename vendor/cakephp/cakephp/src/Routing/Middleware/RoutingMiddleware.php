@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,103 +14,55 @@ declare(strict_types=1);
  */
 namespace Cake\Routing\Middleware;
 
-use Cake\Cache\Cache;
-use Cake\Core\PluginApplicationInterface;
+use Cake\Http\BaseApplication;
 use Cake\Http\MiddlewareQueue;
 use Cake\Http\Runner;
 use Cake\Routing\Exception\RedirectException;
-use Cake\Routing\RouteCollection;
+use Cake\Routing\RouteBuilder;
 use Cake\Routing\Router;
-use Cake\Routing\RoutingApplicationInterface;
-use Laminas\Diactoros\Response\RedirectResponse;
 use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Psr\Http\Server\MiddlewareInterface;
-use Psr\Http\Server\RequestHandlerInterface;
+use Zend\Diactoros\Response\RedirectResponse;
 
 /**
  * Applies routing rules to the request and creates the controller
  * instance if possible.
  */
-class RoutingMiddleware implements MiddlewareInterface
+class RoutingMiddleware
 {
-    /**
-     * Key used to store the route collection in the cache engine
-     */
-    public const ROUTE_COLLECTION_CACHE_KEY = 'routeCollection';
-
     /**
      * The application that will have its routing hook invoked.
      *
-     * @var \Cake\Routing\RoutingApplicationInterface
+     * @var \Cake\Http\BaseApplication
      */
     protected $app;
 
     /**
-     * The cache configuration name to use for route collection caching,
-     * null to disable caching
-     *
-     * @var string|null
-     */
-    protected $cacheConfig;
-
-    /**
      * Constructor
      *
-     * @param \Cake\Routing\RoutingApplicationInterface $app The application instance that routes are defined on.
-     * @param string|null $cacheConfig The cache config name to use or null to disable routes cache
+     * @param \Cake\Http\BaseApplication $app The application instance that routes are defined on.
      */
-    public function __construct(RoutingApplicationInterface $app, ?string $cacheConfig = null)
+    public function __construct(BaseApplication $app = null)
     {
         $this->app = $app;
-        $this->cacheConfig = $cacheConfig;
     }
 
     /**
      * Trigger the application's routes() hook if the application exists and Router isn't initialized.
-     * Uses the routes cache if enabled via configuration param "Router.cache"
      *
      * If the middleware is created without an Application, routes will be
      * loaded via the automatic route loading that pre-dates the routes() hook.
      *
      * @return void
      */
-    protected function loadRoutes(): void
+    protected function loadRoutes()
     {
-        $routeCollection = $this->buildRouteCollection();
-        Router::setRouteCollection($routeCollection);
-    }
-
-    /**
-     * Check if route cache is enabled and use the configured Cache to 'remember' the route collection
-     *
-     * @return \Cake\Routing\RouteCollection
-     */
-    protected function buildRouteCollection(): RouteCollection
-    {
-        if (Cache::enabled() && $this->cacheConfig !== null) {
-            return Cache::remember(static::ROUTE_COLLECTION_CACHE_KEY, function () {
-                return $this->prepareRouteCollection();
-            }, $this->cacheConfig);
+        if ($this->app && !Router::$initialized) {
+            $builder = Router::createRouteBuilder('/');
+            $this->app->routes($builder);
+            // Prevent routes from being loaded again
+            Router::$initialized = true;
         }
-
-        return $this->prepareRouteCollection();
-    }
-
-    /**
-     * Generate the route collection using the builder
-     *
-     * @return \Cake\Routing\RouteCollection
-     */
-    protected function prepareRouteCollection(): RouteCollection
-    {
-        $builder = Router::createRouteBuilder('/');
-        $this->app->routes($builder);
-        if ($this->app instanceof PluginApplicationInterface) {
-            $this->app->pluginRoutes($builder);
-        }
-
-        return Router::getRouteCollection();
     }
 
     /**
@@ -122,14 +72,15 @@ class RoutingMiddleware implements MiddlewareInterface
      * invoked.
      *
      * @param \Psr\Http\Message\ServerRequestInterface $request The request.
-     * @param \Psr\Http\Server\RequestHandlerInterface $handler The request handler.
+     * @param \Psr\Http\Message\ResponseInterface $response The response.
+     * @param callable $next The next middleware to call.
      * @return \Psr\Http\Message\ResponseInterface A response.
      */
-    public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
+    public function __invoke(ServerRequestInterface $request, ResponseInterface $response, $next)
     {
         $this->loadRoutes();
         try {
-            Router::setRequest($request);
+            Router::setRequestContext($request);
             $params = (array)$request->getAttribute('params', []);
             $middleware = [];
             if (empty($params['controller'])) {
@@ -143,22 +94,22 @@ class RoutingMiddleware implements MiddlewareInterface
                     unset($params['_middleware']);
                 }
                 $request = $request->withAttribute('params', $params);
-                Router::setRequest($request);
             }
         } catch (RedirectException $e) {
             return new RedirectResponse(
                 $e->getMessage(),
-                (int)$e->getCode()
+                $e->getCode(),
+                $response->getHeaders()
             );
         }
         $matching = Router::getRouteCollection()->getMiddleware($middleware);
         if (!$matching) {
-            return $handler->handle($request);
+            return $next($request, $response);
         }
-
+        $matching[] = $next;
         $middleware = new MiddlewareQueue($matching);
         $runner = new Runner();
 
-        return $runner->run($middleware, $request, $handler);
+        return $runner->run($middleware, $request, $response);
     }
 }

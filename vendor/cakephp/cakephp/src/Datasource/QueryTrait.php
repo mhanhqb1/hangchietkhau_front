@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -19,8 +17,6 @@ namespace Cake\Datasource;
 use BadMethodCallException;
 use Cake\Collection\Iterator\MapReduce;
 use Cake\Datasource\Exception\RecordNotFoundException;
-use InvalidArgumentException;
-use Traversable;
 
 /**
  * Contains the characteristics for an object that is attached to a repository and
@@ -28,10 +24,11 @@ use Traversable;
  */
 trait QueryTrait
 {
+
     /**
      * Instance of a table object this query is bound to
      *
-     * @var \Cake\Datasource\RepositoryInterface
+     * @var \Cake\ORM\Table|\Cake\Datasource\RepositoryInterface
      */
     protected $_repository;
 
@@ -40,7 +37,7 @@ trait QueryTrait
      *
      * When set, query execution will be bypassed.
      *
-     * @var iterable|null
+     * @var \Cake\Datasource\ResultSetInterface|null
      * @see \Cake\Datasource\QueryTrait::setResult()
      */
     protected $_results;
@@ -64,7 +61,7 @@ trait QueryTrait
     /**
      * A query cacher instance if this query has caching enabled.
      *
-     * @var \Cake\Datasource\QueryCacher|null
+     * @var \Cake\Datasource\QueryCacher
      */
     protected $_cache;
 
@@ -84,28 +81,23 @@ trait QueryTrait
     protected $_eagerLoaded = false;
 
     /**
-     * Set the default Table object that will be used by this query
-     * and form the `FROM` clause.
-     *
-     * @param \Cake\Datasource\RepositoryInterface|\Cake\ORM\Table $table The default table object to use
-     * @return $this
-     */
-    public function repository(RepositoryInterface $table)
-    {
-        $this->_repository = $table;
-
-        return $this;
-    }
-
-    /**
      * Returns the default table object that will be used by this query,
      * that is, the table that will appear in the from clause.
      *
-     * @return \Cake\Datasource\RepositoryInterface
+     * When called with a Table argument, the default table object will be set
+     * and this query object will be returned for chaining.
+     *
+     * @param \Cake\Datasource\RepositoryInterface|null $table The default table object to use
+     * @return \Cake\Datasource\RepositoryInterface|$this
      */
-    public function getRepository(): RepositoryInterface
+    public function repository(RepositoryInterface $table = null)
     {
-        return $this->_repository;
+        if ($table === null) {
+            return $this->_repository;
+        }
+        $this->_repository = $table;
+
+        return $this;
     }
 
     /**
@@ -117,10 +109,10 @@ trait QueryTrait
      *
      * This method is most useful when combined with results stored in a persistent cache.
      *
-     * @param iterable $results The results this query should return.
+     * @param \Cake\Datasource\ResultSetInterface $results The results this query should return.
      * @return $this
      */
-    public function setResult(iterable $results)
+    public function setResult($results)
     {
         $this->_results = $results;
 
@@ -133,8 +125,7 @@ trait QueryTrait
      * iterated without having to call execute() manually, thus making it look like
      * a result set instead of the query itself.
      *
-     * @return \Cake\Datasource\ResultSetInterface
-     * @psalm-suppress ImplementedReturnTypeMismatch
+     * @return \Iterator
      */
     public function getIterator()
     {
@@ -171,10 +162,10 @@ trait QueryTrait
      * $query->cache(false);
      * ```
      *
-     * @param \Closure|string|false $key Either the cache key or a function to generate the cache key.
+     * @param false|string|\Closure $key Either the cache key or a function to generate the cache key.
      *   When using a function, this query instance will be supplied as an argument.
-     * @param string|\Psr\SimpleCache\CacheInterface $config Either the name of the cache config to use, or
-     *   a cache engine instance.
+     * @param string|\Cake\Cache\CacheEngine $config Either the name of the cache config to use, or
+     *   a cache config instance.
      * @return $this
      */
     public function cache($key, $config = 'default')
@@ -194,7 +185,7 @@ trait QueryTrait
      *
      * @return bool
      */
-    public function isEagerLoaded(): bool
+    public function isEagerLoaded()
     {
         return $this->_eagerLoaded;
     }
@@ -203,11 +194,15 @@ trait QueryTrait
      * Sets the query instance to be an eager loaded query. If no argument is
      * passed, the current configured query `_eagerLoaded` value is returned.
      *
-     * @param bool $value Whether or not to eager load.
-     * @return $this
+     * @deprecated 3.5.0 Use isEagerLoaded() for the getter part instead.
+     * @param bool|null $value Whether or not to eager load.
+     * @return $this|\Cake\ORM\Query
      */
-    public function eagerLoaded(bool $value)
+    public function eagerLoaded($value = null)
     {
+        if ($value === null) {
+            return $this->_eagerLoaded;
+        }
         $this->_eagerLoaded = $value;
 
         return $this;
@@ -225,17 +220,17 @@ trait QueryTrait
      * @param string|null $alias the alias used to prefix the field
      * @return array
      */
-    public function aliasField(string $field, ?string $alias = null): array
+    public function aliasField($field, $alias = null)
     {
         $namespaced = strpos($field, '.') !== false;
         $aliasedField = $field;
 
         if ($namespaced) {
-            [$alias, $field] = explode('.', $field);
+            list($alias, $field) = explode('.', $field);
         }
 
         if (!$alias) {
-            $alias = $this->getRepository()->getAlias();
+            $alias = $this->repository()->getAlias();
         }
 
         $key = sprintf('%s__%s', $alias, $field);
@@ -252,9 +247,9 @@ trait QueryTrait
      *
      * @param array $fields The fields to alias
      * @param string|null $defaultAlias The default alias
-     * @return string[]
+     * @return array
      */
-    public function aliasFields(array $fields, ?string $defaultAlias = null): array
+    public function aliasFields($fields, $defaultAlias = null)
     {
         $aliased = [];
         foreach ($fields as $alias => $field) {
@@ -279,7 +274,7 @@ trait QueryTrait
      *
      * @return \Cake\Datasource\ResultSetInterface
      */
-    public function all(): ResultSetInterface
+    public function all()
     {
         if ($this->_results !== null) {
             return $this->_results;
@@ -304,7 +299,7 @@ trait QueryTrait
      *
      * @return array
      */
-    public function toArray(): array
+    public function toArray()
     {
         return $this->all()->toArray();
     }
@@ -316,26 +311,25 @@ trait QueryTrait
      * The MapReduce routing will only be run when the query is executed and the first
      * result is attempted to be fetched.
      *
+     * If the first argument is set to null, it will return the list of previously
+     * registered map reduce routines.
+     *
      * If the third argument is set to true, it will erase previous map reducers
      * and replace it with the arguments passed.
      *
      * @param callable|null $mapper The mapper callable.
      * @param callable|null $reducer The reducing function.
      * @param bool $overwrite Set to true to overwrite existing map + reduce functions.
-     * @return $this
+     * @return $this|array
      * @see \Cake\Collection\Iterator\MapReduce for details on how to use emit data to the map reducer.
      */
-    public function mapReduce(?callable $mapper = null, ?callable $reducer = null, bool $overwrite = false)
+    public function mapReduce(callable $mapper = null, callable $reducer = null, $overwrite = false)
     {
         if ($overwrite) {
             $this->_mapReduce = [];
         }
         if ($mapper === null) {
-            if (!$overwrite) {
-                throw new InvalidArgumentException('$mapper can be null only when $overwrite is true.');
-            }
-
-            return $this;
+            return $this->_mapReduce;
         }
         $this->_mapReduce[] = compact('mapper', 'reducer');
 
@@ -343,25 +337,18 @@ trait QueryTrait
     }
 
     /**
-     * Returns the list of previously registered map reduce routines.
-     *
-     * @return array
-     */
-    public function getMapReducers(): array
-    {
-        return $this->_mapReduce;
-    }
-
-    /**
      * Registers a new formatter callback function that is to be executed when trying
      * to fetch the results from the database.
      *
-     * Formatting callbacks will get a first parameter, an object implementing
-     * `\Cake\Collection\CollectionInterface`, that can be traversed and modified at will.
+     * Formatting callbacks will get a first parameter, a `ResultSetDecorator`, that
+     * can be traversed and modified at will.
      *
      * Callbacks are required to return an iterator object, which will be used as
      * the return value for this query's result. Formatter functions are applied
      * after all the `MapReduce` routines for this query have been executed.
+     *
+     * If the first argument is set to null, it will return the list of previously
+     * registered map reduce routines.
      *
      * If the second argument is set to true, it will erase previous formatters
      * and replace them with the passed first argument.
@@ -384,21 +371,16 @@ trait QueryTrait
      * ```
      *
      * @param callable|null $formatter The formatting callable.
-     * @param int|true $mode Whether or not to overwrite, append or prepend the formatter.
-     * @return $this
-     * @throws \InvalidArgumentException
+     * @param bool|int $mode Whether or not to overwrite, append or prepend the formatter.
+     * @return $this|array
      */
-    public function formatResults(?callable $formatter = null, $mode = self::APPEND)
+    public function formatResults(callable $formatter = null, $mode = 0)
     {
         if ($mode === self::OVERWRITE) {
             $this->_formatters = [];
         }
         if ($formatter === null) {
-            if ($mode !== self::OVERWRITE) {
-                throw new InvalidArgumentException('$formatter can be null only when $mode is overwrite.');
-            }
-
-            return $this;
+            return $this->_formatters;
         }
 
         if ($mode === self::PREPEND) {
@@ -410,16 +392,6 @@ trait QueryTrait
         $this->_formatters[] = $formatter;
 
         return $this;
-    }
-
-    /**
-     * Returns the list of previously registered format routines.
-     *
-     * @return callable[]
-     */
-    public function getResultFormatters(): array
-    {
-        return $this->_formatters;
     }
 
     /**
@@ -453,11 +425,9 @@ trait QueryTrait
     {
         $entity = $this->first();
         if (!$entity) {
-            /** @var \Cake\ORM\Table $table */
-            $table = $this->getRepository();
             throw new RecordNotFoundException(sprintf(
                 'Record not found in table "%s"',
-                $table->getTable()
+                $this->repository()->table()
             ));
         }
 
@@ -475,11 +445,11 @@ trait QueryTrait
      *  $query->getOptions(); // Returns ['doABarrelRoll' => true]
      * ```
      *
-     * @see \Cake\Datasource\QueryInterface::applyOptions() to read about the options that will
+     * @see \Cake\ORM\Query::applyOptions() to read about the options that will
      * be processed by this class and not returned by this function
      * @return array
      */
-    public function getOptions(): array
+    public function getOptions()
     {
         return $this->_options;
     }
@@ -492,10 +462,10 @@ trait QueryTrait
      * @return mixed
      * @throws \BadMethodCallException if no such method exists in result set
      */
-    public function __call(string $method, array $arguments)
+    public function __call($method, $arguments)
     {
         $resultSetClass = $this->_decoratorClass();
-        if (in_array($method, get_class_methods($resultSetClass), true)) {
+        if (in_array($method, get_class_methods($resultSetClass))) {
             $results = $this->all();
 
             return $results->$method(...$arguments);
@@ -517,9 +487,9 @@ trait QueryTrait
     /**
      * Executes this query and returns a traversable object containing the results
      *
-     * @return \Cake\Datasource\ResultSetInterface
+     * @return \Traversable
      */
-    abstract protected function _execute(): ResultSetInterface;
+    abstract protected function _execute();
 
     /**
      * Decorates the results iterator with MapReduce routines and formatters
@@ -527,7 +497,7 @@ trait QueryTrait
      * @param \Traversable $result Original results
      * @return \Cake\Datasource\ResultSetInterface
      */
-    protected function _decorateResults(Traversable $result): ResultSetInterface
+    protected function _decorateResults($result)
     {
         $decorator = $this->_decoratorClass();
         foreach ($this->_mapReduce as $functions) {
@@ -553,10 +523,9 @@ trait QueryTrait
      * Returns the name of the class to be used for decorating results
      *
      * @return string
-     * @psalm-return class-string<\Cake\Datasource\ResultSetInterface>
      */
-    protected function _decoratorClass(): string
+    protected function _decoratorClass()
     {
-        return ResultSetDecorator::class;
+        return 'Cake\Datasource\ResultSetDecorator';
     }
 }

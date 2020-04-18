@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
@@ -16,7 +14,6 @@ namespace Migrations;
 use Cake\Datasource\ConnectionManager;
 use Phinx\Config\Config;
 use Phinx\Config\ConfigInterface;
-use Phinx\Db\Adapter\WrapperInterface;
 use Phinx\Migration\Manager;
 use Symfony\Component\Console\Input\ArrayInput;
 use Symfony\Component\Console\Input\InputInterface;
@@ -28,6 +25,7 @@ use Symfony\Component\Console\Output\NullOutput;
  */
 class Migrations
 {
+
     use ConfigurationTrait;
 
     /**
@@ -57,7 +55,7 @@ class Migrations
      * Useful if some logic needs to be applied in the ConfigurationTrait depending
      * on the command
      *
-     * @var string
+     * @var array
      */
     protected $command;
 
@@ -71,7 +69,6 @@ class Migrations
 
     /**
      * Constructor
-     *
      * @param array $default Default option to be used when calling a method.
      * Available options are :
      * - `connection` The datasource connection to use
@@ -92,12 +89,11 @@ class Migrations
      * Sets the command
      *
      * @param string $command Command name to store.
-     * @return $this
+     * @return self
      */
-    public function setCommand(string $command)
+    public function setCommand($command)
     {
         $this->command = $command;
-
         return $this;
     }
 
@@ -133,9 +129,10 @@ class Migrations
      * - `connection` The datasource connection to use
      * - `source` The folder where migrations are in
      * - `plugin` The plugin containing the migrations
+     *
      * @return array The migrations list and their statuses
      */
-    public function status(array $options = [])
+    public function status($options = [])
     {
         $this->setCommand('status');
         $input = $this->getInput('Status', [], $options);
@@ -156,9 +153,10 @@ class Migrations
      * - `source` The folder where migrations are in
      * - `plugin` The plugin containing the migrations
      * - `date` The date to migrate to
+     *
      * @return bool Success
      */
-    public function migrate(array $options = [])
+    public function migrate($options = [])
     {
         $this->setCommand('migrate');
         $input = $this->getInput('Migrate', [], $options);
@@ -171,7 +169,6 @@ class Migrations
         }
 
         $this->run($method, $params, $input);
-
         return true;
     }
 
@@ -187,9 +184,10 @@ class Migrations
      * - `source` The folder where migrations are in
      * - `plugin` The plugin containing the migrations
      * - `date` The date to rollback to
+     *
      * @return bool Success
      */
-    public function rollback(array $options = [])
+    public function rollback($options = [])
     {
         $this->setCommand('rollback');
         $input = $this->getInput('Rollback', [], $options);
@@ -202,7 +200,6 @@ class Migrations
         }
 
         $this->run($method, $params, $input);
-
         return true;
     }
 
@@ -216,14 +213,14 @@ class Migrations
      * - `connection` The datasource connection to use
      * - `source` The folder where migrations are in
      * - `plugin` The plugin containing the migrations
+     *
      * @return bool Success
      */
-    public function markMigrated($version = null, array $options = [])
+    public function markMigrated($version = null, $options = [])
     {
         $this->setCommand('mark_migrated');
 
-        if (
-            isset($options['target']) &&
+        if (isset($options['target']) &&
             isset($options['exclude']) &&
             isset($options['only'])
         ) {
@@ -238,11 +235,10 @@ class Migrations
         $params = [
             array_pop($migrationPaths),
             $this->getManager()->getVersionsToMark($input),
-            $this->output,
+            $this->output
         ];
 
         $this->run('markVersionsAsMigrated', $params, $input);
-
         return true;
     }
 
@@ -256,9 +252,10 @@ class Migrations
      * - `source` The folder where migrations are in
      * - `plugin` The plugin containing the migrations
      * - `seed` The seed file to use
+     *
      * @return bool Success
      */
-    public function seed(array $options = [])
+    public function seed($options = [])
     {
         $this->setCommand('seed');
         $input = $this->getInput('Seed', [], $options);
@@ -270,7 +267,6 @@ class Migrations
 
         $params = ['default', $seed];
         $this->run('seed', $params, $input);
-
         return true;
     }
 
@@ -279,11 +275,12 @@ class Migrations
      *
      * @param string $method Manager method to call
      * @param array $params Manager params to pass
-     * @param \Symfony\Component\Console\Input\InputInterface $input InputInterface needed for the
+     * @param \Symfony\Component\Console\Input\InputInterface InputInterface needed for the
      * Manager to properly run
+     *
      * @return mixed The result of the CakeManager::$method() call
      */
-    protected function run($method, array $params, $input)
+    protected function run($method, $params, $input)
     {
         if ($this->configuration instanceof Config) {
             $migrationPaths = $this->getConfig()->getMigrationPaths();
@@ -292,7 +289,6 @@ class Migrations
             $seedPath = array_pop($seedPaths);
         }
 
-        $pdo = null;
         if ($this->manager instanceof Manager) {
             $pdo = $this->manager->getEnvironment('default')
                 ->getAdapter()
@@ -304,14 +300,11 @@ class Migrations
         $manager = $this->getManager($newConfig);
         $manager->setInput($input);
 
-        if ($pdo !== null) {
-            /** @var \Phinx\Db\Adapter\PdoAdapter|\Migrations\CakeAdapter $adapter */
-            $adapter = $this->manager->getEnvironment('default')->getAdapter();
-            while ($adapter instanceof WrapperInterface) {
-                /** @var \Phinx\Db\Adapter\PdoAdapter|\Migrations\CakeAdapter $adapter */
-                $adapter = $adapter->getAdapter();
-            }
-            $adapter->setConnection($pdo);
+
+        if (isset($pdo)) {
+            $this->manager->getEnvironment('default')
+                ->getAdapter()
+                ->setConnection($pdo);
         }
 
         $newMigrationPaths = $newConfig->getMigrationPaths();
@@ -349,7 +342,7 @@ class Migrations
                 $environment = $this->manager->getEnvironment('default');
                 $oldConfig = $environment->getOptions();
                 unset($oldConfig['connection']);
-                if ($oldConfig === $defaultEnvironment) {
+                if ($oldConfig == $defaultEnvironment) {
                     $defaultEnvironment['connection'] = $environment
                         ->getAdapter()
                         ->getConnection();
@@ -362,7 +355,6 @@ class Migrations
         }
 
         $this->setAdapter();
-
         return $this->manager;
     }
 
@@ -379,7 +371,6 @@ class Migrations
             if ($this->input->getOption('connection')) {
                 $connectionName = $this->input->getOption('connection');
             }
-            /** @var \Cake\Database\Connection $connection */
             $connection = ConnectionManager::get($connectionName);
 
             $env = $this->manager->getEnvironment('default');
@@ -401,14 +392,11 @@ class Migrations
      * @return \Symfony\Component\Console\Input\InputInterface InputInterface needed for the
      * Manager to properly run
      */
-    public function getInput($command, array $arguments, array $options)
+    public function getInput($command, $arguments, $options)
     {
-        $className = 'Migrations\Command\Phinx\\' . $command;
+        $className = '\Migrations\Command\\' . $command;
         $options = $arguments + $this->prepareOptions($options);
-        /** @var \Symfony\Component\Console\Command\Command $command */
-        $command = new $className();
-        $definition = $command->getDefinition();
-
+        $definition = (new $className())->getDefinition();
         return new ArrayInput($options, $definition);
     }
 
@@ -418,9 +406,9 @@ class Migrations
      * @param array $options Simple key-values array to pass to the InputInterface
      * @return array Prepared $options
      */
-    protected function prepareOptions(array $options = [])
+    protected function prepareOptions($options = [])
     {
-        $options += $this->default;
+        $options = array_merge($this->default, $options);
         if (!$options) {
             return $options;
         }

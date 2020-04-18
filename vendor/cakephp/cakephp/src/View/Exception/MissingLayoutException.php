@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -14,13 +12,13 @@ declare(strict_types=1);
  */
 namespace Cake\View\Exception;
 
+use Cake\Core\Exception\Exception;
+
 /**
  * Used when a layout file cannot be found.
  */
-class MissingLayoutException extends MissingTemplateException
+class MissingLayoutException extends Exception
 {
-    /**
-     * @var string
-     */
-    protected $type = 'Layout';
+
+    protected $_messageTemplate = 'Layout file "%s" is missing.';
 }

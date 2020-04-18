@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,36 +14,29 @@ declare(strict_types=1);
  */
 namespace Cake\Database\Type;
 
-use Cake\I18n\Date;
-use Cake\I18n\FrozenDate;
+use Cake\Database\Driver;
 use DateTime;
-use DateTimeImmutable;
-use DateTimeInterface;
 
-/**
- * Class DateType
- */
 class DateType extends DateTimeType
 {
+
     /**
-     * @inheritDoc
+     * The class to use for representing date objects
+     *
+     * This property can only be used before an instance of this type
+     * class is constructed. After that use `useMutable()` or `useImmutable()` instead.
+     *
+     * @var string
+     * @deprecated 3.2.0 Use DateType::useMutable() or DateType::useImmutable() instead.
+     */
+    public static $dateTimeClass = 'Cake\I18n\Date';
+
+    /**
+     * Date format for DateTime object
+     *
+     * @var string|array
      */
     protected $_format = 'Y-m-d';
-
-    /**
-     * @inheritDoc
-     */
-    protected $_marshalFormats = [
-        'Y-m-d',
-    ];
-
-    /**
-     * In this class we want Date objects to  have their time
-     * set to the beginning of the day.
-     *
-     * @var bool
-     */
-    protected $setToDateStart = true;
 
     /**
      * Change the preferred class name to the FrozenDate implementation.
@@ -54,7 +45,7 @@ class DateType extends DateTimeType
      */
     public function useImmutable()
     {
-        $this->_setClassName(FrozenDate::class, DateTimeImmutable::class);
+        $this->_setClassName('Cake\I18n\FrozenDate', 'DateTimeImmutable');
 
         return $this;
     }
@@ -66,7 +57,7 @@ class DateType extends DateTimeType
      */
     public function useMutable()
     {
-        $this->_setClassName(Date::class, DateTime::class);
+        $this->_setClassName('Cake\I18n\Date', 'DateTime');
 
         return $this;
     }
@@ -75,9 +66,9 @@ class DateType extends DateTimeType
      * Convert request data into a datetime object.
      *
      * @param mixed $value Request data
-     * @return \DateTimeInterface|null
+     * @return \DateTime
      */
-    public function marshal($value): ?DateTimeInterface
+    public function marshal($value)
     {
         $date = parent::marshal($value);
         if ($date instanceof DateTime) {
@@ -88,13 +79,30 @@ class DateType extends DateTimeType
     }
 
     /**
-     * @inheritDoc
+     * Convert strings into Date instances.
+     *
+     * @param string $value The value to convert.
+     * @param \Cake\Database\Driver $driver The driver instance to convert with.
+     * @return \Cake\I18n\Date|\DateTime
      */
-    protected function _parseLocaleValue(string $value)
+    public function toPHP($value, Driver $driver)
     {
-        /** @var \Cake\I18n\I18nDateTimeInterface $class */
+        $date = parent::toPHP($value, $driver);
+        if ($date instanceof DateTime) {
+            $date->setTime(0, 0, 0);
+        }
+
+        return $date;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    protected function _parseValue($value)
+    {
+        /* @var \Cake\I18n\Time $class */
         $class = $this->_className;
 
-        return $class::parseDate($value, $this->_localeMarshalFormat);
+        return $class::parseDate($value, $this->_localeFormat);
     }
 }

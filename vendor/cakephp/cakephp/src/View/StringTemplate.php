@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,7 +15,6 @@ declare(strict_types=1);
 namespace Cake\View;
 
 use Cake\Core\Configure\Engine\PhpConfig;
-use Cake\Core\Exception\Exception;
 use Cake\Core\InstanceConfigTrait;
 use Cake\Utility\Hash;
 use RuntimeException;
@@ -31,6 +28,7 @@ use RuntimeException;
  */
 class StringTemplate
 {
+
     use InstanceConfigTrait {
         getConfig as get;
     }
@@ -120,11 +118,11 @@ class StringTemplate
      *
      * @return void
      */
-    public function push(): void
+    public function push()
     {
         $this->_configStack[] = [
             $this->_config,
-            $this->_compiled,
+            $this->_compiled
         ];
     }
 
@@ -133,12 +131,12 @@ class StringTemplate
      *
      * @return void
      */
-    public function pop(): void
+    public function pop()
     {
         if (empty($this->_configStack)) {
             return;
         }
-        [$this->_config, $this->_compiled] = array_pop($this->_configStack);
+        list($this->_config, $this->_compiled) = array_pop($this->_configStack);
     }
 
     /**
@@ -153,7 +151,7 @@ class StringTemplate
      * ]);
      * ```
      *
-     * @param string[] $templates An associative list of named templates.
+     * @param array $templates An associative list of named templates.
      * @return $this
      */
     public function add(array $templates)
@@ -167,10 +165,10 @@ class StringTemplate
     /**
      * Compile templates into a more efficient printf() compatible format.
      *
-     * @param string[] $templates The template names to compile. If empty all templates will be compiled.
+     * @param array $templates The template names to compile. If empty all templates will be compiled.
      * @return void
      */
-    protected function _compileTemplates(array $templates = []): void
+    protected function _compileTemplates(array $templates = [])
     {
         if (empty($templates)) {
             $templates = array_keys($this->_config);
@@ -182,10 +180,10 @@ class StringTemplate
             }
 
             $template = str_replace('%', '%%', $template);
-            preg_match_all('#\{\{([\w\._]+)\}\}#', $template, $matches);
+            preg_match_all('#\{\{([\w\d\._]+)\}\}#', $template, $matches);
             $this->_compiled[$name] = [
                 str_replace($matches[0], '%s', $template),
-                $matches[1],
+                $matches[1]
             ];
         }
     }
@@ -200,12 +198,8 @@ class StringTemplate
      * @param string $file The file to load
      * @return void
      */
-    public function load(string $file): void
+    public function load($file)
     {
-        if ($file === '') {
-            throw new Exception('String template filename cannot be an empty string');
-        }
-
         $loader = new PhpConfig();
         $templates = $loader->read($file);
         $this->add($templates);
@@ -217,7 +211,7 @@ class StringTemplate
      * @param string $name The template to remove.
      * @return void
      */
-    public function remove(string $name): void
+    public function remove($name)
     {
         $this->setConfig($name, null);
         unset($this->_compiled[$name]);
@@ -228,15 +222,14 @@ class StringTemplate
      *
      * @param string $name The template name.
      * @param array $data The data to insert.
-     * @return string Formatted string
-     * @throws \RuntimeException If template not found.
+     * @return string|null Formatted string or null if template not found.
      */
-    public function format(string $name, array $data): string
+    public function format($name, array $data)
     {
         if (!isset($this->_compiled[$name])) {
             throw new RuntimeException("Cannot find template named '$name'.");
         }
-        [$template, $placeholders] = $this->_compiled[$name];
+        list($template, $placeholders) = $this->_compiled[$name];
 
         if (isset($data['templateVars'])) {
             $data += $data['templateVars'];
@@ -244,7 +237,7 @@ class StringTemplate
         }
         $replace = [];
         foreach ($placeholders as $placeholder) {
-            $replacement = $data[$placeholder] ?? null;
+            $replacement = isset($data[$placeholder]) ? $data[$placeholder] : null;
             if (is_array($replacement)) {
                 $replacement = implode('', $replacement);
             }
@@ -280,7 +273,7 @@ class StringTemplate
      * @param array|null $exclude Array of options to be excluded, the options here will not be part of the return.
      * @return string Composed attributes.
      */
-    public function formatAttributes(?array $options, ?array $exclude = null): string
+    public function formatAttributes($options, $exclude = null)
     {
         $insertBefore = ' ';
         $options = (array)$options + ['escape' => true];
@@ -289,14 +282,13 @@ class StringTemplate
             $exclude = [];
         }
 
-        $exclude = ['escape' => true, 'idPrefix' => true, 'templateVars' => true, 'fieldName' => true]
-            + array_flip($exclude);
+        $exclude = ['escape' => true, 'idPrefix' => true, 'templateVars' => true] + array_flip($exclude);
         $escape = $options['escape'];
         $attributes = [];
 
         foreach ($options as $key => $value) {
             if (!isset($exclude[$key]) && $value !== false && $value !== null) {
-                $attributes[] = $this->_formatAttribute((string)$key, $value, $escape);
+                $attributes[] = $this->_formatAttribute($key, $value, $escape);
             }
         }
         $out = trim(implode(' ', $attributes));
@@ -309,11 +301,11 @@ class StringTemplate
      * Works with minimized attributes that have the same value as their name such as 'disabled' and 'checked'
      *
      * @param string $key The name of the attribute to create
-     * @param string|string[] $value The value of the attribute to create.
+     * @param string|array $value The value of the attribute to create.
      * @param bool $escape Define if the value must be escaped
      * @return string The composed attribute.
      */
-    protected function _formatAttribute(string $key, $value, $escape = true): string
+    protected function _formatAttribute($key, $value, $escape = true)
     {
         if (is_array($value)) {
             $value = implode(' ', $value);
@@ -342,9 +334,9 @@ class StringTemplate
      * @param array|string $input The array or string to add the class to
      * @param array|string $newClass the new class or classes to add
      * @param string $useIndex if you are inputting an array with an element other than default of 'class'.
-     * @return string|string[]
+     * @return array|string
      */
-    public function addClass($input, $newClass, string $useIndex = 'class')
+    public function addClass($input, $newClass, $useIndex = 'class')
     {
         // NOOP
         if (empty($newClass)) {

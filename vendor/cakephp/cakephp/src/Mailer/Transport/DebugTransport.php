@@ -1,8 +1,6 @@
 <?php
-declare(strict_types=1);
-
 /**
- * Emulates the message sending process for testing purposes
+ * Emulates the email sending process for testing purposes
  *
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -19,7 +17,7 @@ declare(strict_types=1);
 namespace Cake\Mailer\Transport;
 
 use Cake\Mailer\AbstractTransport;
-use Cake\Mailer\Message;
+use Cake\Mailer\Email;
 
 /**
  * Debug Transport class, useful for emulating the email sending process and inspecting
@@ -27,15 +25,18 @@ use Cake\Mailer\Message;
  */
 class DebugTransport extends AbstractTransport
 {
+
     /**
-     * @inheritDoc
+     * Send mail
+     *
+     * @param \Cake\Mailer\Email $email Cake Email
+     * @return array
      */
-    public function send(Message $message): array
+    public function send(Email $email)
     {
-        $headers = $message->getHeadersString(
-            ['from', 'sender', 'replyTo', 'readReceipt', 'returnPath', 'to', 'cc', 'subject']
-        );
-        $message = implode("\r\n", (array)$message->getBody());
+        $headers = $email->getHeaders(['from', 'sender', 'replyTo', 'readReceipt', 'returnPath', 'to', 'cc', 'subject']);
+        $headers = $this->_headersToString($headers);
+        $message = implode("\r\n", (array)$email->message());
 
         return ['headers' => $headers, 'message' => $message];
     }

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -23,6 +21,7 @@ use Cake\Console\Helper;
  */
 class TableHelper extends Helper
 {
+
     /**
      * Default config for this helper.
      *
@@ -38,15 +37,15 @@ class TableHelper extends Helper
      * Calculate the column widths
      *
      * @param array $rows The rows on which the columns width will be calculated on.
-     * @return int[]
+     * @return array
      */
-    protected function _calculateWidths(array $rows): array
+    protected function _calculateWidths($rows)
     {
         $widths = [];
         foreach ($rows as $line) {
             foreach (array_values($line) as $k => $v) {
-                $columnLength = $this->_cellWidth($v);
-                if ($columnLength >= ($widths[$k] ?? 0)) {
+                $columnLength = mb_strwidth($v);
+                if ($columnLength >= (isset($widths[$k]) ? $widths[$k] : 0)) {
                     $widths[$k] = $columnLength;
                 }
             }
@@ -56,35 +55,12 @@ class TableHelper extends Helper
     }
 
     /**
-     * Get the width of a cell exclusive of style tags.
-     *
-     * @param string|null $text The text to calculate a width for.
-     * @return int The width of the textual content in visible characters.
-     */
-    protected function _cellWidth(?string $text): int
-    {
-        if ($text === null) {
-            return 0;
-        }
-
-        if (strpos($text, '<') === false && strpos($text, '>') === false) {
-            return mb_strwidth($text);
-        }
-
-        $styles = $this->_io->styles();
-        $tags = implode('|', array_keys($styles));
-        $text = preg_replace('#</?(?:' . $tags . ')>#', '', $text);
-
-        return mb_strwidth($text);
-    }
-
-    /**
      * Output a row separator.
      *
-     * @param int[] $widths The widths of each column to output.
+     * @param array $widths The widths of each column to output.
      * @return void
      */
-    protected function _rowSeparator(array $widths): void
+    protected function _rowSeparator($widths)
     {
         $out = '';
         foreach ($widths as $column) {
@@ -98,11 +74,11 @@ class TableHelper extends Helper
      * Output a row.
      *
      * @param array $row The row to output.
-     * @param int[] $widths The widths of each column to output.
+     * @param array $widths The widths of each column to output.
      * @param array $options Options to be passed.
      * @return void
      */
-    protected function _render(array $row, array $widths, array $options = []): void
+    protected function _render(array $row, $widths, $options = [])
     {
         if (count($row) === 0) {
             return;
@@ -110,7 +86,7 @@ class TableHelper extends Helper
 
         $out = '';
         foreach (array_values($row) as $i => $column) {
-            $pad = $widths[$i] - $this->_cellWidth($column);
+            $pad = $widths[$i] - mb_strwidth($column);
             if (!empty($options['style'])) {
                 $column = $this->_addStyle($column, $options['style']);
             }
@@ -129,9 +105,9 @@ class TableHelper extends Helper
      * @param array $rows The data to render out.
      * @return void
      */
-    public function output(array $rows): void
+    public function output($rows)
     {
-        if (empty($rows)) {
+        if (!is_array($rows) || count($rows) === 0) {
             return;
         }
 
@@ -144,7 +120,7 @@ class TableHelper extends Helper
             $this->_rowSeparator($widths);
         }
 
-        if (empty($rows)) {
+        if (!$rows) {
             return;
         }
 
@@ -166,7 +142,7 @@ class TableHelper extends Helper
      * @param string $style The style to be applied
      * @return string
      */
-    protected function _addStyle(string $text, string $style): string
+    protected function _addStyle($text, $style)
     {
         return '<' . $style . '>' . $text . '</' . $style . '>';
     }

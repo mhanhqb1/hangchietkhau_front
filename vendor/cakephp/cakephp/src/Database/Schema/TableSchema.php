@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -18,7 +16,7 @@ namespace Cake\Database\Schema;
 
 use Cake\Database\Connection;
 use Cake\Database\Exception;
-use Cake\Database\TypeFactory;
+use Cake\Database\Type;
 
 /**
  * Represents a single table in a database schema.
@@ -33,6 +31,7 @@ use Cake\Database\TypeFactory;
  */
 class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
 {
+
     /**
      * The name of the table
      *
@@ -87,21 +86,21 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
      *
      * @var int
      */
-    public const LENGTH_TINY = 255;
+    const LENGTH_TINY = 255;
 
     /**
      * Column length when using a `medium` column type
      *
      * @var int
      */
-    public const LENGTH_MEDIUM = 16777215;
+    const LENGTH_MEDIUM = 16777215;
 
     /**
      * Column length when using a `long` column type
      *
      * @var int
      */
-    public const LENGTH_LONG = 4294967295;
+    const LENGTH_LONG = 4294967295;
 
     /**
      * Valid column length that can be used with text type columns
@@ -111,7 +110,7 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     public static $columnLengths = [
         'tiny' => self::LENGTH_TINY,
         'medium' => self::LENGTH_MEDIUM,
-        'long' => self::LENGTH_LONG,
+        'long' => self::LENGTH_LONG
     ];
 
     /**
@@ -137,9 +136,7 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
      */
     protected static $_columnExtras = [
         'string' => [
-            'collate' => null,
-        ],
-        'char' => [
+            'fixed' => null,
             'collate' => null,
         ],
         'text' => [
@@ -221,70 +218,70 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
      *
      * @var string
      */
-    public const CONSTRAINT_PRIMARY = 'primary';
+    const CONSTRAINT_PRIMARY = 'primary';
 
     /**
      * Unique constraint type
      *
      * @var string
      */
-    public const CONSTRAINT_UNIQUE = 'unique';
+    const CONSTRAINT_UNIQUE = 'unique';
 
     /**
      * Foreign constraint type
      *
      * @var string
      */
-    public const CONSTRAINT_FOREIGN = 'foreign';
+    const CONSTRAINT_FOREIGN = 'foreign';
 
     /**
      * Index - index type
      *
      * @var string
      */
-    public const INDEX_INDEX = 'index';
+    const INDEX_INDEX = 'index';
 
     /**
      * Fulltext index type
      *
      * @var string
      */
-    public const INDEX_FULLTEXT = 'fulltext';
+    const INDEX_FULLTEXT = 'fulltext';
 
     /**
      * Foreign key cascade action
      *
      * @var string
      */
-    public const ACTION_CASCADE = 'cascade';
+    const ACTION_CASCADE = 'cascade';
 
     /**
      * Foreign key set null action
      *
      * @var string
      */
-    public const ACTION_SET_NULL = 'setNull';
+    const ACTION_SET_NULL = 'setNull';
 
     /**
      * Foreign key no action
      *
      * @var string
      */
-    public const ACTION_NO_ACTION = 'noAction';
+    const ACTION_NO_ACTION = 'noAction';
 
     /**
      * Foreign key restrict action
      *
      * @var string
      */
-    public const ACTION_RESTRICT = 'restrict';
+    const ACTION_RESTRICT = 'restrict';
 
     /**
      * Foreign key restrict default
      *
      * @var string
      */
-    public const ACTION_SET_DEFAULT = 'setDefault';
+    const ACTION_SET_DEFAULT = 'setDefault';
 
     /**
      * Constructor.
@@ -292,7 +289,7 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
      * @param string $table The table name.
      * @param array $columns The list of columns for the schema.
      */
-    public function __construct(string $table, array $columns = [])
+    public function __construct($table, array $columns = [])
     {
         $this->_table = $table;
         foreach ($columns as $field => $definition) {
@@ -301,17 +298,17 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function name(): string
+    public function name()
     {
         return $this->_table;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function addColumn(string $name, $attrs)
+    public function addColumn($name, $attrs)
     {
         if (is_string($attrs)) {
             $attrs = ['type' => $attrs];
@@ -328,9 +325,9 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function removeColumn(string $name)
+    public function removeColumn($name)
     {
         unset($this->_columns[$name], $this->_typeMap[$name]);
 
@@ -338,17 +335,29 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function columns(): array
+    public function columns()
     {
         return array_keys($this->_columns);
     }
 
     /**
-     * @inheritDoc
+     * Get column data in the table.
+     *
+     * @param string $name The column name.
+     * @return array|null Column data or null.
+     * @deprecated 3.5.0 Use getColumn() instead.
      */
-    public function getColumn(string $name): ?array
+    public function column($name)
+    {
+        return $this->getColumn($name);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getColumn($name)
     {
         if (!isset($this->_columns[$name])) {
             return null;
@@ -360,9 +369,27 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * Sets the type of a column, or returns its current type
+     * if none is passed.
+     *
+     * @param string $name The column to get the type of.
+     * @param string|null $type The type to set the column to.
+     * @return string|null Either the column type or null.
+     * @deprecated 3.5.0 Use setColumnType()/getColumnType() instead.
      */
-    public function getColumnType(string $name): ?string
+    public function columnType($name, $type = null)
+    {
+        if ($type !== null) {
+            $this->setColumnType($name, $type);
+        }
+
+        return $this->getColumnType($name);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getColumnType($name)
     {
         if (!isset($this->_columns[$name])) {
             return null;
@@ -372,9 +399,9 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function setColumnType(string $name, string $type)
+    public function setColumnType($name, $type)
     {
         if (!isset($this->_columns[$name])) {
             return $this;
@@ -387,17 +414,17 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function hasColumn(string $name): bool
+    public function hasColumn($name)
     {
         return isset($this->_columns[$name]);
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function baseColumnType(string $column): ?string
+    public function baseColumnType($column)
     {
         if (isset($this->_columns[$column]['baseType'])) {
             return $this->_columns[$column]['baseType'];
@@ -409,37 +436,37 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
             return null;
         }
 
-        if (TypeFactory::getMap($type)) {
-            $type = TypeFactory::build($type)->getBaseType();
+        if (Type::map($type)) {
+            $type = Type::build($type)->getBaseType();
         }
 
         return $this->_columns[$column]['baseType'] = $type;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function typeMap(): array
+    public function typeMap()
     {
         return $this->_typeMap;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function isNullable(string $name): bool
+    public function isNullable($name)
     {
         if (!isset($this->_columns[$name])) {
             return true;
         }
 
-        return $this->_columns[$name]['null'] === true;
+        return ($this->_columns[$name]['null'] === true);
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function defaultValues(): array
+    public function defaultValues()
     {
         $defaults = [];
         foreach ($this->_columns as $name => $data) {
@@ -456,9 +483,10 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @throws \Cake\Database\Exception
      */
-    public function addIndex(string $name, $attrs)
+    public function addIndex($name, $attrs)
     {
         if (is_string($attrs)) {
             $attrs = ['type' => $attrs];
@@ -468,19 +496,10 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
         unset($attrs['references'], $attrs['update'], $attrs['delete']);
 
         if (!in_array($attrs['type'], static::$_validIndexTypes, true)) {
-            throw new Exception(sprintf(
-                'Invalid index type "%s" in index "%s" in table "%s".',
-                $attrs['type'],
-                $name,
-                $this->_table
-            ));
+            throw new Exception(sprintf('Invalid index type "%s" in index "%s" in table "%s".', $attrs['type'], $name, $this->_table));
         }
         if (empty($attrs['columns'])) {
-            throw new Exception(sprintf(
-                'Index "%s" in table "%s" must have at least one column.',
-                $name,
-                $this->_table
-            ));
+            throw new Exception(sprintf('Index "%s" in table "%s" must have at least one column.', $name, $this->_table));
         }
         $attrs['columns'] = (array)$attrs['columns'];
         foreach ($attrs['columns'] as $field) {
@@ -501,17 +520,29 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function indexes(): array
+    public function indexes()
     {
         return array_keys($this->_indexes);
     }
 
     /**
-     * @inheritDoc
+     * Read information about an index based on name.
+     *
+     * @param string $name The name of the index.
+     * @return array|null Array of index data, or null
+     * @deprecated 3.5.0 Use getIndex() instead.
      */
-    public function getIndex(string $name): ?array
+    public function index($name)
+    {
+        return $this->getIndex($name);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getIndex($name)
     {
         if (!isset($this->_indexes[$name])) {
             return null;
@@ -521,23 +552,11 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * Get the column(s) used for the primary key.
-     *
-     * @return array Column name(s) for the primary key. An
-     *   empty list will be returned when the table has no primary key.
-     * @deprecated 4.0.0 Renamed to getPrimaryKey()
+     * {@inheritDoc}
      */
-    public function primaryKey(): array
+    public function primaryKey()
     {
-        return $this->getPrimarykey();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function getPrimaryKey(): array
-    {
-        foreach ($this->_constraints as $data) {
+        foreach ($this->_constraints as $name => $data) {
             if ($data['type'] === static::CONSTRAINT_PRIMARY) {
                 return $data['columns'];
             }
@@ -547,9 +566,10 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
+     * @throws \Cake\Database\Exception
      */
-    public function addConstraint(string $name, $attrs)
+    public function addConstraint($name, $attrs)
     {
         if (is_string($attrs)) {
             $attrs = ['type' => $attrs];
@@ -603,9 +623,9 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function dropConstraint(string $name)
+    public function dropConstraint($name)
     {
         if (isset($this->_constraints[$name])) {
             unset($this->_constraints[$name]);
@@ -619,7 +639,7 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
      *
      * @return bool
      */
-    public function hasAutoincrement(): bool
+    public function hasAutoincrement()
     {
         foreach ($this->_columns as $column) {
             if (isset($column['autoIncrement']) && $column['autoIncrement']) {
@@ -637,39 +657,45 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
      * @return array
      * @throws \Cake\Database\Exception When foreign key definition is not valid.
      */
-    protected function _checkForeignKey(array $attrs): array
+    protected function _checkForeignKey($attrs)
     {
         if (count($attrs['references']) < 2) {
             throw new Exception('References must contain a table and column.');
         }
         if (!in_array($attrs['update'], static::$_validForeignKeyActions)) {
-            throw new Exception(sprintf(
-                'Update action is invalid. Must be one of %s',
-                implode(',', static::$_validForeignKeyActions)
-            ));
+            throw new Exception(sprintf('Update action is invalid. Must be one of %s', implode(',', static::$_validForeignKeyActions)));
         }
         if (!in_array($attrs['delete'], static::$_validForeignKeyActions)) {
-            throw new Exception(sprintf(
-                'Delete action is invalid. Must be one of %s',
-                implode(',', static::$_validForeignKeyActions)
-            ));
+            throw new Exception(sprintf('Delete action is invalid. Must be one of %s', implode(',', static::$_validForeignKeyActions)));
         }
 
         return $attrs;
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function constraints(): array
+    public function constraints()
     {
         return array_keys($this->_constraints);
     }
 
     /**
-     * @inheritDoc
+     * Read information about a constraint based on name.
+     *
+     * @param string $name The name of the constraint.
+     * @return array|null Array of constraint data, or null
+     * @deprecated 3.5.0 Use getConstraint() instead.
      */
-    public function getConstraint(string $name): ?array
+    public function constraint($name)
+    {
+        return $this->getConstraint($name);
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getConstraint($name)
     {
         if (!isset($this->_constraints[$name])) {
             return null;
@@ -679,9 +705,9 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function setOptions(array $options)
+    public function setOptions($options)
     {
         $this->_options = array_merge($this->_options, $options);
 
@@ -689,17 +715,36 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function getOptions(): array
+    public function getOptions()
     {
         return $this->_options;
     }
 
     /**
-     * @inheritDoc
+     * Get/set the options for a table.
+     *
+     * Table options allow you to set platform specific table level options.
+     * For example the engine type in MySQL.
+     *
+     * @deprecated 3.4.0 Use setOptions()/getOptions() instead.
+     * @param array|null $options The options to set, or null to read options.
+     * @return $this|array Either the TableSchema instance, or an array of options when reading.
      */
-    public function setTemporary(bool $temporary)
+    public function options($options = null)
+    {
+        if ($options !== null) {
+            return $this->setOptions($options);
+        }
+
+        return $this->getOptions();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function setTemporary($temporary)
     {
         $this->_temporary = (bool)$temporary;
 
@@ -707,17 +752,33 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function isTemporary(): bool
+    public function isTemporary()
     {
         return $this->_temporary;
     }
 
     /**
-     * @inheritDoc
+     * Get/Set whether the table is temporary in the database
+     *
+     * @deprecated 3.4.0 Use setTemporary()/isTemporary() instead.
+     * @param bool|null $temporary whether or not the table is to be temporary
+     * @return $this|bool Either the TableSchema instance, the current temporary setting
      */
-    public function createSql(Connection $connection): array
+    public function temporary($temporary = null)
+    {
+        if ($temporary !== null) {
+            return $this->setTemporary($temporary);
+        }
+
+        return $this->isTemporary();
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function createSql(Connection $connection)
     {
         $dialect = $connection->getDriver()->schemaDialect();
         $columns = $constraints = $indexes = [];
@@ -735,9 +796,9 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function dropSql(Connection $connection): array
+    public function dropSql(Connection $connection)
     {
         $dialect = $connection->getDriver()->schemaDialect();
 
@@ -745,9 +806,9 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function truncateSql(Connection $connection): array
+    public function truncateSql(Connection $connection)
     {
         $dialect = $connection->getDriver()->schemaDialect();
 
@@ -755,9 +816,9 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function addConstraintSql(Connection $connection): array
+    public function addConstraintSql(Connection $connection)
     {
         $dialect = $connection->getDriver()->schemaDialect();
 
@@ -765,30 +826,15 @@ class TableSchema implements TableSchemaInterface, SqlGeneratorInterface
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function dropConstraintSql(Connection $connection): array
+    public function dropConstraintSql(Connection $connection)
     {
         $dialect = $connection->getDriver()->schemaDialect();
 
         return $dialect->dropConstraintSql($this);
     }
-
-    /**
-     * Returns an array of the table schema.
-     *
-     * @return array
-     */
-    public function __debugInfo(): array
-    {
-        return [
-            'table' => $this->_table,
-            'columns' => $this->_columns,
-            'indexes' => $this->_indexes,
-            'constraints' => $this->_constraints,
-            'options' => $this->_options,
-            'typeMap' => $this->_typeMap,
-            'temporary' => $this->_temporary,
-        ];
-    }
 }
+
+// @deprecated Add backwards compat alias.
+class_alias('Cake\Database\Schema\TableSchema', 'Cake\Database\Schema\Table');

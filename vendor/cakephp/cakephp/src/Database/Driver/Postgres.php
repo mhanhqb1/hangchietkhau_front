@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -18,21 +16,13 @@ namespace Cake\Database\Driver;
 
 use Cake\Database\Dialect\PostgresDialectTrait;
 use Cake\Database\Driver;
-use Cake\Database\PostgresCompiler;
-use Cake\Database\QueryCompiler;
 use PDO;
 
-/**
- * Class Postgres
- */
 class Postgres extends Driver
 {
-    use PostgresDialectTrait;
 
-    /**
-     * @var int|null Maximum alias length or null if no limit
-     */
-    protected const MAX_ALIAS_LENGTH = 63;
+    use PDODriverTrait;
+    use PostgresDialectTrait;
 
     /**
      * Base configuration settings for Postgres driver
@@ -58,7 +48,7 @@ class Postgres extends Driver
      *
      * @return bool true on success
      */
-    public function connect(): bool
+    public function connect()
     {
         if ($this->_connection) {
             return true;
@@ -67,7 +57,7 @@ class Postgres extends Driver
         $config['flags'] += [
             PDO::ATTR_PERSISTENT => $config['persistent'],
             PDO::ATTR_EMULATE_PREPARES => false,
-            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+            PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION
         ];
         if (empty($config['unix_socket'])) {
             $dsn = "pgsql:host={$config['host']};port={$config['port']};dbname={$config['database']}";
@@ -76,7 +66,7 @@ class Postgres extends Driver
         }
 
         $this->_connect($dsn, $config);
-        $this->_connection = $connection = $this->getConnection();
+        $this->_connection = $connection = $this->connection();
         if (!empty($config['encoding'])) {
             $this->setEncoding($config['encoding']);
         }
@@ -101,9 +91,9 @@ class Postgres extends Driver
      *
      * @return bool true if it is valid to use this driver
      */
-    public function enabled(): bool
+    public function enabled()
     {
-        return in_array('pgsql', PDO::getAvailableDrivers(), true);
+        return in_array('pgsql', PDO::getAvailableDrivers());
     }
 
     /**
@@ -112,7 +102,7 @@ class Postgres extends Driver
      * @param string $encoding The encoding to use.
      * @return void
      */
-    public function setEncoding(string $encoding): void
+    public function setEncoding($encoding)
     {
         $this->connect();
         $this->_connection->exec('SET NAMES ' . $this->_connection->quote($encoding));
@@ -125,27 +115,17 @@ class Postgres extends Driver
      * @param string $schema The schema names to set `search_path` to.
      * @return void
      */
-    public function setSchema(string $schema): void
+    public function setSchema($schema)
     {
         $this->connect();
         $this->_connection->exec('SET search_path TO ' . $this->_connection->quote($schema));
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function supportsDynamicConstraints(): bool
+    public function supportsDynamicConstraints()
     {
         return true;
-    }
-
-    /**
-     * {@inheritDoc}
-     *
-     * @return \Cake\Database\PostgresCompiler
-     */
-    public function newCompiler(): QueryCompiler
-    {
-        return new PostgresCompiler();
     }
 }

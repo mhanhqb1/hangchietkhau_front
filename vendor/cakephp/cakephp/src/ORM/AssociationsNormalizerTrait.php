@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -22,14 +20,15 @@ namespace Cake\ORM;
  */
 trait AssociationsNormalizerTrait
 {
+
     /**
      * Returns an array out of the original passed associations list where dot notation
      * is transformed into nested arrays so that they can be parsed by other routines
      *
-     * @param array|string $associations The array of included associations.
+     * @param array $associations The array of included associations.
      * @return array An array having dot notation transformed into nested arrays
      */
-    protected function _normalizeAssociations($associations): array
+    protected function _normalizeAssociations($associations)
     {
         $result = [];
         foreach ((array)$associations as $table => $options) {
@@ -63,6 +62,6 @@ trait AssociationsNormalizerTrait
             $pointer['associated'][$table] = $options + $pointer['associated'][$table];
         }
 
-        return $result['associated'] ?? $result;
+        return isset($result['associated']) ? $result['associated'] : $result;
     }
 }

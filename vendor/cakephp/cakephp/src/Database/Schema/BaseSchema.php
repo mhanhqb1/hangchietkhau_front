@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,8 +14,7 @@ declare(strict_types=1);
  */
 namespace Cake\Database\Schema;
 
-use Cake\Database\DriverInterface;
-use InvalidArgumentException;
+use Cake\Database\Driver;
 
 /**
  * Base class for schema implementations.
@@ -27,10 +24,11 @@ use InvalidArgumentException;
  */
 abstract class BaseSchema
 {
+
     /**
      * The driver instance being used.
      *
-     * @var \Cake\Database\DriverInterface
+     * @var \Cake\Database\Driver
      */
     protected $_driver;
 
@@ -40,9 +38,9 @@ abstract class BaseSchema
      * This constructor will connect the driver so that methods like columnSql() and others
      * will fail when the driver has not been connected.
      *
-     * @param \Cake\Database\DriverInterface $driver The driver to use.
+     * @param \Cake\Database\Driver $driver The driver to use.
      */
-    public function __construct(DriverInterface $driver)
+    public function __construct(Driver $driver)
     {
         $driver->connect();
         $this->_driver = $driver;
@@ -51,10 +49,10 @@ abstract class BaseSchema
     /**
      * Generate an ON clause for a foreign key.
      *
-     * @param string $on The on clause
+     * @param string|null $on The on clause
      * @return string
      */
-    protected function _foreignOnClause(string $on): string
+    protected function _foreignOnClause($on)
     {
         if ($on === TableSchema::ACTION_SET_NULL) {
             return 'SET NULL';
@@ -71,17 +69,15 @@ abstract class BaseSchema
         if ($on === TableSchema::ACTION_NO_ACTION) {
             return 'NO ACTION';
         }
-
-        throw new InvalidArgumentException('Invalid value for "on": ' . $on);
     }
 
     /**
      * Convert string on clauses to the abstract ones.
      *
      * @param string $clause The on clause to convert.
-     * @return string
+     * @return string|null
      */
-    protected function _convertOnClause(string $clause): string
+    protected function _convertOnClause($clause)
     {
         if ($clause === 'CASCADE' || $clause === 'RESTRICT') {
             return strtolower($clause);
@@ -100,7 +96,7 @@ abstract class BaseSchema
      * @param string|array $references The referenced columns of a foreign key constraint statement
      * @return string
      */
-    protected function _convertConstraintColumns($references): string
+    protected function _convertConstraintColumns($references)
     {
         if (is_string($references)) {
             return $this->_driver->quoteIdentifier($references);
@@ -118,7 +114,7 @@ abstract class BaseSchema
      * @param \Cake\Database\Schema\TableSchema $schema Schema instance
      * @return array SQL statements to drop a table.
      */
-    public function dropTableSql(TableSchema $schema): array
+    public function dropTableSql(TableSchema $schema)
     {
         $sql = sprintf(
             'DROP TABLE %s',
@@ -135,7 +131,7 @@ abstract class BaseSchema
      *    getting tables from.
      * @return array An array of (sql, params) to execute.
      */
-    abstract public function listTablesSql(array $config): array;
+    abstract public function listTablesSql($config);
 
     /**
      * Generate the SQL to describe a table.
@@ -144,7 +140,7 @@ abstract class BaseSchema
      * @param array $config The connection configuration.
      * @return array An array of (sql, params) to execute.
      */
-    abstract public function describeColumnSql(string $tableName, array $config): array;
+    abstract public function describeColumnSql($tableName, $config);
 
     /**
      * Generate the SQL to describe the indexes in a table.
@@ -153,7 +149,7 @@ abstract class BaseSchema
      * @param array $config The connection configuration.
      * @return array An array of (sql, params) to execute.
      */
-    abstract public function describeIndexSql(string $tableName, array $config): array;
+    abstract public function describeIndexSql($tableName, $config);
 
     /**
      * Generate the SQL to describe the foreign keys in a table.
@@ -162,7 +158,7 @@ abstract class BaseSchema
      * @param array $config The connection configuration.
      * @return array An array of (sql, params) to execute.
      */
-    abstract public function describeForeignKeySql(string $tableName, array $config): array;
+    abstract public function describeForeignKeySql($tableName, $config);
 
     /**
      * Generate the SQL to describe table options
@@ -171,7 +167,7 @@ abstract class BaseSchema
      * @param array $config The connection configuration.
      * @return array SQL statements to get options for a table.
      */
-    public function describeOptionsSql(string $tableName, array $config): array
+    public function describeOptionsSql($tableName, $config)
     {
         return ['', ''];
     }
@@ -183,7 +179,7 @@ abstract class BaseSchema
      * @param array $row The row data from `describeColumnSql`.
      * @return void
      */
-    abstract public function convertColumnDescription(TableSchema $schema, array $row): void;
+    abstract public function convertColumnDescription(TableSchema $schema, $row);
 
     /**
      * Convert an index description results into abstract schema indexes or constraints.
@@ -193,7 +189,7 @@ abstract class BaseSchema
      * @param array $row The row data from `describeIndexSql`.
      * @return void
      */
-    abstract public function convertIndexDescription(TableSchema $schema, array $row): void;
+    abstract public function convertIndexDescription(TableSchema $schema, $row);
 
     /**
      * Convert a foreign key description into constraints on the Table object.
@@ -203,7 +199,7 @@ abstract class BaseSchema
      * @param array $row The row data from `describeForeignKeySql`.
      * @return void
      */
-    abstract public function convertForeignKeyDescription(TableSchema $schema, array $row): void;
+    abstract public function convertForeignKeyDescription(TableSchema $schema, $row);
 
     /**
      * Convert options data into table options.
@@ -212,7 +208,7 @@ abstract class BaseSchema
      * @param array $row The row of data.
      * @return void
      */
-    public function convertOptionsDescription(TableSchema $schema, array $row): void
+    public function convertOptionsDescription(TableSchema $schema, $row)
     {
     }
 
@@ -220,17 +216,12 @@ abstract class BaseSchema
      * Generate the SQL to create a table.
      *
      * @param \Cake\Database\Schema\TableSchema $schema Table instance.
-     * @param string[] $columns The columns to go inside the table.
-     * @param string[] $constraints The constraints for the table.
-     * @param string[] $indexes The indexes for the table.
-     * @return string[] SQL statements to create a table.
+     * @param array $columns The columns to go inside the table.
+     * @param array $constraints The constraints for the table.
+     * @param array $indexes The indexes for the table.
+     * @return array SQL statements to create a table.
      */
-    abstract public function createTableSql(
-        TableSchema $schema,
-        array $columns,
-        array $constraints,
-        array $indexes
-    ): array;
+    abstract public function createTableSql(TableSchema $schema, $columns, $constraints, $indexes);
 
     /**
      * Generate the SQL fragment for a single column in a table.
@@ -239,7 +230,7 @@ abstract class BaseSchema
      * @param string $name The name of the column.
      * @return string SQL fragment.
      */
-    abstract public function columnSql(TableSchema $schema, string $name): string;
+    abstract public function columnSql(TableSchema $schema, $name);
 
     /**
      * Generate the SQL queries needed to add foreign key constraints to the table
@@ -247,7 +238,7 @@ abstract class BaseSchema
      * @param \Cake\Database\Schema\TableSchema $schema The table instance the foreign key constraints are.
      * @return array SQL fragment.
      */
-    abstract public function addConstraintSql(TableSchema $schema): array;
+    abstract public function addConstraintSql(TableSchema $schema);
 
     /**
      * Generate the SQL queries needed to drop foreign key constraints from the table
@@ -255,7 +246,7 @@ abstract class BaseSchema
      * @param \Cake\Database\Schema\TableSchema $schema The table instance the foreign key constraints are.
      * @return array SQL fragment.
      */
-    abstract public function dropConstraintSql(TableSchema $schema): array;
+    abstract public function dropConstraintSql(TableSchema $schema);
 
     /**
      * Generate the SQL fragments for defining table constraints.
@@ -264,7 +255,7 @@ abstract class BaseSchema
      * @param string $name The name of the column.
      * @return string SQL fragment.
      */
-    abstract public function constraintSql(TableSchema $schema, string $name): string;
+    abstract public function constraintSql(TableSchema $schema, $name);
 
     /**
      * Generate the SQL fragment for a single index in a table.
@@ -273,7 +264,7 @@ abstract class BaseSchema
      * @param string $name The name of the column.
      * @return string SQL fragment.
      */
-    abstract public function indexSql(TableSchema $schema, string $name): string;
+    abstract public function indexSql(TableSchema $schema, $name);
 
     /**
      * Generate the SQL to truncate a table.
@@ -281,5 +272,5 @@ abstract class BaseSchema
      * @param \Cake\Database\Schema\TableSchema $schema Table instance.
      * @return array SQL statements to truncate a table.
      */
-    abstract public function truncateTableSql(TableSchema $schema): array;
+    abstract public function truncateTableSql(TableSchema $schema);
 }

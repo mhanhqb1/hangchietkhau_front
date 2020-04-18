@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -55,6 +53,7 @@ use Cake\Utility\Hash;
  */
 class IniConfig implements ConfigEngineInterface
 {
+
     use FileConfigTrait;
 
     /**
@@ -79,7 +78,7 @@ class IniConfig implements ConfigEngineInterface
      * @param string|null $section Only get one section, leave null to parse and fetch
      *     all sections in the ini file.
      */
-    public function __construct(?string $path = null, ?string $section = null)
+    public function __construct($path = null, $section = null)
     {
         if ($path === null) {
             $path = CONFIG;
@@ -97,7 +96,7 @@ class IniConfig implements ConfigEngineInterface
      * @throws \Cake\Core\Exception\Exception when files don't exist.
      *  Or when files contain '..' as this could lead to abusive reads.
      */
-    public function read(string $key): array
+    public function read($key)
     {
         $file = $this->_getFilePath($key, true);
 
@@ -125,7 +124,7 @@ class IniConfig implements ConfigEngineInterface
      * @param array $values Values to be exploded.
      * @return array Array of values exploded
      */
-    protected function _parseNestedValues(array $values): array
+    protected function _parseNestedValues($values)
     {
         foreach ($values as $key => $value) {
             if ($value === '1') {
@@ -135,7 +134,7 @@ class IniConfig implements ConfigEngineInterface
                 $value = false;
             }
             unset($values[$key]);
-            if (strpos((string)$key, '.') !== false) {
+            if (strpos($key, '.') !== false) {
                 $values = Hash::insert($values, $key, $value);
             } else {
                 $values[$key] = $value;
@@ -153,12 +152,11 @@ class IniConfig implements ConfigEngineInterface
      * @param array $data The data to convert to ini file.
      * @return bool Success.
      */
-    public function dump(string $key, array $data): bool
+    public function dump($key, array $data)
     {
         $result = [];
         foreach ($data as $k => $value) {
             $isSection = false;
-            /** @psalm-suppress InvalidArrayAccess */
             if ($k[0] !== '[') {
                 $result[] = "[$k]";
                 $isSection = true;
@@ -186,7 +184,7 @@ class IniConfig implements ConfigEngineInterface
      * @param mixed $value Value to export.
      * @return string String value for ini file.
      */
-    protected function _value($value): string
+    protected function _value($value)
     {
         if ($value === null) {
             return 'null';

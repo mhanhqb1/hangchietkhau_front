@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -22,7 +20,6 @@ use Cake\ORM\Association;
 use Cake\ORM\Association\Loader\SelectLoader;
 use Cake\ORM\Table;
 use Cake\Utility\Inflector;
-use Closure;
 use RuntimeException;
 
 /**
@@ -33,20 +30,21 @@ use RuntimeException;
  */
 class BelongsTo extends Association
 {
+
     /**
      * Valid strategies for this type of association
      *
-     * @var string[]
+     * @var array
      */
     protected $_validStrategies = [
         self::STRATEGY_JOIN,
-        self::STRATEGY_SELECT,
+        self::STRATEGY_SELECT
     ];
 
     /**
      * Gets the name of the field representing the foreign key to the target table.
      *
-     * @return string|string[]
+     * @return string
      */
     public function getForeignKey()
     {
@@ -66,7 +64,7 @@ class BelongsTo extends Association
      * @param array $options The options for the original delete.
      * @return bool Success.
      */
-    public function cascadeDelete(EntityInterface $entity, array $options = []): bool
+    public function cascadeDelete(EntityInterface $entity, array $options = [])
     {
         return true;
     }
@@ -76,9 +74,9 @@ class BelongsTo extends Association
      *
      * @return string
      */
-    protected function _propertyName(): string
+    protected function _propertyName()
     {
-        [, $name] = pluginSplit($this->_name);
+        list(, $name) = pluginSplit($this->_name);
 
         return Inflector::underscore(Inflector::singularize($name));
     }
@@ -91,7 +89,7 @@ class BelongsTo extends Association
      * @param \Cake\ORM\Table $side The potential Table with ownership
      * @return bool
      */
-    public function isOwningSide(Table $side): bool
+    public function isOwningSide(Table $side)
     {
         return $side === $this->getTarget();
     }
@@ -101,7 +99,7 @@ class BelongsTo extends Association
      *
      * @return string
      */
-    public function type(): string
+    public function type()
     {
         return self::MANY_TO_ONE;
     }
@@ -113,8 +111,9 @@ class BelongsTo extends Association
      * `$options`
      *
      * @param \Cake\Datasource\EntityInterface $entity an entity from the source table
-     * @param array $options options to be passed to the save method in the target table
-     * @return \Cake\Datasource\EntityInterface|false false if $entity could not be saved, otherwise it returns
+     * @param array|\ArrayObject $options options to be passed to the save method in
+     * the target table
+     * @return bool|\Cake\Datasource\EntityInterface false if $entity could not be saved, otherwise it returns
      * the saved entity
      * @see \Cake\ORM\Table::save()
      */
@@ -145,11 +144,11 @@ class BelongsTo extends Association
      * clause for getting the results on the target table.
      *
      * @param array $options list of options passed to attachTo method
-     * @return \Cake\Database\Expression\IdentifierExpression[]
+     * @return array
      * @throws \RuntimeException if the number of columns in the foreignKey do not
      * match the number of columns in the target table primaryKey
      */
-    protected function _joinCondition(array $options): array
+    protected function _joinCondition($options)
     {
         $conditions = [];
         $tAlias = $this->_name;
@@ -184,9 +183,9 @@ class BelongsTo extends Association
     /**
      * {@inheritDoc}
      *
-     * @return \Closure
+     * @return callable
      */
-    public function eagerLoader(array $options): Closure
+    public function eagerLoader(array $options)
     {
         $loader = new SelectLoader([
             'alias' => $this->getAlias(),
@@ -196,7 +195,7 @@ class BelongsTo extends Association
             'bindingKey' => $this->getBindingKey(),
             'strategy' => $this->getStrategy(),
             'associationType' => $this->type(),
-            'finder' => [$this, 'find'],
+            'finder' => [$this, 'find']
         ]);
 
         return $loader->buildEagerLoader($options);

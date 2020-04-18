@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -14,32 +12,35 @@ declare(strict_types=1);
  */
 namespace DebugKit\Panel;
 
-use Cake\Event\EventInterface;
+use Cake\Controller\Controller;
+use Cake\Event\Event;
 use DebugKit\DebugPanel;
 
 /**
  * Provides debug information on the Current request params.
+ *
  */
 class RequestPanel extends DebugPanel
 {
+
     /**
      * Data collection callback.
      *
-     * @param \Cake\Event\EventInterface $event The shutdown event.
+     * @param \Cake\Event\Event $event The shutdown event.
      * @return void
      */
-    public function shutdown(EventInterface $event)
+    public function shutdown(Event $event)
     {
-        /** @var \Cake\Controller\Controller $controller */
-        $controller = $event->getSubject();
-        $request = $controller->getRequest();
+        /* @var Controller $controller */
+        $controller = $event->subject();
+        $request = $controller->request;
         $this->_data = [
-            'params' => $request->getAttribute("params"),
-            'query' => $request->getQueryParams(),
-            'data' => $request->getData(),
-            'cookie' => $request->getCookieParams(),
+            'params' => $request->params,
+            'query' => $request->query,
+            'data' => $request->data,
+            'cookie' => $request->cookies,
             'get' => $_GET,
-            'matchedRoute' => $request->getParam('_matchedRoute'),
+            'matchedRoute' => $request->param('_matchedRoute'),
             'headers' => ['response' => headers_sent($file, $line), 'file' => $file, 'line' => $line],
         ];
     }

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -21,12 +19,13 @@ namespace Cake\View\Form;
  */
 interface ContextInterface
 {
+
     /**
      * Get the fields used in the context as a primary key.
      *
-     * @return string[]
+     * @return array
      */
-    public function getPrimaryKey(): array;
+    public function primaryKey();
 
     /**
      * Returns true if the passed field name is part of the primary key for this context
@@ -35,14 +34,14 @@ interface ContextInterface
      *   is needed for.
      * @return bool
      */
-    public function isPrimaryKey(string $field): bool;
+    public function isPrimaryKey($field);
 
     /**
      * Returns whether or not this form is for a create operation.
      *
      * @return bool
      */
-    public function isCreate(): bool;
+    public function isCreate();
 
     /**
      * Get the current value for a given field.
@@ -56,11 +55,10 @@ interface ContextInterface
      *      context's schema should be used if it's not explicitly provided.
      *
      * @param string $field A dot separated path to the field a value
-     * @param array $options Options.
      *   is needed for.
      * @return mixed
      */
-    public function val(string $field, array $options = []);
+    public function val($field);
 
     /**
      * Check if a given field is 'required'.
@@ -68,41 +66,25 @@ interface ContextInterface
      * In this context class, this is simply defined by the 'required' array.
      *
      * @param string $field A dot separated path to check required-ness for.
-     * @return bool|null
+     * @return bool
      */
-    public function isRequired(string $field): ?bool;
+    public function isRequired($field);
 
     /**
-     * Gets the default "required" error message for a field
+     * Get the fieldnames of the top level object in this context.
      *
-     * @param string $field A dot separated path to the field name
-     * @return string|null
+     * @return array A list of the field names in the context.
      */
-    public function getRequiredMessage(string $field): ?string;
-
-    /**
-     * Get maximum length of a field from model validation.
-     *
-     * @param string $field Field name.
-     * @return int|null
-     */
-    public function getMaxLength(string $field): ?int;
-
-    /**
-     * Get the field names of the top level object in this context.
-     *
-     * @return string[] A list of the field names in the context.
-     */
-    public function fieldNames(): array;
+    public function fieldNames();
 
     /**
      * Get the abstract field type for a given field name.
      *
      * @param string $field A dot separated path to get a schema type for.
-     * @return string|null An abstract data type or null.
-     * @see \Cake\Database\TypeFactory
+     * @return null|string An abstract data type or null.
+     * @see \Cake\Database\Type
      */
-    public function type(string $field): ?string;
+    public function type($field);
 
     /**
      * Get an associative array of other attributes for a field name.
@@ -110,7 +92,7 @@ interface ContextInterface
      * @param string $field A dot separated path to get additional data on.
      * @return array An array of data describing the additional attributes on a field.
      */
-    public function attributes(string $field): array;
+    public function attributes($field);
 
     /**
      * Check whether or not a field has an error attached to it
@@ -118,7 +100,7 @@ interface ContextInterface
      * @param string $field A dot separated path to check errors on.
      * @return bool Returns true if the errors for the field are not empty.
      */
-    public function hasError(string $field): bool;
+    public function hasError($field);
 
     /**
      * Get the errors for a given field
@@ -127,5 +109,5 @@ interface ContextInterface
      * @return array An array of errors, an empty array will be returned when the
      *    context has no errors.
      */
-    public function error(string $field): array;
+    public function error($field);
 }

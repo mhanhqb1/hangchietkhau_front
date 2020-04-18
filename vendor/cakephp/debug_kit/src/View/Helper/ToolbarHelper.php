@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -24,12 +22,11 @@ use Iterator;
  * Provides Base methods for content specific debug toolbar helpers.
  * Acts as a facade for other toolbars helpers as well.
  *
- * @property \Cake\View\Helper\HtmlHelper $Html
- * @property \Cake\View\Helper\FormHelper $Form
- * @property \Cake\View\Helper\UrlHelper $Url
+ * @since         DebugKit 0.1
  */
 class ToolbarHelper extends Helper
 {
+
     /**
      * helpers property
      *
@@ -48,7 +45,6 @@ class ToolbarHelper extends Helper
      * set sorting of values
      *
      * @param bool $sort Whether or not sort values by key
-     * @return void
      */
     public function setSort($sort)
     {
@@ -66,13 +62,8 @@ class ToolbarHelper extends Helper
      * the path.
      * @return string
      */
-    public function makeNeatArray(
-        $values,
-        $openDepth = 0,
-        $currentDepth = 0,
-        $doubleEncode = false,
-        ?\SplObjectStorage $currentAncestors = null
-    ) {
+    public function makeNeatArray($values, $openDepth = 0, $currentDepth = 0, $doubleEncode = false, \SplObjectStorage $currentAncestors = null)
+    {
         if ($currentAncestors === null) {
             $ancestors = new \SplObjectStorage();
         } elseif (is_object($values)) {
@@ -110,7 +101,7 @@ class ToolbarHelper extends Helper
             if (is_array($value) && count($value) > 0) {
                 $out .= '(array)';
             } elseif (is_object($value)) {
-                $out .= '(' . (get_class($value) ?: 'object') . ')';
+                $out .= '(object)';
             }
             if ($value === null) {
                 $value = '(null)';
@@ -128,16 +119,17 @@ class ToolbarHelper extends Helper
                 $value = 'function';
             }
 
-            if (is_object($value) && $ancestors->contains($value)) {
+            $isObject = is_object($value);
+            if ($isObject && $ancestors->contains($value)) {
+                $isObject = false;
                 $value = ' - recursion';
             }
 
-            if (
-                (
+            if ((
                 $value instanceof ArrayAccess ||
                 $value instanceof Iterator ||
                 is_array($value) ||
-                is_object($value)
+                $isObject
                 ) && !empty($value)
             ) {
                 $out .= $this->makeNeatArray($value, $openDepth, $nextDepth, $doubleEncode, $ancestors);

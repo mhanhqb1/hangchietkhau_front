@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,8 +14,9 @@ declare(strict_types=1);
  */
 namespace Cake\Database\Type;
 
-use Cake\Database\DriverInterface;
-use Cake\I18n\Number;
+use Cake\Database\Driver;
+use Cake\Database\Type;
+use Cake\Database\TypeInterface;
 use PDO;
 use RuntimeException;
 
@@ -26,14 +25,37 @@ use RuntimeException;
  *
  * Use to convert float/decimal data between PHP and the database types.
  */
-class FloatType extends BaseType implements BatchCastingInterface
+class FloatType extends Type implements TypeInterface
 {
+    /**
+     * Identifier name for this type.
+     *
+     * (This property is declared here again so that the inheritance from
+     * Cake\Database\Type can be removed in the future.)
+     *
+     * @var string|null
+     */
+    protected $_name;
+
+    /**
+     * Constructor.
+     *
+     * (This method is declared here again so that the inheritance from
+     * Cake\Database\Type can be removed in the future.)
+     *
+     * @param string|null $name The name identifying this type
+     */
+    public function __construct($name = null)
+    {
+        $this->_name = $name;
+    }
+
     /**
      * The class to use for representing number objects
      *
      * @var string
      */
-    public static $numberClass = Number::class;
+    public static $numberClass = 'Cake\I18n\Number';
 
     /**
      * Whether numbers should be parsed using a locale aware parser
@@ -46,11 +68,11 @@ class FloatType extends BaseType implements BatchCastingInterface
     /**
      * Convert integer data into the database format.
      *
-     * @param mixed $value The value to convert.
-     * @param \Cake\Database\DriverInterface $driver The driver instance to convert with.
+     * @param string|resource $value The value to convert.
+     * @param \Cake\Database\Driver $driver The driver instance to convert with.
      * @return float|null
      */
-    public function toDatabase($value, DriverInterface $driver): ?float
+    public function toDatabase($value, Driver $driver)
     {
         if ($value === null || $value === '') {
             return null;
@@ -62,72 +84,57 @@ class FloatType extends BaseType implements BatchCastingInterface
     /**
      * Convert float values to PHP integers
      *
-     * @param mixed $value The value to convert.
-     * @param \Cake\Database\DriverInterface $driver The driver instance to convert with.
+     * @param null|string|resource $value The value to convert.
+     * @param \Cake\Database\Driver $driver The driver instance to convert with.
      * @return float|null
      * @throws \Cake\Core\Exception\Exception
      */
-    public function toPHP($value, DriverInterface $driver): ?float
+    public function toPHP($value, Driver $driver)
     {
         if ($value === null) {
             return null;
+        }
+        if (is_array($value)) {
+            return 1.0;
         }
 
         return (float)$value;
     }
 
     /**
-     * {@inheritDoc}
-     *
-     * @return array
-     */
-    public function manyToPHP(array $values, array $fields, DriverInterface $driver): array
-    {
-        foreach ($fields as $field) {
-            if (!isset($values[$field])) {
-                continue;
-            }
-
-            $values[$field] = (float)$values[$field];
-        }
-
-        return $values;
-    }
-
-    /**
      * Get the correct PDO binding type for integer data.
      *
      * @param mixed $value The value being bound.
-     * @param \Cake\Database\DriverInterface $driver The driver.
+     * @param \Cake\Database\Driver $driver The driver.
      * @return int
      */
-    public function toStatement($value, DriverInterface $driver): int
+    public function toStatement($value, Driver $driver)
     {
         return PDO::PARAM_STR;
     }
 
     /**
-     * Marshals request data into PHP floats.
+     * Marshalls request data into PHP floats.
      *
      * @param mixed $value The value to convert.
-     * @return string|float|null Converted value.
+     * @return float|null Converted value.
      */
     public function marshal($value)
     {
         if ($value === null || $value === '') {
             return null;
         }
-        if (is_string($value) && $this->_useLocaleParser) {
-            return $this->_parseValue($value);
-        }
         if (is_numeric($value)) {
             return (float)$value;
         }
-        if (is_string($value) && preg_match('/^[0-9,. ]+$/', $value)) {
-            return $value;
+        if (is_string($value) && $this->_useLocaleParser) {
+            return $this->_parseValue($value);
+        }
+        if (is_array($value)) {
+            return 1.0;
         }
 
-        return null;
+        return $value;
     }
 
     /**
@@ -137,16 +144,15 @@ class FloatType extends BaseType implements BatchCastingInterface
      * @param bool $enable Whether or not to enable
      * @return $this
      */
-    public function useLocaleParser(bool $enable = true)
+    public function useLocaleParser($enable = true)
     {
         if ($enable === false) {
             $this->_useLocaleParser = $enable;
 
             return $this;
         }
-        if (
-            static::$numberClass === Number::class ||
-            is_subclass_of(static::$numberClass, Number::class)
+        if (static::$numberClass === 'Cake\I18n\Number' ||
+            is_subclass_of(static::$numberClass, 'Cake\I18n\Number')
         ) {
             $this->_useLocaleParser = $enable;
 
@@ -164,7 +170,7 @@ class FloatType extends BaseType implements BatchCastingInterface
      * @param string $value The value to parse and convert to an float.
      * @return float
      */
-    protected function _parseValue(string $value): float
+    protected function _parseValue($value)
     {
         $class = static::$numberClass;
 

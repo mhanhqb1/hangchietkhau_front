@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -17,8 +15,6 @@ declare(strict_types=1);
 namespace Cake\Database\Dialect;
 
 use Cake\Database\Expression\FunctionExpression;
-use Cake\Database\Query;
-use Cake\Database\Schema\BaseSchema;
 use Cake\Database\Schema\PostgresSchema;
 use Cake\Database\SqlDialectTrait;
 
@@ -30,6 +26,7 @@ use Cake\Database\SqlDialectTrait;
  */
 trait PostgresDialectTrait
 {
+
     use SqlDialectTrait;
 
     /**
@@ -59,7 +56,7 @@ trait PostgresDialectTrait
      * @param \Cake\Database\Query $query The query to be transformed
      * @return \Cake\Database\Query
      */
-    protected function _transformDistinct(Query $query): Query
+    protected function _transformDistinct($query)
     {
         return $query;
     }
@@ -71,7 +68,7 @@ trait PostgresDialectTrait
      * @param \Cake\Database\Query $query The query to translate.
      * @return \Cake\Database\Query
      */
-    protected function _insertQueryTranslator(Query $query): Query
+    protected function _insertQueryTranslator($query)
     {
         if (!$query->clause('epilog')) {
             $query->epilog('RETURNING *');
@@ -86,12 +83,12 @@ trait PostgresDialectTrait
      *
      * @return array
      */
-    protected function _expressionTranslators(): array
+    protected function _expressionTranslators()
     {
         $namespace = 'Cake\Database\Expression';
 
         return [
-            $namespace . '\FunctionExpression' => '_transformFunctionExpression',
+            $namespace . '\FunctionExpression' => '_transformFunctionExpression'
         ];
     }
 
@@ -103,7 +100,7 @@ trait PostgresDialectTrait
      *   to postgres SQL.
      * @return void
      */
-    protected function _transformFunctionExpression(FunctionExpression $expression): void
+    protected function _transformFunctionExpression(FunctionExpression $expression)
     {
         switch ($expression->getName()) {
             case 'CONCAT':
@@ -135,9 +132,6 @@ trait PostgresDialectTrait
             case 'NOW':
                 $expression->setName('LOCALTIMESTAMP')->add([' 0 ' => 'literal']);
                 break;
-            case 'RAND':
-                $expression->setName('RANDOM');
-                break;
             case 'DATE_ADD':
                 $expression
                     ->setName('')
@@ -166,11 +160,11 @@ trait PostgresDialectTrait
      * Used by Cake\Database\Schema package to reflect schema and
      * generate schema.
      *
-     * @return \Cake\Database\Schema\BaseSchema
+     * @return \Cake\Database\Schema\PostgresSchema
      */
-    public function schemaDialect(): BaseSchema
+    public function schemaDialect()
     {
-        if ($this->_schemaDialect === null) {
+        if (!$this->_schemaDialect) {
             $this->_schemaDialect = new PostgresSchema($this);
         }
 
@@ -178,17 +172,17 @@ trait PostgresDialectTrait
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function disableForeignKeySQL(): string
+    public function disableForeignKeySQL()
     {
         return 'SET CONSTRAINTS ALL DEFERRED';
     }
 
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function enableForeignKeySQL(): string
+    public function enableForeignKeySQL()
     {
         return 'SET CONSTRAINTS ALL IMMEDIATE';
     }

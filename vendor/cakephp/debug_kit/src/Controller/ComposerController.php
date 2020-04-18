@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -15,6 +13,10 @@ declare(strict_types=1);
  */
 namespace DebugKit\Controller;
 
+use Cake\Controller\Controller;
+use Cake\Core\Configure;
+use Cake\Event\Event;
+use Cake\Network\Exception\NotFoundException;
 use Cake\View\JsonView;
 use Composer\Console\Application;
 use Symfony\Component\Console\Input\ArrayInput;
@@ -23,16 +25,31 @@ use Symfony\Component\Console\Output\BufferedOutput;
 /**
  * Provides utility features need by the toolbar.
  */
-class ComposerController extends DebugKitController
+class ComposerController extends Controller
 {
+
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
-    public function initialize(): void
+    public function initialize()
     {
         parent::initialize();
         $this->loadComponent('RequestHandler');
-        $this->viewBuilder()->setClassName(JsonView::class);
+        $this->viewBuilder()->className(JsonView::class);
+    }
+
+    /**
+     * Before filter handler.
+     *
+     * @param \Cake\Event\Event $event The event.
+     * @return void
+     * @throws \Cake\Network\Exception\NotFoundException
+     */
+    public function beforeFilter(Event $event)
+    {
+        if (!Configure::read('debug')) {
+            throw new NotFoundException();
+        }
     }
 
     /**
@@ -48,7 +65,7 @@ class ComposerController extends DebugKitController
         $input = new ArrayInput([
             'command' => 'outdated',
             '--no-interaction' => true,
-            '--direct' => filter_var($this->request->getData('direct'), FILTER_VALIDATE_BOOLEAN),
+            '--direct' => (bool)$this->request->data('direct'),
         ]);
 
         $output = $this->executeComposerCommand($input);
@@ -56,7 +73,7 @@ class ComposerController extends DebugKitController
         $packages = [];
         foreach ($dependencies as $dependency) {
             if (strpos($dependency, 'php_network_getaddresses') !== false) {
-                throw new \RuntimeException(__d('debug_kit', 'You have to be connected to the internet'));
+                throw new \RuntimeException('You have to be connected to the internet');
             }
             if (strpos($dependency, '<highlight>') !== false) {
                 $packages['semverCompatible'][] = $dependency;
@@ -71,13 +88,15 @@ class ComposerController extends DebugKitController
             $packages['bcBreaks'] = trim(implode("\n", $packages['bcBreaks']));
         }
 
-        $this->viewBuilder()->setOption('serialize', ['packages']);
-        $this->set('packages', $packages);
+        $this->set([
+            '_serialize' => ['packages'],
+            'packages' => $packages,
+        ]);
     }
 
     /**
-     * @param \Symfony\Component\Console\Input\ArrayInput $input An array describing the command input
-     * @return \Symfony\Component\Console\Output\BufferedOutput Aa Console command buffered result
+     * @param ArrayInput $input An array describing the command input
+     * @return BufferedOutput Aa Console command buffered result
      */
     private function executeComposerCommand(ArrayInput $input)
     {
@@ -99,7 +118,7 @@ class ComposerController extends DebugKitController
 
         // Restore environment
         chdir($dir);
-        set_time_limit((int)$timeLimit);
+        set_time_limit($timeLimit);
         ini_set('memory_limit', $memoryLimit);
 
         return $output;

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -18,6 +16,7 @@ namespace Cake\I18n;
 
 use Cake\Chronos\Date as ChronosDate;
 use IntlDateFormatter;
+use JsonSerializable;
 
 /**
  * Extends the Date class provided by Chronos.
@@ -26,13 +25,13 @@ use IntlDateFormatter;
  *
  * This object provides an immutable variant of Cake\I18n\Date
  */
-class FrozenDate extends ChronosDate implements I18nDateTimeInterface
+class FrozenDate extends ChronosDate implements JsonSerializable
 {
     use DateFormatTrait;
 
     /**
      * The format to use when formatting a time using `Cake\I18n\Date::i18nFormat()`
-     * and `__toString`. This format is also used by `parseDateTime()`.
+     * and `__toString`
      *
      * The format should be either the formatting constants from IntlDateFormatter as
      * described in (https://secure.php.net/manual/en/class.intldateformatter.php) or a pattern
@@ -46,22 +45,6 @@ class FrozenDate extends ChronosDate implements I18nDateTimeInterface
      * @see \Cake\I18n\DateFormatTrait::i18nFormat()
      */
     protected static $_toStringFormat = [IntlDateFormatter::SHORT, -1];
-
-    /**
-     * The format to use when converting this object to JSON.
-     *
-     * The format should be either the formatting constants from IntlDateFormatter as
-     * described in (https://secure.php.net/manual/en/class.intldateformatter.php) or a pattern
-     * as specified in (http://www.icu-project.org/apiref/icu4c/classSimpleDateFormat.html#details)
-     *
-     * It is possible to provide an array of 2 constants. In this case, the first position
-     * will be used for formatting the date part of the object and the second position
-     * will be used to format the time part.
-     *
-     * @var string|array|int
-     * @see \Cake\I18n\Time::i18nFormat()
-     */
-    protected static $_jsonEncodeFormat = "yyyy-MM-dd";
 
     /**
      * The format to use when formatting a time using `Cake\I18n\Date::timeAgoInWords()`
@@ -92,7 +75,7 @@ class FrozenDate extends ChronosDate implements I18nDateTimeInterface
      * The format to use when formatting a time using `Date::timeAgoInWords()`
      * and the difference is less than `Date::$wordEnd`
      *
-     * @var string[]
+     * @var array
      * @see \Cake\I18n\Date::timeAgoInWords()
      */
     public static $wordAccuracy = [
@@ -114,29 +97,6 @@ class FrozenDate extends ChronosDate implements I18nDateTimeInterface
     public static $wordEnd = '+1 month';
 
     /**
-     * Create a new Date instance.
-     *
-     * You can specify the timezone for the $time parameter. This timezone will
-     * not be used in any future modifications to the Date instance.
-     *
-     * The `$timezone` parameter is ignored if `$time` is a DateTimeInterface
-     * instance.
-     *
-     * Date instances lack time components, however due to limitations in PHP's
-     * internal Datetime object the time will always be set to 00:00:00, and the
-     * timezone will always be UTC. Normalizing the timezone allows for
-     * subtraction/addition to have deterministic results.
-     *
-     * @param string|int|\DateTimeInterface|null $time Fixed or relative time
-     * @param \DateTimeZone|string|null $tz The timezone in which the date is taken.
-     *                                  Ignored if `$time` is a DateTimeInterface instance.
-     */
-    public function __construct($time = 'now', $tz = null)
-    {
-        parent::__construct($time, $tz);
-    }
-
-    /**
      * Returns either a relative or a formatted absolute date depending
      * on the difference between the current date and this object.
      *
@@ -145,10 +105,10 @@ class FrozenDate extends ChronosDate implements I18nDateTimeInterface
      * - `from` => another Date object representing the "now" date
      * - `format` => a fall back format if the relative time is longer than the duration specified by end
      * - `accuracy` => Specifies how accurate the date should be described (array)
-     *     - year =>   The format if years > 0   (default "day")
-     *     - month =>  The format if months > 0  (default "day")
-     *     - week =>   The format if weeks > 0   (default "day")
-     *     - day =>    The format if weeks > 0   (default "day")
+     *    - year =>   The format if years > 0   (default "day")
+     *    - month =>  The format if months > 0  (default "day")
+     *    - week =>   The format if weeks > 0   (default "day")
+     *    - day =>    The format if weeks > 0   (default "day")
      * - `end` => The end of relative date telling
      * - `relativeString` => The printf compatible string when outputting relative date
      * - `absoluteString` => The printf compatible string when outputting absolute date
@@ -170,9 +130,8 @@ class FrozenDate extends ChronosDate implements I18nDateTimeInterface
      * @param array $options Array of options.
      * @return string Relative time string.
      */
-    public function timeAgoInWords(array $options = []): string
+    public function timeAgoInWords(array $options = [])
     {
-        /** @psalm-suppress UndefinedInterfaceMethod */
-        return static::getDiffFormatter()->dateAgoInWords($this, $options);
+        return static::diffFormatter()->dateAgoInWords($this, $options);
     }
 }

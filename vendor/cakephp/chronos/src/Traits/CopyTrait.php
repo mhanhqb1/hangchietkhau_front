@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
  *
@@ -14,8 +12,6 @@ declare(strict_types=1);
  */
 namespace Cake\Chronos\Traits;
 
-use Cake\Chronos\ChronosInterface;
-
 /**
  * Provides methods for copying datetime objects.
  *
@@ -28,7 +24,7 @@ trait CopyTrait
      *
      * @return static
      */
-    public function copy(): ChronosInterface
+    public function copy()
     {
         return static::instance($this);
     }

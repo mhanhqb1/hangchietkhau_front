@@ -36,12 +36,10 @@ class LicensesCommand extends BaseCommand
                 new InputOption('format', 'f', InputOption::VALUE_REQUIRED, 'Format of the output: text or json', 'text'),
                 new InputOption('no-dev', null, InputOption::VALUE_NONE, 'Disables search in require-dev packages.'),
             ))
-            ->setHelp(
-                <<<EOT
+            ->setHelp(<<<EOT
 The license command displays detailed information about the licenses of
 the installed dependencies.
 
-Read more at https://getcomposer.org/doc/03-cli.md#licenses
 EOT
             )
         ;
@@ -76,13 +74,8 @@ EOT
 
                 $table = new Table($output);
                 $table->setStyle('compact');
-                $tableStyle = $table->getStyle();
-                if (method_exists($tableStyle, 'setVerticalBorderChars')) {
-                    $tableStyle->setVerticalBorderChars('');
-                } else {
-                    $tableStyle->setVerticalBorderChar('');
-                }
-                $tableStyle->setCellRowContentFormat('%s  ');
+                $table->getStyle()->setVerticalBorderChar('');
+                $table->getStyle()->setCellRowContentFormat('%s  ');
                 $table->setHeaders(array('Name', 'Version', 'License'));
                 foreach ($packages as $package) {
                     $table->addRow(array(
@@ -114,8 +107,6 @@ EOT
             default:
                 throw new \RuntimeException(sprintf('Unsupported format "%s".  See help for supported formats.', $format));
         }
-
-        return 0;
     }
 
     /**

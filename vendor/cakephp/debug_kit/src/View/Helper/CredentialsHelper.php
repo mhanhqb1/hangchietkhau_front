@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -15,6 +13,9 @@ declare(strict_types=1);
  */
 namespace DebugKit\View\Helper;
 
+use Cake\Core\Configure;
+use Cake\Error\Debugger;
+use Cake\Filesystem\File;
 use Cake\Utility\Hash;
 use Cake\View\Helper;
 
@@ -22,12 +23,10 @@ use Cake\View\Helper;
  * CredentialsHelper
  *
  * Filter sensitive data in screen, data will be displayed on mouse click
- *
- * @property \Cake\View\Helper\HtmlHelper $Html
- * @property \DebugKit\View\Helper\ToolbarHelper $Toolbar
  */
 class CredentialsHelper extends Helper
 {
+
     /**
      * Helpers property
      *
@@ -58,7 +57,7 @@ class CredentialsHelper extends Helper
         $link = $this->Html->tag('a', '******', [
             'class' => 'filtered-credentials',
             'title' => h($credentials),
-            'onclick' => "this.innerHTML = this.title",
+            'onclick' => "this.innerHTML = this.title"
         ]);
 
         return h($protocol) . $link . '@' . h($tail);

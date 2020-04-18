@@ -248,14 +248,4 @@ class Foo
     public function inheritedCaseInsentive()
     {
     }
-
-    /**
-     * Some sentence.
-     *
-     * @param \Foo&\Bar $param Some Param.
-     * @return void
-     */
-    public function intersectionType($param)
-    {
-    }
 }

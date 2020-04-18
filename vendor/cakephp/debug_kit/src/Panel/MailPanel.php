@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (http://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (http://cakefoundation.org)
@@ -16,7 +14,7 @@ namespace DebugKit\Panel;
 
 use ArrayObject;
 use Cake\Core\App;
-use Cake\Mailer\TransportFactory;
+use Cake\Mailer\Email;
 use DebugKit\DebugPanel;
 use DebugKit\Mailer\Transport\DebugKitTransport;
 use ReflectionClass;
@@ -26,10 +24,11 @@ use ReflectionClass;
  */
 class MailPanel extends DebugPanel
 {
+
     /**
      * The list of emails produced during the request
      *
-     * @var \ArrayObject
+     * @var ArrayObject
      */
     protected $emailLog;
 
@@ -40,31 +39,28 @@ class MailPanel extends DebugPanel
      */
     public function initialize()
     {
-        $reflection = new ReflectionClass(TransportFactory::class);
-        $property = $reflection->getProperty('_config');
+        $reflection = new ReflectionClass(Email::class);
+        $property = $reflection->getProperty('_transportConfig');
         $property->setAccessible(true);
         $configs = $property->getValue();
 
-        $log = $this->emailLog = new ArrayObject();
+        $log = $this->emailLog = new ArrayObject;
 
-        foreach ($configs as $name => $transport) {
+        foreach ($configs as $name => &$transport) {
             if (is_object($transport)) {
-                if (!$transport instanceof DebugKitTransport) {
-                    $configs[$name] = new DebugKitTransport(['debugKitLog' => $log], $transport);
-                }
+                $configs[$name] = new DebugKitTransport(['debugKitLog' => $log], $transport);
                 continue;
             }
 
             $className = App::className($transport['className'], 'Mailer/Transport', 'Transport');
-            if (!$className || $className === DebugKitTransport::class) {
+
+            if (!$className) {
                 continue;
             }
 
             $transport['originalClassName'] = $transport['className'];
             $transport['className'] = 'DebugKit.DebugKit';
             $transport['debugKitLog'] = $log;
-
-            $configs[$name] = $transport;
         }
         $property->setValue($configs);
     }
@@ -77,7 +73,7 @@ class MailPanel extends DebugPanel
     public function data()
     {
         return [
-            'emails' => isset($this->emailLog) ? $this->emailLog->getArrayCopy() : [],
+            'emails' => isset($this->emailLog) ? $this->emailLog->getArrayCopy() : []
         ];
     }
 
@@ -88,7 +84,7 @@ class MailPanel extends DebugPanel
      */
     public function summary()
     {
-        if (empty($this->emailLog)) {
+        if (count($this->emailLog) === 0) {
             return '';
         }
 

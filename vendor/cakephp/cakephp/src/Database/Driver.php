@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP(tm) : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,33 +14,17 @@ declare(strict_types=1);
  */
 namespace Cake\Database;
 
-use Cake\Core\App;
-use Cake\Database\Exception\MissingConnectionException;
-use Cake\Database\Schema\BaseSchema;
-use Cake\Database\Schema\TableSchema;
-use Cake\Database\Statement\PDOStatement;
-use Closure;
 use InvalidArgumentException;
 use PDO;
-use PDOException;
 
 /**
  * Represents a database driver containing all specificities for
  * a database engine including its SQL dialect.
+ *
+ * @property \Cake\Datasource\ConnectionInterface $_connection
  */
-abstract class Driver implements DriverInterface
+abstract class Driver
 {
-    /**
-     * @var int|null Maximum alias length or null if no limit
-     */
-    protected const MAX_ALIAS_LENGTH = null;
-
-    /**
-     * Instance of PDO.
-     *
-     * @var \PDO
-     */
-    protected $_connection;
 
     /**
      * Configuration data.
@@ -73,7 +55,7 @@ abstract class Driver implements DriverInterface
      * @param array $config The configuration for the driver.
      * @throws \InvalidArgumentException
      */
-    public function __construct(array $config = [])
+    public function __construct($config = [])
     {
         if (empty($config['username']) && !empty($config['login'])) {
             throw new InvalidArgumentException(
@@ -90,217 +72,177 @@ abstract class Driver implements DriverInterface
     /**
      * Establishes a connection to the database server
      *
-     * @param string $dsn A Driver-specific PDO-DSN
-     * @param array $config configuration to be used for creating connection
      * @return bool true on success
      */
-    protected function _connect(string $dsn, array $config): bool
-    {
-        try {
-            $connection = new PDO(
-                $dsn,
-                $config['username'] ?: null,
-                $config['password'] ?: null,
-                $config['flags']
-            );
-        } catch (PDOException $e) {
-            throw new MissingConnectionException(
-                [
-                    'driver' => App::shortName(static::class, 'Database/Driver'),
-                    'reason' => $e->getMessage(),
-                ],
-                null,
-                $e
-            );
-        }
-        $this->setConnection($connection);
-
-        return true;
-    }
+    abstract public function connect();
 
     /**
-     * @inheritDoc
-     */
-    abstract public function connect(): bool;
-
-    /**
-     * @inheritDoc
-     */
-    public function disconnect(): void
-    {
-        /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
-        $this->_connection = null;
-    }
-
-    /**
-     * Get the internal PDO connection instance.
+     * Disconnects from database server
      *
+     * @return void
+     */
+    abstract public function disconnect();
+
+    /**
+     * Returns correct connection resource or object that is internally used
+     * If first argument is passed,
+     *
+     * @param null|\PDO $connection The connection object
      * @return \PDO
      */
-    public function getConnection()
-    {
-        if ($this->_connection === null) {
-            throw new MissingConnectionException([
-                'driver' => App::shortName(static::class, 'Database/Driver'),
-                'reason' => 'Unknown',
-            ]);
-        }
-
-        return $this->_connection;
-    }
+    abstract public function connection($connection = null);
 
     /**
-     * Set the internal PDO connection instance.
+     * Returns whether php is able to use this driver for connecting to database
      *
-     * @param \PDO $connection PDO instance.
-     * @return $this
-     * @psalm-suppress MoreSpecificImplementedParamType
+     * @return bool true if it is valid to use this driver
      */
-    public function setConnection($connection)
-    {
-        $this->_connection = $connection;
-
-        return $this;
-    }
+    abstract public function enabled();
 
     /**
-     * @inheritDoc
+     * Prepares a sql statement to be executed
+     *
+     * @param string|\Cake\Database\Query $query The query to convert into a statement.
+     * @return \Cake\Database\StatementInterface
      */
-    abstract public function enabled(): bool;
+    abstract public function prepare($query);
 
     /**
-     * @inheritDoc
+     * Starts a transaction
+     *
+     * @return bool true on success, false otherwise
      */
-    public function prepare($query): StatementInterface
-    {
-        $this->connect();
-        $statement = $this->_connection->prepare($query instanceof Query ? $query->sql() : $query);
-
-        return new PDOStatement($statement, $this);
-    }
+    abstract public function beginTransaction();
 
     /**
-     * @inheritDoc
+     * Commits a transaction
+     *
+     * @return bool true on success, false otherwise
      */
-    public function beginTransaction(): bool
-    {
-        $this->connect();
-        if ($this->_connection->inTransaction()) {
-            return true;
-        }
-
-        return $this->_connection->beginTransaction();
-    }
+    abstract public function commitTransaction();
 
     /**
-     * @inheritDoc
+     * Rollsback a transaction
+     *
+     * @return bool true on success, false otherwise
      */
-    public function commitTransaction(): bool
-    {
-        $this->connect();
-        if (!$this->_connection->inTransaction()) {
-            return false;
-        }
-
-        return $this->_connection->commit();
-    }
+    abstract public function rollbackTransaction();
 
     /**
-     * @inheritDoc
+     * Get the SQL for releasing a save point.
+     *
+     * @param string $name The table name
+     * @return string
      */
-    public function rollbackTransaction(): bool
-    {
-        $this->connect();
-        if (!$this->_connection->inTransaction()) {
-            return false;
-        }
-
-        return $this->_connection->rollBack();
-    }
+    abstract public function releaseSavePointSQL($name);
 
     /**
-     * @inheritDoc
+     * Get the SQL for creating a save point.
+     *
+     * @param string $name The table name
+     * @return string
      */
-    abstract public function releaseSavePointSQL($name): string;
+    abstract public function savePointSQL($name);
 
     /**
-     * @inheritDoc
+     * Get the SQL for rollingback a save point.
+     *
+     * @param string $name The table name
+     * @return string
      */
-    abstract public function savePointSQL($name): string;
+    abstract public function rollbackSavePointSQL($name);
 
     /**
-     * @inheritDoc
+     * Get the SQL for disabling foreign keys
+     *
+     * @return string
      */
-    abstract public function rollbackSavePointSQL($name): string;
+    abstract public function disableForeignKeySQL();
 
     /**
-     * @inheritDoc
+     * Get the SQL for enabling foreign keys
+     *
+     * @return string
      */
-    abstract public function disableForeignKeySQL(): string;
+    abstract public function enableForeignKeySQL();
 
     /**
-     * @inheritDoc
+     * Returns whether the driver supports adding or dropping constraints
+     * to already created tables.
+     *
+     * @return bool true if driver supports dynamic constraints
      */
-    abstract public function enableForeignKeySQL(): string;
+    abstract public function supportsDynamicConstraints();
 
     /**
-     * @inheritDoc
+     * Returns whether this driver supports save points for nested transactions
+     *
+     * @return bool true if save points are supported, false otherwise
      */
-    abstract public function supportsDynamicConstraints(): bool;
-
-    /**
-     * @inheritDoc
-     */
-    public function supportsSavePoints(): bool
+    public function supportsSavePoints()
     {
         return true;
     }
 
     /**
-     * {@inheritDoc}
+     * Returns a value in a safe representation to be used in a query string
      *
      * @param mixed $value The value to quote.
-     * @param int $type Type to be used for determining kind of quoting to perform.
+     * @param string $type Type to be used for determining kind of quoting to perform
      * @return string
      */
-    public function quote($value, $type = PDO::PARAM_STR): string
-    {
-        $this->connect();
-
-        return $this->_connection->quote($value, $type);
-    }
+    abstract public function quote($value, $type);
 
     /**
-     * Checks if the driver supports quoting, as PDO_ODBC does not support it.
+     * Checks if the driver supports quoting
      *
      * @return bool
      */
-    public function supportsQuoting(): bool
+    public function supportsQuoting()
     {
-        $this->connect();
-
-        return $this->_connection->getAttribute(PDO::ATTR_DRIVER_NAME) !== 'odbc';
+        return true;
     }
 
     /**
-     * @inheritDoc
+     * Returns a callable function that will be used to transform a passed Query object.
+     * This function, in turn, will return an instance of a Query object that has been
+     * transformed to accommodate any specificities of the SQL dialect in use.
+     *
+     * @param string $type the type of query to be transformed
+     * (select, insert, update, delete)
+     * @return callable
      */
-    abstract public function queryTranslator(string $type): Closure;
+    abstract public function queryTranslator($type);
 
     /**
-     * @inheritDoc
+     * Get the schema dialect.
+     *
+     * Used by Cake\Database\Schema package to reflect schema and
+     * generate schema.
+     *
+     * If all the tables that use this Driver specify their
+     * own schemas, then this may return null.
+     *
+     * @return \Cake\Database\Schema\BaseSchema
      */
-    abstract public function schemaDialect(): BaseSchema;
+    abstract public function schemaDialect();
 
     /**
-     * @inheritDoc
+     * Quotes a database identifier (a column name, table name, etc..) to
+     * be used safely in queries without the risk of using reserved words
+     *
+     * @param string $identifier The identifier expression to quote.
+     * @return string
      */
-    abstract public function quoteIdentifier(string $identifier): string;
+    abstract public function quoteIdentifier($identifier);
 
     /**
-     * @inheritDoc
+     * Escapes values for use in schema definitions.
+     *
+     * @param mixed $value The value to escape.
+     * @return string String for use in schema definitions.
      */
-    public function schemaValue($value): string
+    public function schemaValue($value)
     {
         if ($value === null) {
             return 'NULL';
@@ -314,18 +256,9 @@ abstract class Driver implements DriverInterface
         if (is_float($value)) {
             return str_replace(',', '.', (string)$value);
         }
-        /** @psalm-suppress InvalidArgument */
-        if (
-            (
-                is_int($value) ||
-                $value === '0'
-            ) ||
-            (
-                is_numeric($value) &&
-                strpos($value, ',') === false &&
-                substr($value, 0, 1) !== '0' &&
-                strpos($value, 'e') === false
-            )
+        if ((is_int($value) || $value === '0') || (
+            is_numeric($value) && strpos($value, ',') === false &&
+            $value[0] !== '0' && strpos($value, 'e') === false)
         ) {
             return (string)$value;
         }
@@ -334,77 +267,92 @@ abstract class Driver implements DriverInterface
     }
 
     /**
-     * @inheritDoc
+     * Returns the schema name that's being used
+     *
+     * @return string
      */
-    public function schema(): string
+    public function schema()
     {
         return $this->_config['schema'];
     }
 
     /**
-     * @inheritDoc
+     * Returns last id generated for a table or sequence in database
+     *
+     * @param string|null $table table name or sequence to get last insert value from
+     * @param string|null $column the name of the column representing the primary key
+     * @return string|int
      */
-    public function lastInsertId(?string $table = null, ?string $column = null)
+    public function lastInsertId($table = null, $column = null)
     {
-        $this->connect();
-
-        if ($this->_connection instanceof PDO) {
-            return $this->_connection->lastInsertId($table);
-        }
-
         return $this->_connection->lastInsertId($table, $column);
     }
 
     /**
-     * @inheritDoc
+     * Check whether or not the driver is connected.
+     *
+     * @return bool
      */
-    public function isConnected(): bool
+    public function isConnected()
     {
-        if ($this->_connection === null) {
-            $connected = false;
-        } else {
-            try {
-                $connected = (bool)$this->_connection->query('SELECT 1');
-            } catch (PDOException $e) {
-                $connected = false;
-            }
-        }
-
-        return $connected;
+        return $this->_connection !== null;
     }
 
     /**
-     * @inheritDoc
+     * Sets whether or not this driver should automatically quote identifiers
+     * in queries.
+     *
+     * @param bool $enable Whether to enable auto quoting
+     * @return $this
      */
-    public function enableAutoQuoting(bool $enable = true)
+    public function enableAutoQuoting($enable = true)
     {
-        $this->_autoQuoting = $enable;
+        $this->_autoQuoting = (bool)$enable;
 
         return $this;
     }
 
     /**
-     * @inheritDoc
+     * Returns whether or not this driver should automatically quote identifiers
+     * in queries
+     *
+     * @return bool
      */
-    public function disableAutoQuoting()
-    {
-        $this->_autoQuoting = false;
-
-        return $this;
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function isAutoQuotingEnabled(): bool
+    public function isAutoQuotingEnabled()
     {
         return $this->_autoQuoting;
     }
 
     /**
-     * @inheritDoc
+     * Returns whether or not this driver should automatically quote identifiers
+     * in queries
+     *
+     * If called with a boolean argument, it will toggle the auto quoting setting
+     * to the passed value
+     *
+     * @deprecated 3.4.0 use enableAutoQuoting()/isAutoQuotingEnabled() instead.
+     * @param bool|null $enable Whether to enable auto quoting
+     * @return bool
      */
-    public function compileQuery(Query $query, ValueBinder $generator): array
+    public function autoQuoting($enable = null)
+    {
+        if ($enable !== null) {
+            $this->enableAutoQuoting($enable);
+        }
+
+        return $this->isAutoQuotingEnabled();
+    }
+
+    /**
+     * Transforms the passed query to this Driver's dialect and returns an instance
+     * of the transformed query and the full compiled SQL string
+     *
+     * @param \Cake\Database\Query $query The query to compile.
+     * @param \Cake\Database\ValueBinder $generator The value binder to use.
+     * @return array containing 2 entries. The first entity is the transformed query
+     * and the second one the compiled SQL
+     */
+    public function compileQuery(Query $query, ValueBinder $generator)
     {
         $processor = $this->newCompiler();
         $translator = $this->queryTranslator($query->type());
@@ -414,36 +362,13 @@ abstract class Driver implements DriverInterface
     }
 
     /**
-     * @inheritDoc
+     * Returns an instance of a QueryCompiler
+     *
+     * @return \Cake\Database\QueryCompiler
      */
-    public function newCompiler(): QueryCompiler
+    public function newCompiler()
     {
         return new QueryCompiler();
-    }
-
-    /**
-     * @inheritDoc
-     */
-    public function newTableSchema(string $table, array $columns = []): TableSchema
-    {
-        $className = TableSchema::class;
-        if (isset($this->_config['tableSchema'])) {
-            /** @var class-string<\Cake\Database\Schema\TableSchema> $className */
-            $className = $this->_config['tableSchema'];
-        }
-
-        return new $className($table, $columns);
-    }
-
-    /**
-     * Returns the maximum alias length allowed.
-     * This can be different than the maximum identifier length for columns.
-     *
-     * @return int|null Maximum alias length or null if no limit
-     */
-    public function getMaxAliasLength(): ?int
-    {
-        return static::MAX_ALIAS_LENGTH;
     }
 
     /**
@@ -451,7 +376,6 @@ abstract class Driver implements DriverInterface
      */
     public function __destruct()
     {
-        /** @psalm-suppress PossiblyNullPropertyAssignmentValue */
         $this->_connection = null;
     }
 
@@ -461,10 +385,10 @@ abstract class Driver implements DriverInterface
      *
      * @return array
      */
-    public function __debugInfo(): array
+    public function __debugInfo()
     {
         return [
-            'connected' => $this->_connection !== null,
+            'connected' => $this->_connection !== null
         ];
     }
 }

@@ -1,6 +1,4 @@
 <?php
-declare(strict_types=1);
-
 /**
  * CakePHP : Rapid Development Framework (https://cakephp.org)
  * Copyright (c) Cake Software Foundation, Inc. (https://cakefoundation.org)
@@ -16,8 +14,7 @@ declare(strict_types=1);
  */
 namespace Cake\Event\Decorator;
 
-use Cake\Core\Exception\Exception;
-use Cake\Event\EventInterface;
+use Cake\Event\Event;
 use RuntimeException;
 
 /**
@@ -31,8 +28,9 @@ use RuntimeException;
  */
 class SubjectFilterDecorator extends AbstractDecorator
 {
+
     /**
-     * @inheritDoc
+     * {@inheritDoc}
      */
     public function __invoke()
     {
@@ -47,11 +45,12 @@ class SubjectFilterDecorator extends AbstractDecorator
     /**
      * Checks if the event is triggered for this listener.
      *
-     * @param \Cake\Event\EventInterface $event Event object.
+     * @param \Cake\Event\Event $event Event object.
      * @return bool
      */
-    public function canTrigger(EventInterface $event): bool
+    public function canTrigger(Event $event)
     {
+        $class = get_class($event->getSubject());
         if (!isset($this->_options['allowedSubject'])) {
             throw new RuntimeException(self::class . ' Missing subject filter options!');
         }
@@ -59,12 +58,6 @@ class SubjectFilterDecorator extends AbstractDecorator
             $this->_options['allowedSubject'] = [$this->_options['allowedSubject']];
         }
 
-        try {
-            $subject = $event->getSubject();
-        } catch (Exception $e) {
-            return false;
-        }
-
-        return in_array(get_class($subject), $this->_options['allowedSubject'], true);
+        return in_array($class, $this->_options['allowedSubject']);
     }
 }
