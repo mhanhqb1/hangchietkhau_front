@@ -155,6 +155,8 @@ class AppController extends Controller {
             $this->viewBuilder()->layout('ajax');
         } elseif ($this->controller == 'home') {
             $this->viewBuilder()->layout('home');
+        } elseif ($this->controller == 'login') {
+            $this->viewBuilder()->layout('default');
         } else {
             $this->viewBuilder()->layout('layout');
         }
