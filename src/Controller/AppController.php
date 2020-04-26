@@ -56,6 +56,10 @@ class AppController extends Controller {
 
         $this->loadComponent('RequestHandler');
         $this->loadComponent('Flash');
+        $this->loadComponent('Cookie', [
+            'expires' => Configure::read('Config.CookieExpires'),
+            'httpOnly' => true
+        ]);
         $this->loadComponent('Auth', array(
             'loginRedirect' => false,
             'logoutRedirect' => false,
