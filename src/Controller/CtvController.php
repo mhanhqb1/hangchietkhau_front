@@ -17,4 +17,11 @@ class CtvController extends AppController {
     public function index() {
         include ('Bus/Ctv/index.php');
     }
+    
+    /**
+     * List products
+     */
+    public function products() {
+        include ('Bus/Ctv/products.php');
+    }
 }

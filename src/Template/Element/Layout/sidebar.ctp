@@ -8,13 +8,13 @@
     </div>
     <ul class="app-menu">
         <li>
-            <a class="app-menu__item active" href="<?php echo $BASE_URL;?>/ctv">
+            <a class="app-menu__item <?php echo ($action == 'index') ? 'active' : '';?>" href="<?php echo $BASE_URL;?>/ctv">
                 <i class="app-menu__icon fa fa-dashboard"></i>
                 <span class="app-menu__label">Trang chủ</span>
             </a>
         </li>
         <li>
-            <a class="app-menu__item" href="<?php echo $BASE_URL;?>/ctv/san-pham">
+            <a class="app-menu__item <?php echo ($action == 'products') ? 'active' : '';?>" href="<?php echo $BASE_URL;?>/ctv/san-pham">
                 <i class="app-menu__icon fa fa-pie-chart"></i>
                 <span class="app-menu__label">Danh sách sản phẩm</span>
             </a>
