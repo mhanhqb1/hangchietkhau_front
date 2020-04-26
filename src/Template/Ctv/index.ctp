@@ -54,6 +54,36 @@
     <div class="col-md-6">
         <div class="tile">
             <h3 class="tile-title">Sản phẩm mới</h3>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Tên</th>
+                        <th>Giá bán</th>
+                        <th>Hoa hồng</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td>abc</td>
+                        <td>500.000đ</td>
+                        <td>100.000đ</td>
+                        <td><button class="btn btn-primary">Copy link</button></td>
+                    </tr>
+                    <tr>
+                        <td>abc</td>
+                        <td>500.000đ</td>
+                        <td>100.000đ</td>
+                        <td><button class="btn btn-primary">Copy link</button></td>
+                    </tr>
+                    <tr>
+                        <td>abc</td>
+                        <td>500.000đ</td>
+                        <td>100.000đ</td>
+                        <td><button class="btn btn-primary">Copy link</button></td>
+                    </tr>
+                </tbody>
+            </table>
         </div>
     </div>
 </div>
