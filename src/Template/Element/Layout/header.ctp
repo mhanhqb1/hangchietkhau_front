@@ -10,7 +10,7 @@
             </a>
             <ul class="dropdown-menu settings-menu dropdown-menu-right">
                 <li>
-                    <a class="dropdown-item" href="<?php echo $BASE_URL;?>/ctv/cap-nhat-thong-tin">
+                    <a class="dropdown-item" href="<?php echo $BASE_URL;?>/ctv/cap-nhat-ho-so">
                         <i class="fa fa-user fa-lg"></i> 
                         Cập nhật hồ sơ
                     </a>
