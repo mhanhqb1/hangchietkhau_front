@@ -52,6 +52,7 @@ Router::scope('/', function (RouteBuilder $routes) {
     $routes->connect('/', ['controller' => 'Home', 'action' => 'index']);
     $routes->connect('/dang-nhap', ['controller' => 'Login', 'action' => 'index']);
     $routes->connect('/dang-ky', ['controller' => 'Login', 'action' => 'register']);
+    $routes->connect('/dang-xuat', ['controller' => 'Login', 'action' => 'logout']);
 
     /**
      * ...and connect the rest of 'Pages' controller's URLs.
