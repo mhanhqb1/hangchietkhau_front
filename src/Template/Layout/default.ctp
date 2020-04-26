@@ -1,7 +1,37 @@
+<?php
+$webTitle = 'HangChietKhau.Com';
+$_description = !empty($pageDescription) ? $pageDescription : $_settings['company']['seo_description'];
+$_keyword = !empty($pageKeyword) ? $pageKeyword : $_settings['company']['seo_keyword'];
+$_title = !empty($pageTitle) ? $pageTitle : $_settings['company']['name'];
+$_image = !empty($pageImage) ? $pageImage : $_settings['company']['seo_image'];
+$_time = time();
+?>
 <!DOCTYPE html>
 <html>
     <head>
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta charset="utf-8">
+        <title>
+            <?php echo $_title; ?>
+        </title>
+        <meta content="width=device-width, initial-scale=1.0, maximum-scale=2.0, user-scalable=0" name="viewport">
+        <meta name="description" itemprop="description" content="<?php echo $_description; ?>" />
+        <meta name="keywords" content="<?php echo $_keyword; ?>">
+        
+        <meta property="og:title" content="<?php echo $_title; ?>" />
+        <meta property="og:type" content="article" />
+        <meta property="og:url" content="<?php echo $current_url;?>" />
+        <meta property="og:image" content="<?php echo $_image; ?>" />
+        <meta property="og:site_name" content="<?php echo $webTitle; ?>" />
+        <meta property="og:description" content="<?php echo $_description; ?>" />
+       
+        <meta name="twitter:card" content="summary" />
+        <meta name="twitter:title" content="<?php echo $_title; ?>" />
+        <meta name="twitter:description" content="<?php echo $_description; ?>" />
+        <meta name="twitter:image" content="<?php echo $_image; ?>" />
+        <meta itemprop="image" content="<?php echo $_image; ?>" />
+        
+        <meta name="generator" content="<?php echo $webTitle; ?>" />
         <style>
             body {font-family: Arial, Helvetica, sans-serif;}
             form {border: 3px solid #f1f1f1; background: #fff; border-radius: 5px;}

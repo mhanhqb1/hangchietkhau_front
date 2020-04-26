@@ -1,5 +1,5 @@
 <div class="container">
-    <form action="<?php echo $BASE_URL;?>/login" method="POST">
+    <form action="<?php echo $BASE_URL;?>/dang-ky" method="POST">
         <div class="imgcontainer">
           <!--<img src="img_avatar2.png" alt="Avatar" class="avatar">-->
             <h1>Đăng ký tài khoản</h1>

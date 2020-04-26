@@ -23,3 +23,5 @@ Configure::write('API.url_orders_addupdate', 'orders/addupdate');
 
 Configure::write('API.url_contacts_addupdate', 'contacts/addupdate');
 Configure::write('API.url_pages_detail', 'pages/detail');
+
+Configure::write('API.url_users_register', 'users/register');
