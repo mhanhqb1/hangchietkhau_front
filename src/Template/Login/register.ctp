@@ -4,7 +4,7 @@
           <!--<img src="img_avatar2.png" alt="Avatar" class="avatar">-->
             <h1>Đăng ký tài khoản</h1>
         </div>
-
+        <div><?php echo $this->Flash->render() ?></div>
         <div class="container">
             <input type="hidden" name="_csrfToken" value="<?php echo $this->request->getParam('_csrfToken'); ?>"/>
             <label for="name"><b>Họ tên</b></label>

@@ -1,10 +1,10 @@
 <div class="container">
-    <form action="<?php echo $BASE_URL;?>/login" method="POST">
+    <form action="<?php echo $BASE_URL;?>/dang-nhap" method="POST">
         <div class="imgcontainer">
           <!--<img src="img_avatar2.png" alt="Avatar" class="avatar">-->
             <h1>Thông tin đăng nhập</h1>
         </div>
-
+        <div><?php echo $this->Flash->render() ?></div>
         <div class="container">
             <input type="hidden" name="_csrfToken" value="<?php echo $this->request->getParam('_csrfToken'); ?>"/>
             <label for="email"><b>Email</b></label>

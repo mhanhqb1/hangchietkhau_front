@@ -93,6 +93,16 @@ $_time = time();
             .clear {
                 clear: both;
             }
+            .message {
+                width: 100%;
+                text-align: center;
+                color: #fff;
+                font-weight: bold;
+                padding: 10px 0;
+            }
+            .message.error {
+                background: #d9534f;
+            }
 
             /* Change styles for span and cancel button on extra small screens */
             @media screen and (max-width: 300px) {
