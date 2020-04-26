@@ -31,7 +31,10 @@ use App\Lib\Api;
  * @link https://book.cakephp.org/3.0/en/controllers.html#the-app-controller
  */
 class AppController extends Controller {
-
+    
+    /** @var object $AppUI Session infomation of user logged. */
+    public $AppUI = null;
+    
     /** @var object $controller Controller name. */
     public $controller = null;
 
@@ -133,6 +136,11 @@ class AppController extends Controller {
         if ($this->session->check($sessionKey)) {
             $cart = $this->session->read($sessionKey);
         }
+        
+        // Auth
+        if (isset($this->Auth) && $this->isAuthorized()) {
+            $this->set('AppUI', $this->Auth->user());
+        }
 
         // Set common param
         $this->set('cart', $cart);
@@ -146,10 +154,30 @@ class AppController extends Controller {
 
         // Set common data
         $this->set('_settings', $this->_settings);
-        $this->set('productCates', $this->getProductCates());
 
         // Set default layout
         $this->setLayout();
+    }
+    
+    /**
+     * Commont function check user is Authorized..
+     * 
+     * 
+     * @param object $user Session user logged.
+     * @return boolean  If true is authorize, and false is unauthorize.
+     */
+    public function isAuthorized($user = null) {
+        if (!isset($this->Auth)) {
+            return false;
+        }
+        if (empty($user)) {
+            $user = $this->Auth->user();
+        }
+        if (!empty($user)) {
+            $this->AppUI = $user;
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -178,22 +206,6 @@ class AppController extends Controller {
         return $data;
     }
 
-    // Get product cates
-    public function getProductCates() {
-        $productCates = array();
-        $_tmpPC = !empty($this->_settings['product_cates']) ? $this->_settings['product_cates'] : array();
-        if (!empty($_tmpPC)) {
-            foreach ($_tmpPC as $pc) {
-                if (empty($pc['parent_id'])) {
-                    $productCates[$pc['id']]['data'] = $pc;
-                } else {
-                    $productCates[$pc['parent_id']]['child_data'][$pc['id']] = $pc;
-                }
-            }
-        }
-        return $productCates;
-    }
-
     /**
      * Commont function to get params of actions in controller.
      * 
@@ -211,55 +223,4 @@ class AppController extends Controller {
         }
         return $params;
     }
-
-    /**
-     * Cart format
-     */
-    public function formatCart($cart) {
-        $total = 0;
-        $totalPrice = 0;
-        $productHtml = "";
-        foreach ($cart as $k => $v) {
-            if (in_array($k, array('html', 'total'))) {
-                continue;
-            }
-            if (!empty($v['name'])) {
-                $total += $v['qty'];
-                $totalPrice += $v['price'] * $v['qty'];
-                $_price = number_format($v['price']);
-                $_link = $this->BASE_URL . '/san-pham/' . $v['url'];
-                $productHtml .= "<li class='product-info' data-id='{$v['id']}'>
-                    <div class='p-left'>
-                        <a href='{$_link}'>
-                            <img class='img-responsive' src='{$v['image']}' alt='{$v['name']}'>
-                        </a>
-                    </div>
-                    <div class='p-right'>
-                        <p class='p-name'>{$v['name']}</p>
-                        <p class='p-rice'>{$_price}đ</p>
-                        <p>Số lượng: {$v['qty']}</p>
-                    </div>
-                </li>";
-            }
-        }
-        $cart['total'] = $total;
-        $html = "<div class='cart-block-content'>
-            <h5 class='cart-title'>Bạn hiện có {$total} sản phẩm</h5>
-            <div class='cart-block-list'>
-                <ul>
-                    {$productHtml}
-                </ul>
-            </div>
-            <div class='toal-cart'>
-                <span>Tổng tiền</span>
-                <span class='toal-price pull-right'>" . number_format($totalPrice) . "₫</span>
-            </div>
-            <div class='cart-buttons'>
-                <a href='" . $this->BASE_URL . '/thanh-toan' . "' class='btn-check-out'>Thanh toán</a>
-            </div>
-        </div>";
-        $cart['html'] = $html;
-        return $cart;
-    }
-
 }
