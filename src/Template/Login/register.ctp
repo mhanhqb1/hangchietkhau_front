@@ -17,7 +17,7 @@
             <button type="submit">Đăng ký</button>
         </div>
         <div class="form-footer" style="background-color:#f1f1f1">
-            <span class="psw">Bạn đã có tài khoản? <a href="<?php echo $BASE_URL;?>/dang-nhập">Đăng nhập</a></span>
+            <span class="psw">Bạn đã có tài khoản? <a href="<?php echo $BASE_URL;?>/dang-nhap">Đăng nhập</a></span>
             <div class="clear"></div>
         </div>
     </form>
