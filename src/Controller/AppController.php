@@ -61,6 +61,7 @@ class AppController extends Controller {
             'httpOnly' => true
         ]);
         $this->loadComponent('Auth', array(
+            'authError' => 'Vui lòng đăng nhập!',
             'loginRedirect' => false,
             'logoutRedirect' => false,
             'loginAction' => array(
