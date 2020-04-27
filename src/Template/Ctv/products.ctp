@@ -28,16 +28,20 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr>
-                                <td><img src="http://img.adsoca.com/public/share/adflex/offers/icon/c906cae994ad8091a6f6acd218279f13_8074.JPG" width="100px"/></td>
-                                <td>abc</td>
-                                <td>500.000đ</td>
-                                <td>100.000đ</td>
-                                <td>99</td>
-                                <td>Thuốc</td>
-                                <td><button class="btn btn-primary">Xem chi tiết</button></td>
-                                <td><button class="btn btn-primary">Copy link</button></td>
-                            </tr>
+                            <?php if (!empty($data)): ?>
+                                <?php foreach ($data as $v): ?>
+                                    <tr>
+                                        <td><img src="<?php echo $v['image']; ?>" width="100px"/></td>
+                                        <td><?php echo $v['name']; ?></td>
+                                        <td><?= number_format($v['price']); ?></td>
+                                        <td><?= number_format($v['wholesale_income']); ?></td>
+                                        <td><?= $v['qty']; ?></td>
+                                        <td><?= $v['cate_name']; ?></td>
+                                        <td><a target="_blank" class="btn btn-primary" href="<?php echo $BASE_URL; ?>/san-pham/<?= $v['slug']; ?>">Xem chi tiết</a></td>
+                                        <td><button class="btn btn-primary btnCopyLink" data-link="<?php echo $BASE_URL; ?>/san-pham/<?= $v['slug']; ?>?aff_id=<?= $AppUI['id']; ?>">Copy link</button></td>
+                                    </tr>
+                                <?php endforeach; ?>
+                            <?php endif; ?>
                         </tbody>
                     </table>
                 </div>
@@ -47,4 +51,35 @@
 </div>
 <script type="text/javascript">
     $('#productTable').DataTable();
+    $(document).ready(function () {
+        $('.btnCopyLink').on('click', function () {
+            var link = $(this).attr('data-link');
+            copyToClipboard(link);
+            alert('Copied');
+        });
+    });
+    function copyToClipboard(text) {
+        if (window.clipboardData && window.clipboardData.setData) {
+            // Internet Explorer-specific code path to prevent textarea being shown while dialog is visible.
+            return clipboardData.setData("Text", text);
+
+        }
+        else if (document.queryCommandSupported && document.queryCommandSupported("copy")) {
+            var textarea = document.createElement("textarea");
+            textarea.textContent = text;
+            textarea.style.position = "fixed";  // Prevent scrolling to bottom of page in Microsoft Edge.
+            document.body.appendChild(textarea);
+            textarea.select();
+            try {
+                return document.execCommand("copy");  // Security exception may be thrown by some browsers.
+            }
+            catch (ex) {
+                console.warn("Copy to clipboard failed.", ex);
+                return false;
+            }
+            finally {
+                document.body.removeChild(textarea);
+            }
+        }
+    }
 </script>
