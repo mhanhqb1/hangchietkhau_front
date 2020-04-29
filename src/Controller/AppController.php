@@ -186,8 +186,10 @@ class AppController extends Controller {
     public function setLayout() {
         if ($this->controller == 'ajax') {
             $this->viewBuilder()->layout('ajax');
-        } elseif ($this->controller == 'home') {
+        } elseif (in_array($this->controller, array('home'))) {
             $this->viewBuilder()->layout('home');
+        } elseif (in_array($this->controller, array('products'))) {
+            $this->viewBuilder()->layout('product');
         } elseif ($this->controller == 'login') {
             $this->viewBuilder()->layout('default');
         } else {

@@ -35,7 +35,7 @@ $_time = time();
         <link rel="stylesheet" type="text/css" href="<?php echo $BASE_URL; ?>/css/main.css?<?php echo $_time; ?>" media="all">
         <!-- Font-icon css-->
         <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
-
+        
         <script type="text/javascript">
             var BASE_URL = '<?php echo $BASE_URL; ?>';
             var controller = '<?php echo $controller; ?>';
@@ -44,11 +44,12 @@ $_time = time();
         </script>
         
         <!-- Essential javascripts for application to work-->
-        <script type="text/javascript" src="<?php echo $BASE_URL; ?>/js/jquery-3.3.1.min.js"></script>
-        <script type="text/javascript" src="<?php echo $BASE_URL; ?>/js/popper.min.js"></script>
-        <script type="text/javascript" src="<?php echo $BASE_URL; ?>/js/bootstrap.min.js"></script>
-        <script type="text/javascript" src="<?php echo $BASE_URL; ?>/js/main.js"></script>
-
+        <script src="<?php echo $BASE_URL; ?>/js/jquery-3.3.1.min.js"></script>
+        <script src="<?php echo $BASE_URL; ?>/js/popper.min.js"></script>
+        <script src="<?php echo $BASE_URL; ?>/js/bootstrap.min.js"></script>
+        <script src="<?php echo $BASE_URL; ?>/js/main.js?<?= $time;?>"></script>
+        
+        <script src="<?php echo $BASE_URL; ?>/js/plugins/pace.min.js"></script>
         <!-- Page specific javascripts-->
         <script type="text/javascript" src="<?php echo $BASE_URL; ?>/js/plugins/chart.js"></script>
         
@@ -57,7 +58,7 @@ $_time = time();
         <script type="text/javascript" src="<?php echo $BASE_URL; ?>/js/plugins/dataTables.bootstrap.min.js"></script>
     </head>
 
-    <body class="app sidebar-mini">
+    <body class="app sidebar-mini pace-done">
         <!-- Navbar-->
         <?php echo $this->element('Layout/header');?>
 
