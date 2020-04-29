@@ -31,6 +31,11 @@
                         <tbody>
                             <?php if (!empty($data)): ?>
                                 <?php foreach ($data as $v): ?>
+                                    <?php
+                                    if (empty($v['id'])) {
+                                        continue;
+                                    }
+                                    ?>
                                     <tr>
                                         <td><img src="<?php echo $v['image']; ?>" width="100px"/></td>
                                         <td><?php echo $v['name']; ?></td>
