@@ -25,6 +25,7 @@
                                 <th>Danh mục</th>
                                 <th></th>
                                 <th></th>
+                                <th></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -37,7 +38,8 @@
                                         <td><?= number_format($v['wholesale_income']); ?></td>
                                         <td><?= $v['qty']; ?></td>
                                         <td><?= $v['cate_name']; ?></td>
-                                        <td><a target="_blank" class="btn btn-primary" href="<?php echo $BASE_URL; ?>/san-pham/<?= $v['slug']; ?>?aff_id=<?= $AppUI['id'];?>">Xem chi tiết</a></td>
+                                        <td><button type="button" class="btn btn-primary btnNewsUrl" data-news-url="<?= $v['aff_news_url']; ?>" data-aff-id="<?= $AppUI['id']; ?>">Bài viết</button></td>
+                                        <td><a target="_blank" class="btn btn-primary" href="<?php echo $BASE_URL; ?>/san-pham/<?= $v['slug']; ?>?aff_id=<?= $AppUI['id']; ?>">Xem chi tiết</a></td>
                                         <td><button class="btn btn-primary btnCopyLink" data-link="<?php echo $BASE_URL; ?>/san-pham/<?= $v['slug']; ?>?aff_id=<?= $AppUI['id']; ?>">Copy link</button></td>
                                     </tr>
                                 <?php endforeach; ?>
@@ -49,6 +51,24 @@
         </div>
     </div>
 </div>
+<div id="newsModal" class="modal fade"  role="dialog">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Danh sách bài viết</h5>
+                <button class="close" type="button" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">×</span></button>
+            </div>
+            <div class="modal-body">
+                <ul>
+                    <li><a href="#">aaaa</a></li>
+                </ul>
+            </div>
+            <div class="modal-footer">
+                <button class="btn btn-secondary" type="button" data-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 <script type="text/javascript">
     $('#productTable').DataTable();
     $(document).ready(function () {
@@ -56,6 +76,24 @@
             var link = $(this).attr('data-link');
             copyToClipboard(link);
             alert('Copied');
+        });
+        $('.btnNewsUrl').on('click', function () {
+            var urls = $(this).attr('data-news-url');
+            var affId = $(this).attr('data-aff-id');
+            var modal = $('#newsModal');
+            urls = urls.split('\n');
+            var i;
+            var el = '';
+            for (i = 0; i < urls.length; i++) {
+                var url = urls[i].split(':::');
+                var title = url[0];
+                var _url = url[1] + '&aff_sub1=' + affId;
+                el += '<li>';
+                el += '<a target="_blank" href="' + _url + '">' + title + '</a>';
+                el += '</li>';
+            }
+            $('#newsModal .modal-body ul').html(el);
+            modal.modal();
         });
     });
     function copyToClipboard(text) {
