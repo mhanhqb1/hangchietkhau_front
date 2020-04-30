@@ -12,6 +12,32 @@
 <div class="row">
     <div class="col-md-12">
         <div class="tile">
+            <form action="<?php echo $BASE_URL; ?>/ctv/san-pham" method="GET">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="form-group">
+                            <label for="exampleSelect1">Danh mục</label>
+                            <select class="form-control" name="cate_id">
+                                <option value="">Tất cả</option>
+                                <?php if (!empty($cates)): ?>
+                                <?php foreach ($cates as $c): ?>
+                                <option value="<?= $c['id'];?>" <?= !empty($params['cate_id']) && $params['cate_id'] == $c['id'] ? 'selected="selected"':'';?>><?= $c['name'];?></option>
+                                <?php endforeach; ?>
+                                <?php endif; ?>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="tile-footer">
+                    <button class="btn btn-primary" type="submit">Áp dụng</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="tile">
             <div class="tile-body">
                 <div class="table-responsive">
                     <table class="table table-hover table-bordered" id="productTable">
