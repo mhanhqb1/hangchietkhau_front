@@ -1,3 +1,29 @@
+<?php
+$s = array(
+    'pending' => 0,
+    'success' => 1,
+    'duplicate' => 2,
+    'cancel' => 3
+);
+$status = array(
+    $s['pending'] => array(
+        'class' => 'info',
+        'title' => 'Chờ duyệt'
+    ),
+    $s['success'] => array(
+        'class' => 'success',
+        'title' => 'Đã duyệt'
+    ),
+    $s['duplicate'] => array(
+        'class' => 'warning',
+        'title' => 'Trùng đơn'
+    ),
+    $s['cancel'] => array(
+        'class' => 'danger',
+        'title' => 'Trùng đơn'
+    )
+);
+?>
 <div class="app-title">
     <div>
         <h1><i class="fa fa-dashboard"></i> HangChietKhau.Com</h1>
@@ -10,18 +36,18 @@
 </div>
 <div class="row">
     <div class="col-md-6 col-lg-3">
-        <div class="widget-small primary coloured-icon"><i class="icon fa fa-users fa-3x"></i>
+        <div class="widget-small primary coloured-icon"><i class="icon fa fa-usd fa-3x"></i>
             <div class="info">
                 <h4>Doanh thu</h4>
-                <p><b>5</b></p>
+                <p><b><?= number_format($data['wholesale_income']);?></b></p>
             </div>
         </div>
     </div>
     <div class="col-md-6 col-lg-3">
-        <div class="widget-small danger coloured-icon"><i class="icon fa fa-star fa-3x"></i>
+        <div class="widget-small danger coloured-icon"><i class="icon fa fa-shopping-cart fa-3x"></i>
             <div class="info">
                 <h4>Đơn hàng</h4>
-                <p><b>500</b></p>
+                <p><b><?= $data['order_cnt'];?></b></p>
             </div>
         </div>
     </div>
@@ -34,10 +60,10 @@
         </div>
     </div>
     <div class="col-md-6 col-lg-3">
-        <div class="widget-small warning coloured-icon"><i class="icon fa fa-files-o fa-3x"></i>
+        <div class="widget-small warning coloured-icon"><i class="icon fa fa-cube fa-3x"></i>
             <div class="info">
                 <h4>Sản phẩm</h4>
-                <p><b>10</b></p>
+                <p><b><?= $data['product_cnt'];?></b></p>
             </div>
         </div>
     </div>
@@ -45,10 +71,29 @@
 <div class="row">
     <div class="col-md-6">
         <div class="tile">
-            <h3 class="tile-title">Doanh thu</h3>
-            <div class="embed-responsive embed-responsive-16by9">
-                <canvas class="embed-responsive-item" id="lineChartDemo"></canvas>
-            </div>
+            <h3 class="tile-title">Đơn hàng</h3>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Ngày tạo</th>
+                        <th>Sản phẩm</th>
+                        <th>Hoa hồng</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($data['orders'])): ?>
+                    <?php foreach ($data['orders'] as $k => $v): ?>
+                        <tr>
+                            <td><?= date('Y-m-d H:i:s', $v['created']); ?></td>
+                            <td><?= $v['product_name']; ?></td>
+                            <td><strong><?= number_format($v['wholesale_income']); ?></strong></td>
+                            <td><button class="btn btn-<?= $status[$v['status']]['class']; ?>"><?= $status[$v['status']]['title']; ?></button></td>
+                        </tr>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
         </div>
     </div>
     <div class="col-md-6">
@@ -64,81 +109,36 @@
                     </tr>
                 </thead>
                 <tbody>
+                    <?php if (!empty($data['products'])): ?>
+                    <?php foreach ($data['products'] as $p): ?>
                     <tr>
-                        <td>abc</td>
-                        <td>500.000đ</td>
-                        <td>100.000đ</td>
-                        <td><button class="btn btn-primary">Copy link</button></td>
+                        <td><a href="<?php echo $BASE_URL; ?>/san-pham/<?= $p['slug']; ?>?aff_id=<?= $AppUI['id']; ?>" target="_blank"><?= $p['name'];?></a></td>
+                        <td><?= number_format($p['price']);?></td>
+                        <td><?= number_format($p['wholesale_income']);?></td>
+                        <td><button class="btn btn-primary btnCopyLink" data-link="<?php echo $BASE_URL; ?>/san-pham/<?= $p['slug']; ?>?aff_id=<?= $AppUI['id']; ?>">Copy link</button></td>
                     </tr>
-                    <tr>
-                        <td>abc</td>
-                        <td>500.000đ</td>
-                        <td>100.000đ</td>
-                        <td><button class="btn btn-primary">Copy link</button></td>
-                    </tr>
-                    <tr>
-                        <td>abc</td>
-                        <td>500.000đ</td>
-                        <td>100.000đ</td>
-                        <td><button class="btn btn-primary">Copy link</button></td>
-                    </tr>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
     </div>
 </div>
 <div class="row">
-    <div class="col-md-12">
+    <div class="col-md-6">
         <div class="tile">
             <h3 class="tile-title">Tin tức</h3>
+            <div>
+                Nội dung đang được cập nhật
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="tile">
+            <h3 class="tile-title">Hướng dẫn</h3>
+            <div>
+                Nội dung đang được cập nhật
+            </div>
         </div>
     </div>
 </div>
-
-<script type="text/javascript">
-    var data = {
-        labels: ["January", "February", "March", "April", "May"],
-        datasets: [
-            {
-                label: "My First dataset",
-                fillColor: "rgba(220,220,220,0.2)",
-                strokeColor: "rgba(220,220,220,1)",
-                pointColor: "rgba(220,220,220,1)",
-                pointStrokeColor: "#fff",
-                pointHighlightFill: "#fff",
-                pointHighlightStroke: "rgba(220,220,220,1)",
-                data: [65, 59, 80, 81, 56]
-            },
-            {
-                label: "My Second dataset",
-                fillColor: "rgba(151,187,205,0.2)",
-                strokeColor: "rgba(151,187,205,1)",
-                pointColor: "rgba(151,187,205,1)",
-                pointStrokeColor: "#fff",
-                pointHighlightFill: "#fff",
-                pointHighlightStroke: "rgba(151,187,205,1)",
-                data: [28, 48, 40, 19, 86]
-            }
-        ]
-    };
-    var pdata = [
-        {
-            value: 300,
-            color: "#46BFBD",
-            highlight: "#5AD3D1",
-            label: "Complete"
-        },
-        {
-            value: 50,
-            color: "#F7464A",
-            highlight: "#FF5A5E",
-            label: "In-Progress"
-        }
-    ]
-
-    var ctxl = $("#lineChartDemo").get(0).getContext("2d");
-    var lineChart = new Chart(ctxl).Line(data);
-
-    var ctxp = $("#pieChartDemo").get(0).getContext("2d");
-    var pieChart = new Chart(ctxp).Pie(pdata);
-</script>
