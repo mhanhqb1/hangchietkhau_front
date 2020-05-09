@@ -28,3 +28,4 @@ Configure::write('API.url_users_register', 'users/register');
 Configure::write('API.url_users_login', 'users/login');
 Configure::write('API.url_users_products', 'users/products');
 Configure::write('API.url_users_productdetail', 'users/productdetail');
+Configure::write('API.url_users_orders', 'users/orders');
