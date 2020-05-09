@@ -15,25 +15,25 @@
         </li>
         <li>
             <a class="app-menu__item <?php echo ($action == 'orders') ? 'active' : ''; ?>" href="<?php echo $BASE_URL; ?>/ctv/don-hang">
-                <i class="app-menu__icon fa fa-pie-chart"></i>
+                <i class="app-menu__icon fa fa-shopping-cart"></i>
                 <span class="app-menu__label">Danh sách đơn hàng</span>
             </a>
         </li>
         <li>
             <a class="app-menu__item <?php echo ($action == 'products') ? 'active' : ''; ?>" href="<?php echo $BASE_URL; ?>/ctv/san-pham">
-                <i class="app-menu__icon fa fa-pie-chart"></i>
+                <i class="app-menu__icon fa fa-cube"></i>
                 <span class="app-menu__label">Danh sách sản phẩm</span>
             </a>
         </li>
         <li>
             <a class="app-menu__item <?php echo ($action == 'news') ? 'active' : ''; ?>" href="<?php echo $BASE_URL; ?>/ctv/tin-tuc">
-                <i class="app-menu__icon fa fa-pie-chart"></i>
+                <i class="app-menu__icon fa fa-newspaper-o"></i>
                 <span class="app-menu__label">Tin tức</span>
             </a>
         </li>
         <li>
             <a class="app-menu__item <?php echo ($action == 'tutorial') ? 'active' : ''; ?>" href="<?php echo $BASE_URL; ?>/ctv/huong-dan">
-                <i class="app-menu__icon fa fa-pie-chart"></i>
+                <i class="app-menu__icon fa fa-book"></i>
                 <span class="app-menu__label">Hướng dẫn</span>
             </a>
         </li>
