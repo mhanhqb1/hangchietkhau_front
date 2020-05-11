@@ -15,8 +15,11 @@ if ($this->request->is('post')) {
     } else {
         // Auth
         unset($user['password']);
+        if (empty($user['image'])) {
+            $user['image'] = $this->BASE_URL . '/images/' . Configure::read('default_avatar');
+        }
         $this->Auth->setUser($user);
-        return $this->redirect($this->BASE_URL.'/ctv');
+        return $this->redirect($this->BASE_URL . '/ctv');
     }
 }
 

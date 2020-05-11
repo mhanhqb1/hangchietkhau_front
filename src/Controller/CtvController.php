@@ -31,4 +31,11 @@ class CtvController extends AppController {
     public function orders() {
         include ('Bus/Ctv/orders.php');
     }
+    
+    /**
+     * Update profile
+     */
+    public function updateprofile() {
+        include ('Bus/Ctv/updateprofile.php');
+    }
 }

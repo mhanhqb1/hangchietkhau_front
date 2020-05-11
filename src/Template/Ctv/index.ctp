@@ -35,7 +35,7 @@ $status = array(
     </ul>
 </div>
 <div class="row">
-    <div class="col-md-6 col-lg-3">
+    <div class="col-md-6 col-lg-4">
         <div class="widget-small primary coloured-icon"><i class="icon fa fa-usd fa-3x"></i>
             <div class="info">
                 <h4>Doanh thu</h4>
@@ -43,7 +43,7 @@ $status = array(
             </div>
         </div>
     </div>
-    <div class="col-md-6 col-lg-3">
+    <div class="col-md-6 col-lg-4">
         <div class="widget-small danger coloured-icon"><i class="icon fa fa-shopping-cart fa-3x"></i>
             <div class="info">
                 <h4>Đơn hàng</h4>
@@ -51,15 +51,15 @@ $status = array(
             </div>
         </div>
     </div>
-    <div class="col-md-6 col-lg-3">
+<!--    <div class="col-md-6 col-lg-3">
         <div class="widget-small info coloured-icon"><i class="icon fa fa-mouse-pointer fa-3x"></i>
             <div class="info">
                 <h4>Click</h4>
                 <p><b>25</b></p>
             </div>
         </div>
-    </div>
-    <div class="col-md-6 col-lg-3">
+    </div>-->
+    <div class="col-md-6 col-lg-4">
         <div class="widget-small warning coloured-icon"><i class="icon fa fa-cube fa-3x"></i>
             <div class="info">
                 <h4>Sản phẩm</h4>
