@@ -25,8 +25,7 @@ if ($this->request->is('post')) {
         }
         $this->Auth->setUser($user);
         $this->AppUI = $user;
-
-        $this->Flash->success(__('MESSAGE_SAVE_OK'));
+        $data = $user;
         return $this->redirect("{$this->BASE_URL}/ctv/cap-nhat-ho-so");
     } else {
         return $this->Flash->error(__('MESSAGE_SAVE_NG'));
