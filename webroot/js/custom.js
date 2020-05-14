@@ -1,5 +1,5 @@
-$('#productTable').DataTable();
 $(document).ready(function () {
+    $('#productTable').DataTable();
     $('.btnCopyLink').on('click', function () {
         var link = $(this).attr('data-link');
         copyToClipboard(link);
