@@ -3,7 +3,8 @@ $s = array(
     'pending' => 0,
     'success' => 1,
     'duplicate' => 2,
-    'cancel' => 3
+    'cancel' => 3,
+    'tmp_success' => 4
 );
 $status = array(
     $s['pending'] => array(
@@ -21,6 +22,10 @@ $status = array(
     $s['cancel'] => array(
         'class' => 'danger',
         'title' => 'Trùng đơn'
+    ),
+    $s['tmp_success'] => array(
+        'class' => 'primary',
+        'title' => 'Tạm tính'
     )
 );
 ?>
