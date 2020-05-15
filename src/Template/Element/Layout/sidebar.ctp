@@ -14,6 +14,12 @@
             </a>
         </li>
         <li>
+            <a class="app-menu__item <?php echo ($action == 'income') ? 'active' : ''; ?>" href="<?php echo $BASE_URL; ?>/ctv/thanh-toan">
+                <i class="app-menu__icon fa fa-usd"></i>
+                <span class="app-menu__label">Thanh toán</span>
+            </a>
+        </li>
+        <li>
             <a class="app-menu__item <?php echo ($action == 'orders') ? 'active' : ''; ?>" href="<?php echo $BASE_URL; ?>/ctv/don-hang">
                 <i class="app-menu__icon fa fa-shopping-cart"></i>
                 <span class="app-menu__label">Danh sách đơn hàng</span>

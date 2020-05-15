@@ -31,3 +31,4 @@ Configure::write('API.url_users_productdetail', 'users/productdetail');
 Configure::write('API.url_users_orders', 'users/orders');
 Configure::write('API.url_users_dashboard', 'users/dashboard');
 Configure::write('API.url_users_updateprofile', 'users/updateprofile');
+Configure::write('API.url_users_income', 'users/income');

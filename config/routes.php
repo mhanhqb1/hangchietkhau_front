@@ -59,6 +59,7 @@ Router::scope('/', function (RouteBuilder $routes) {
     $routes->connect('/ctv/cap-nhat-ho-so', ['controller' => 'Ctv', 'action' => 'updateprofile']);
     $routes->connect('/ctv/tin-tuc', ['controller' => 'Ctv', 'action' => 'news']);
     $routes->connect('/ctv/huong-dan', ['controller' => 'Ctv', 'action' => 'tutorial']);
+    $routes->connect('/ctv/thanh-toan', ['controller' => 'Ctv', 'action' => 'income']);
     
     $routes->connect('/san-pham/*', ['controller' => 'Products', 'action' => 'index']);
     /**
