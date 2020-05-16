@@ -33,46 +33,76 @@ $_time = time();
 
         <meta name="generator" content="<?php echo $webTitle; ?>" />
 
-        
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/css/bootstrap.min.css">
+        <link rel="stylesheet" href="<?= $BASE_URL; ?>/css/home.css?<?= $time; ?>">
         <!-- Font-icon css-->
-        <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+        <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">        
     </head>
 
     <body>
-        <div id="mainnav" class="navbar-head white-nav">
-            <div class="container">
+        <nav class="navbar navbar-inverse">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>
+                        <span class="icon-bar"></span>                        
+                    </button>
+                    <a class="navbar-brand" href="#">WebSiteName</a>
+                </div>
+                <div class="collapse navbar-collapse" id="myNavbar">
+                    <ul class="nav navbar-nav">
+                        <li class="active"><a href="#">Home</a></li>
+                        <li class="dropdown">
+                            <a class="dropdown-toggle" data-toggle="dropdown" href="#">Page 1 <span class="caret"></span></a>
+                            <ul class="dropdown-menu">
+                                <li><a href="#">Page 1-1</a></li>
+                                <li><a href="#">Page 1-2</a></li>
+                                <li><a href="#">Page 1-3</a></li>
+                            </ul>
+                        </li>
+                        <li><a href="#">Page 2</a></li>
+                        <li><a href="#">Page 3</a></li>
+                    </ul>
+                    <ul class="nav navbar-nav navbar-right">
+                        <li><a href="#"><span class="glyphicon glyphicon-user"></span> Sign Up</a></li>
+                        <li><a href="#"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
+                    </ul>
+                </div>
+            </div>
+        </nav>
+        <?php echo $this->fetch('content'); ?>
+        
+        <footer class="container-fluid">
+            <div class="container footer-top">
                 <div class="row">
-                    <div class="col-xs-12 col-sm-12 col-md-12 col-lg-12">
-                        <nav class="navbar navbar-default" role="navigation">
-                            <div class="navbar-header"> 
-                                <button type="button" class="navbar-toggle" data-toggle="collapse" data-target=".navbar-ex1-collapse"> 
-                                    <i class="icon ti-menu" aria-hidden="true"></i> 
-                                </button> 
-                                <a class="navbar-brand" href="https://accesstrade.vn/"> 
-                                    <img class="logo-white" src="https://accesstrade.vn/wp-content/themes/accesstradev2/assets/images/logo-light.png" alt="light logo" title="Logo accesstrade"> 
-                                    <img class="logo-col" src="https://accesstrade.vn/wp-content/themes/accesstradev2/assets/images/logo-normal.png" alt="light logo" title="Logo accesstrade"> 
-                                </a>
-                            </div>
-                            <div class="collapse navbar-collapse navbar-ex1-collapse">
-                                <ul class="nav navbar-nav navbar-right">
-                                    <li><a href="https://accesstrade.vn/">Trang chủ</a></li>
-                                    <li><a href="https://accesstrade.vn/member">Thành viên</a></li>
-                                    <li><a href="https://accesstrade.vn/huong-dan-publisher">Hướng dẫn</a></li>
-                                    <li><a href="https://accesstrade.vn/blog-affiliate">Blog</a></li>
-                                    <li class="navbar-nav-btn"><a href="https://pub.accesstrade.vn/accounts/register">Đăng ký</a></li>
-                                    <li class="hidden-sm hidden-md hidden-lg nav-btn-green"><a href="https://accesstrade.vn/advertiser">Advertiser</a></li>
-                                </ul>
-                            </div>
-                        </nav>
+                    <div class="col-xs-12 col-md-4">
+                        <h3>HangChietKhau.Com</h3>
+                        <p>Nền tảng cung cấp các sản phẩm chiết khấu cao</p>
+                    </div>
+                    <div class="col-xs-12 col-md-4">
+                        <h3>Hướng dẫn</h3>
+                        <ul>
+                            <li><a href="<?= $BASE_URL;?>/dang-ky">Đăng ký</a></li>
+                            <li><a href="<?= $BASE_URL;?>/dang-nhap">Đăng nhập</a></li>
+                        </ul>
+                    </div>
+                    <div class="col-xs-12 col-md-4">
+                        <h3>Kết nối với chúng tôi</h3>
+                        <ul class="soical">
+                            <li><a href="">Facebook</a></li>
+                            <li><a href="">Youtube</a></li>
+                        </ul>
                     </div>
                 </div>
             </div>
+        </footer>
+        <div class="container-fluid text-center footer-bottom">
+            © 2020 HANGCHIETKHAU.COM. All rights reserved.
         </div>
-        <?php echo $this->fetch('content'); ?>
 
         <!-- Essential javascripts for application to work-->
         <script src="<?php echo $BASE_URL; ?>/js/jquery-3.3.1.min.js"></script>
-        <script src="<?php echo $BASE_URL; ?>/js/popper.min.js"></script>
         <script src="<?php echo $BASE_URL; ?>/js/bootstrap.min.js"></script>
         <script src="<?php echo $BASE_URL; ?>/js/main.js?<?= $time; ?>"></script>
     </body>
