@@ -30,6 +30,8 @@ $status = array(
 );
 $success = 0;
 $successCnt = 0;
+$tmpSuccess = 0;
+$tmpSuccessCnt = 0;
 $pending = 0;
 $pendingCnt = 0;
 $duplicate = 0;
@@ -55,6 +57,9 @@ if (!empty($data)) {
                 $cancel += $v['wholesale_income'];
                 $cancelCnt += 1;
                 break;
+            case $s['tmp_success']:
+                $tmpSuccess += $v['wholesale_income'];
+                $tmpSuccessCnt += 1;
         }
     }
 }
@@ -74,7 +79,7 @@ if (!empty($data)) {
     <div class="col-md-6 col-lg-3">
         <div class="widget-small primary coloured-icon"><i class="icon fa fa-check-circle fa-3x"></i>
             <div class="info">
-                <h4>Tạm tính</h4>
+                <h4>Doanh thu</h4>
                 <p><b><?= number_format($success).'/'.$successCnt;?></b></p>
             </div>
         </div>
@@ -82,16 +87,16 @@ if (!empty($data)) {
     <div class="col-md-6 col-lg-3">
         <div class="widget-small info coloured-icon"><i class="icon fa fa-clock-o fa-3x"></i>
             <div class="info">
-                <h4>Chờ duyệt</h4>
-                <p><b><?= number_format($pending).'/'.$pendingCnt;?></b></p>
+                <h4>Tạm tính</h4>
+                <p><b><?= number_format($tmpSuccess).'/'.$tmpSuccessCnt;?></b></p>
             </div>
         </div>
     </div>
     <div class="col-md-6 col-lg-3">
         <div class="widget-small warning coloured-icon"><i class="icon fa fa-files-o fa-3x"></i>
             <div class="info">
-                <h4>Trùng đơn</h4>
-                <p><b><?= number_format($duplicate).'/'.$duplicateCnt;?></b></p>
+                <h4>Chờ duyệt</h4>
+                <p><b><?= number_format($pending).'/'.$pendingCnt;?></b></p>
             </div>
         </div>
     </div>

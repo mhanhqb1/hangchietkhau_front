@@ -40,7 +40,7 @@ $status = array(
     </ul>
 </div>
 <div class="row">
-    <div class="col-md-6 col-lg-4">
+    <div class="col-md-6 col-lg-3">
         <div class="widget-small primary coloured-icon"><i class="icon fa fa-usd fa-3x"></i>
             <div class="info">
                 <h4>Doanh thu</h4>
@@ -48,7 +48,15 @@ $status = array(
             </div>
         </div>
     </div>
-    <div class="col-md-6 col-lg-4">
+    <div class="col-md-6 col-lg-3">
+        <div class="widget-small info coloured-icon"><i class="icon fa fa-usd fa-3x"></i>
+            <div class="info">
+                <h4>Tạm tính</h4>
+                <p><b><?= number_format($data['wholesale_tmp_income']);?></b></p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-6 col-lg-3">
         <div class="widget-small danger coloured-icon"><i class="icon fa fa-shopping-cart fa-3x"></i>
             <div class="info">
                 <h4>Đơn hàng</h4>
@@ -64,7 +72,7 @@ $status = array(
             </div>
         </div>
     </div>-->
-    <div class="col-md-6 col-lg-4">
+    <div class="col-md-6 col-lg-3">
         <div class="widget-small warning coloured-icon"><i class="icon fa fa-cube fa-3x"></i>
             <div class="info">
                 <h4>Sản phẩm</h4>
@@ -76,34 +84,7 @@ $status = array(
 <div class="row">
     <div class="col-md-6">
         <div class="tile">
-            <h3 class="tile-title">Đơn hàng</h3>
-            <table class="table table-striped">
-                <thead>
-                    <tr>
-                        <th>Ngày tạo</th>
-                        <th>Sản phẩm</th>
-                        <th>Hoa hồng</th>
-                        <th>Trạng thái</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <?php if (!empty($data['orders'])): ?>
-                    <?php foreach ($data['orders'] as $k => $v): ?>
-                        <tr>
-                            <td><?= date('Y-m-d H:i:s', $v['created']); ?></td>
-                            <td><?= $v['product_name']; ?></td>
-                            <td><strong><?= number_format($v['wholesale_income']); ?></strong></td>
-                            <td><button class="btn btn-<?= $status[$v['status']]['class']; ?>"><?= $status[$v['status']]['title']; ?></button></td>
-                        </tr>
-                    <?php endforeach; ?>
-                    <?php endif; ?>
-                </tbody>
-            </table>
-        </div>
-    </div>
-    <div class="col-md-6">
-        <div class="tile">
-            <h3 class="tile-title">Sản phẩm mới</h3>
+            <h3 class="tile-title">Sản phẩm mới <a href="<?php echo $BASE_URL;?>/ctv/san-pham" style="font-size: 70%;  float: right;">Xem tất cả</a></h3>
             <table class="table table-striped">
                 <thead>
                     <tr>
@@ -122,6 +103,33 @@ $status = array(
                         <td><?= number_format($p['wholesale_income']);?></td>
                         <td><button class="btn btn-primary btnCopyLink" data-link="<?php echo $BASE_URL; ?>/san-pham/<?= $p['slug']; ?>?aff_id=<?= $AppUI['id']; ?>">Copy link</button></td>
                     </tr>
+                    <?php endforeach; ?>
+                    <?php endif; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <div class="col-md-6">
+        <div class="tile">
+            <h3 class="tile-title">Đơn hàng <a href="<?php echo $BASE_URL;?>/ctv/don-hang" style="font-size: 70%; float: right;">Xem tất cả</a></h3>
+            <table class="table table-striped">
+                <thead>
+                    <tr>
+                        <th>Ngày tạo</th>
+                        <th>Sản phẩm</th>
+                        <th>Hoa hồng</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php if (!empty($data['orders'])): ?>
+                    <?php foreach ($data['orders'] as $k => $v): ?>
+                        <tr>
+                            <td><?= date('Y-m-d H:i:s', $v['created']); ?></td>
+                            <td><?= $v['product_name']; ?></td>
+                            <td><strong><?= number_format($v['wholesale_income']); ?></strong></td>
+                            <td><button class="btn btn-<?= $status[$v['status']]['class']; ?>"><?= $status[$v['status']]['title']; ?></button></td>
+                        </tr>
                     <?php endforeach; ?>
                     <?php endif; ?>
                 </tbody>
