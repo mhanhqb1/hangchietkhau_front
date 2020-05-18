@@ -68,11 +68,11 @@
         </div>
     </div>
 </div>
-<div class="container-fluid home-step-4">
+<div class="container-fluid home-step-4 bg-blue">
     <div class="row">
         <div class="col-xs-12">
-            <a href="<?= $BASE_URL;?>/dang-ky">Tham gia ngay</a>
-            
+            <a href="<?= $BASE_URL;?>/dang-ky" class="btn btn-warning">Tham gia ngay</a>
+            HangChietKhau.Com để kiếm thật nhiều tiền
         </div>
     </div>
 </div>

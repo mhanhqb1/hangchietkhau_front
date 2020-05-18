@@ -40,39 +40,33 @@ $_time = time();
     </head>
 
     <body>
-        <nav class="navbar navbar-inverse">
+        <nav class="navbar navbar-default navbar-fixed-top">
             <div class="container-fluid">
-                <div class="navbar-header">
-                    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>
-                        <span class="icon-bar"></span>                        
-                    </button>
-                    <a class="navbar-brand" href="#">WebSiteName</a>
-                </div>
-                <div class="collapse navbar-collapse" id="myNavbar">
-                    <ul class="nav navbar-nav">
-                        <li class="active"><a href="#">Home</a></li>
-                        <li class="dropdown">
-                            <a class="dropdown-toggle" data-toggle="dropdown" href="#">Page 1 <span class="caret"></span></a>
-                            <ul class="dropdown-menu">
-                                <li><a href="#">Page 1-1</a></li>
-                                <li><a href="#">Page 1-2</a></li>
-                                <li><a href="#">Page 1-3</a></li>
-                            </ul>
-                        </li>
-                        <li><a href="#">Page 2</a></li>
-                        <li><a href="#">Page 3</a></li>
-                    </ul>
-                    <ul class="nav navbar-nav navbar-right">
-                        <li><a href="#"><span class="glyphicon glyphicon-user"></span> Sign Up</a></li>
-                        <li><a href="#"><span class="glyphicon glyphicon-log-in"></span> Login</a></li>
-                    </ul>
+                <div class="container">
+                    <div class="navbar-header">
+                        <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#myNavbar">
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>
+                            <span class="icon-bar"></span>                        
+                        </button>
+                        <a class="navbar-brand" href="<?= $BASE_URL; ?>">HangChietKhau.Com</a>
+                    </div>
+                    <div class="collapse navbar-collapse" id="myNavbar">
+                        <ul class="nav navbar-nav">
+                            <li class="active"><a href="<?= $BASE_URL; ?>">Trang chủ</a></li>
+                            <li><a href="<?= $BASE_URL; ?>/tin-tuc">Tin tức</a></li>
+                            <li><a href="<?= $BASE_URL; ?>/huong-dan">Hướng dẫn</a></li>
+                        </ul>
+                        <ul class="nav navbar-nav navbar-right">
+                            <li><a href="<?= $BASE_URL; ?>/dang-ky"><span class="glyphicon glyphicon-user"></span> Đăng ký</a></li>
+                            <li><a href="<?= $BASE_URL; ?>/dang-nhap"><span class="glyphicon glyphicon-log-in"></span> Đăng nhập</a></li>
+                        </ul>
+                    </div>
                 </div>
             </div>
         </nav>
         <?php echo $this->fetch('content'); ?>
-        
+
         <footer class="container-fluid">
             <div class="container footer-top">
                 <div class="row">
@@ -83,8 +77,8 @@ $_time = time();
                     <div class="col-xs-12 col-md-4">
                         <h3>Hướng dẫn</h3>
                         <ul>
-                            <li><a href="<?= $BASE_URL;?>/dang-ky">Đăng ký</a></li>
-                            <li><a href="<?= $BASE_URL;?>/dang-nhap">Đăng nhập</a></li>
+                            <li><a href="<?= $BASE_URL; ?>/dang-ky">Đăng ký</a></li>
+                            <li><a href="<?= $BASE_URL; ?>/dang-nhap">Đăng nhập</a></li>
                         </ul>
                     </div>
                     <div class="col-xs-12 col-md-4">
