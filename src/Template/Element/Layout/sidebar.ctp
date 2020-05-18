@@ -32,13 +32,13 @@
             </a>
         </li>
         <li>
-            <a class="app-menu__item <?php echo ($action == 'news') ? 'active' : ''; ?>" href="<?php echo $BASE_URL; ?>/ctv/tin-tuc">
+            <a target="_blank" class="app-menu__item <?php echo ($action == 'news') ? 'active' : ''; ?>" href="<?php echo $BASE_URL; ?>/tin-tuc">
                 <i class="app-menu__icon fa fa-newspaper-o"></i>
                 <span class="app-menu__label">Tin tức</span>
             </a>
         </li>
         <li>
-            <a class="app-menu__item <?php echo ($action == 'tutorial') ? 'active' : ''; ?>" href="<?php echo $BASE_URL; ?>/ctv/huong-dan">
+            <a target="_blank" class="app-menu__item <?php echo ($action == 'tutorial') ? 'active' : ''; ?>" href="<?php echo $BASE_URL; ?>/huong-dan">
                 <i class="app-menu__icon fa fa-book"></i>
                 <span class="app-menu__label">Hướng dẫn</span>
             </a>

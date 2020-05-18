@@ -47,7 +47,7 @@
                                 <th>Tên sản phẩm</th>
                                 <th>Giá bán</th>
                                 <th>Hoa hồng</th>
-                                <th>Số lượng còn</th>
+                                <!--<th>Số lượng còn</th>-->
                                 <th></th>
                                 <th></th>
                                 <th></th>
@@ -66,7 +66,7 @@
                                         <td><?php echo $v['name']; ?></td>
                                         <td><?= number_format($v['price']); ?></td>
                                         <td><?= number_format($v['wholesale_income']); ?></td>
-                                        <td><?= $v['qty']; ?></td>
+                                        <!--<td><?= $v['qty']; ?></td>-->
                                         <td><button type="button" class="btn btn-primary btnNewsUrl" data-news-url="<?= $v['aff_news_url']; ?>" data-aff-id="<?= $AppUI['id']; ?>">Bài viết</button></td>
                                         <td><a target="_blank" class="btn btn-primary" href="<?php echo $BASE_URL; ?>/san-pham/<?= $v['slug']; ?>?aff_id=<?= $AppUI['id']; ?>">Xem chi tiết</a></td>
                                         <td><button class="btn btn-primary btnCopyLink" data-link="<?php echo $BASE_URL; ?>/san-pham/<?= $v['slug']; ?>?aff_id=<?= $AppUI['id']; ?>">Copy link</button></td>
