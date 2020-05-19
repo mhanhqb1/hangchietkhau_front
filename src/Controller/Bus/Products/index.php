@@ -8,6 +8,8 @@ $params = $this->getParams(array(
 ));
 $data = Api::call(Configure::read('API.url_users_productdetail'), $params);
 
+return $this->redirect("{$data['aff_url']}?aff_sub1={$params['aff_id']}");
+
 $this->set(compact(array(
     'data',
     'params'
