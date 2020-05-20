@@ -23,6 +23,13 @@ $(document).ready(function () {
         $('#newsModal .modal-body ul').html(el);
         modal.modal();
     });
+    $('.link_tracking').on('click', function() {
+       var val = $(this).val();
+       var input = $('#linkTracking');
+       var btn = $('.btnCopyLink');
+       input.val(val);
+       btn.attr('data-link', val);
+    });
 });
 function copyToClipboard(text) {
     if (window.clipboardData && window.clipboardData.setData) {

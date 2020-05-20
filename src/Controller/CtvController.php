@@ -45,4 +45,11 @@ class CtvController extends AppController {
     public function income() {
         include ('Bus/Ctv/income.php');
     }
+    
+    /**
+     * Update profile
+     */
+    public function productdetail($slug = '') {
+        include ('Bus/Ctv/productdetail.php');
+    }
 }
