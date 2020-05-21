@@ -2,12 +2,14 @@
 $mainUrl = $BASE_URL.'/san-pham/'.$data['slug'].'?aff_id='.$AppUI['id'];
 $newUrls = array();
 if (!empty($data['aff_news_url'])) {
-    $urls = explode('\n', $data['aff_news_url']);
+    $urls = explode(PHP_EOL, $data['aff_news_url']);
     foreach ($urls as $u) {
         $tmp = explode(':::', $u);
+        $lp = explode('?lp=', $tmp[1]);
         $newUrls[] = array(
             'name' => $tmp[0],
-            'url' => $tmp[1]
+            'url' => $mainUrl.'&lp='.$lp[1],
+            'url2' => $tmp[1]
         );
     }
 }
@@ -35,7 +37,6 @@ if (!empty($data['aff_news_url'])) {
                             <h4>Giá: <span class="btn btn-info"><?= number_format($data['price']); ?></span></h4>
                             <h4>Hoa hồng: <span class="btn btn-warning"><?= number_format($data['wholesale_income']); ?></span></h4>
                         </div>
-
                     </div>
                     <div class="col-md-9">
                         <div class="product-box border border-primary">
@@ -65,6 +66,12 @@ if (!empty($data['aff_news_url'])) {
                                 </div>
                                 <?php endforeach; ?>
                                 <?php endif; ?>
+                            </div>
+                            <h4>Thông tin tham khảo</h4>
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <?= $data['detail']; ?>
+                                </div>
                             </div>
                         </div>
                     </div>

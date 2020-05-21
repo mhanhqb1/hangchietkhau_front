@@ -48,9 +48,9 @@
                                 <th>Giá bán</th>
                                 <th>Hoa hồng</th>
                                 <!--<th>Số lượng còn</th>-->
-                                <th></th>
-                                <th></th>
-                                <th></th>
+                                <!--<th></th>-->
+                                <!--<th></th>-->
+                                <th width="80px"></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -60,15 +60,16 @@
                                     if (empty($v['id'])) {
                                         continue;
                                     }
+                                    $url = $BASE_URL.'/ctv/sp/'.$v['slug'];
                                     ?>
                                     <tr>
-                                        <td><img src="<?php echo $v['image']; ?>" width="100px"/></td>
-                                        <td><?php echo $v['name']; ?></td>
+                                        <td><a href="<?php echo $url; ?>"><img src="<?php echo $v['image']; ?>" width="100px"/></a></td>
+                                        <td><a href="<?php echo $url; ?>" style="font-size: 17px;"><?php echo $v['name']; ?></a></td>
                                         <td><?= number_format($v['price']); ?></td>
                                         <td><?= number_format($v['wholesale_income']); ?></td>
                                         <!--<td><?= $v['qty']; ?></td>-->
-                                        <td><button type="button" class="btn btn-primary btnNewsUrl" data-news-url="<?= $v['aff_news_url']; ?>" data-aff-id="<?= $AppUI['id']; ?>">Bài viết</button></td>
-                                        <td><a class="btn btn-primary" href="<?php echo $BASE_URL; ?>/ctv/sp/<?= $v['slug']; ?>">Xem chi tiết</a></td>
+                                        <!--<td><button type="button" class="btn btn-primary btnNewsUrl" data-news-url="<?= $v['aff_news_url']; ?>" data-aff-id="<?= $AppUI['id']; ?>">Bài viết</button></td>-->
+                                        <!--<td><a class="btn btn-primary" href="">Xem chi tiết</a></td>-->
                                         <td><button class="btn btn-primary btnCopyLink" data-link="<?php echo $BASE_URL; ?>/san-pham/<?= $v['slug']; ?>?aff_id=<?= $AppUI['id']; ?>">Copy link</button></td>
                                     </tr>
                                 <?php endforeach; ?>
