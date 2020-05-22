@@ -5,6 +5,9 @@ $_keyword = !empty($pageKeyword) ? $pageKeyword : $_settings['company']['seo_key
 $_title = !empty($pageTitle) ? $pageTitle : $_settings['company']['name'];
 $_image = !empty($pageImage) ? $pageImage : $_settings['company']['seo_image'];
 $_time = time();
+$_scriptHeader = !empty($_settings['company']['script_header']) ? $_settings['company']['script_header'] : '';
+$_scriptBody = !empty($_settings['company']['script_body']) ? $_settings['company']['script_body'] : '';
+$_scriptFooter = !empty($_settings['company']['script_footer']) ? $_settings['company']['script_footer'] : '';
 ?>
 <!DOCTYPE html>
 <html lang="vi" itemscope itemtype="http://schema.org/Article" prefix="og: http://ogp.me/ns#">
@@ -66,10 +69,12 @@ $_time = time();
                 color: black;
             }
         </style>
-
+        
+        <?= $_scriptHeader;?>
     </head>
 
     <body  class="step1">
+        <?= $_scriptBody;?>
         <?php if (!empty($AppUI)): ?>
             <div class="navbar">
                 <a href="<?php echo $BASE_URL;?>/ctv">Trang chủ</a>
@@ -77,5 +82,7 @@ $_time = time();
             </div>
         <?php endif; ?>
         <?php echo $this->fetch('content'); ?>
+        
+        <?= $_scriptFooter; ?>
     </body>
 </html>

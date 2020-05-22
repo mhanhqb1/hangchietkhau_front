@@ -1,10 +1,13 @@
 <?php
-$webTitle = 'LyonaBeauty.Com';
+$webTitle = 'HangChietKhau.Com';
 $_description = !empty($pageDescription) ? $pageDescription : $_settings['company']['seo_description'];
 $_keyword = !empty($pageKeyword) ? $pageKeyword : $_settings['company']['seo_keyword'];
 $_title = !empty($pageTitle) ? $pageTitle : $_settings['company']['name'];
 $_image = !empty($pageImage) ? $pageImage : $_settings['company']['seo_image'];
 $_time = time();
+$_scriptHeader = !empty($_settings['company']['script_header']) ? $_settings['company']['script_header'] : '';
+$_scriptBody = !empty($_settings['company']['script_body']) ? $_settings['company']['script_body'] : '';
+$_scriptFooter = !empty($_settings['company']['script_footer']) ? $_settings['company']['script_footer'] : '';
 ?>
 <!DOCTYPE html>
 <html lang="vi" itemscope itemtype="http://schema.org/Article" prefix="og: http://ogp.me/ns#">
@@ -37,9 +40,12 @@ $_time = time();
         <link rel="stylesheet" href="<?= $BASE_URL; ?>/css/home.css?<?= $time; ?>">
         <!-- Font-icon css-->
         <link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">        
+        
+        <?= $_scriptHeader;?>
     </head>
 
     <body>
+        <?= $_scriptBody; ?>
         <nav class="navbar navbar-default navbar-fixed-top">
             <div class="container-fluid">
                 <div class="container">
@@ -99,5 +105,7 @@ $_time = time();
         <script src="<?php echo $BASE_URL; ?>/js/jquery-3.3.1.min.js"></script>
         <script src="<?php echo $BASE_URL; ?>/js/bootstrap.min.js"></script>
         <script src="<?php echo $BASE_URL; ?>/js/main.js?<?= $time; ?>"></script>
+        
+        <?= $_scriptFooter;?>
     </body>
 </html>

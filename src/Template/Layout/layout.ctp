@@ -5,6 +5,9 @@ $_keyword = !empty($pageKeyword) ? $pageKeyword : $_settings['company']['seo_key
 $_title = !empty($pageTitle) ? $pageTitle : $_settings['company']['name'];
 $_image = !empty($pageImage) ? $pageImage : $_settings['company']['seo_image'];
 $_time = time();
+$_scriptHeader = !empty($_settings['company']['script_header']) ? $_settings['company']['script_header'] : '';
+$_scriptBody = !empty($_settings['company']['script_body']) ? $_settings['company']['script_body'] : '';
+$_scriptFooter = !empty($_settings['company']['script_footer']) ? $_settings['company']['script_footer'] : '';
 ?>
 <!DOCTYPE html>
 <html lang="vi" itemscope itemtype="http://schema.org/Article" prefix="og: http://ogp.me/ns#">
@@ -57,9 +60,12 @@ $_time = time();
         <script type="text/javascript" src="<?php echo $BASE_URL; ?>/js/plugins/jquery.dataTables.min.js"></script>
         <script type="text/javascript" src="<?php echo $BASE_URL; ?>/js/plugins/dataTables.bootstrap.min.js"></script>
         <script type="text/javascript" src="<?php echo $BASE_URL; ?>/js/custom.js?<?= $time;?>"></script>
+        
+        <?= $_scriptHeader; ?>
     </head>
 
     <body class="app sidebar-mini pace-done">
+        <?= $_scriptBody;?>
         <!-- Navbar-->
         <?php echo $this->element('Layout/header');?>
 
@@ -69,5 +75,7 @@ $_time = time();
         <main class="app-content">
             <?php echo $this->fetch('content'); ?>
         </main>
+        
+        <?= $_scriptFooter;?>
     </body>
 </html>
