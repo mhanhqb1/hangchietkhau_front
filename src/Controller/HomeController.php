@@ -32,13 +32,33 @@ class HomeController extends AppController {
      * People top page
      */
     public function news() {
-        
+        $params = $this->getParams(array(
+            'type' => 0,
+            'limit' => 20,
+            'page' => 1
+        ));
+        $result = Api::call(Configure::read('API.url_posts_list'), $params);
+        $data = !empty($result['data']) ? $result['data'] : array();
+        $total = !empty($result['total']) ? $result['total'] : 0;
+        $this->set('data', $data);
+        $this->set('params', $params);
+        $this->set('total', $total);
     }
     
     /**
      * People top page
      */
     public function tutorials() {
-        
+        $params = $this->getParams(array(
+            'type' => 1,
+            'limit' => 20,
+            'page' => 1
+        ));
+        $result = Api::call(Configure::read('API.url_posts_list'), $params);
+        $data = !empty($result['data']) ? $result['data'] : array();
+        $total = !empty($result['total']) ? $result['total'] : 0;
+        $this->set('data', $data);
+        $this->set('params', $params);
+        $this->set('total', $total);
     }
 }

@@ -94,3 +94,22 @@ footer ul li a {
     padding: 20px;
     background-color: #2a2a2a;
 }
+.post-detail {
+    border: 1px solid #ccc;
+    padding: 20px;
+    text-align: center;
+    margin: 10px 0;
+}
+.post-detail img {
+    width: 90%;
+}
+.post-detail p {
+    font-size: 15px;
+    margin-top: 20px;
+}
+.post-detail h4 {
+    font-weight: bold;
+}
+.content_sortPagiBar {
+    text-align: center;
+}

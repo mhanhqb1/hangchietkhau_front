@@ -59,9 +59,9 @@ $_scriptFooter = !empty($_settings['company']['script_footer']) ? $_settings['co
                     </div>
                     <div class="collapse navbar-collapse" id="myNavbar">
                         <ul class="nav navbar-nav">
-                            <li class="active"><a href="<?= $BASE_URL; ?>">Trang chủ</a></li>
-                            <li><a href="<?= $BASE_URL; ?>/tin-tuc">Tin tức</a></li>
-                            <li><a href="<?= $BASE_URL; ?>/huong-dan">Hướng dẫn</a></li>
+                            <li class="<?php echo ($action == 'index') ? 'active' : '';?>"><a href="<?= $BASE_URL; ?>">Trang chủ</a></li>
+                            <li class="<?php echo ($action == 'news') ? 'active' : '';?>"><a href="<?= $BASE_URL; ?>/tin-tuc">Tin tức</a></li>
+                            <li class="<?php echo ($action == 'tutorials') ? 'active' : '';?>"><a href="<?= $BASE_URL; ?>/huong-dan">Hướng dẫn</a></li>
                         </ul>
                         <ul class="nav navbar-nav navbar-right">
                             <li><a href="<?= $BASE_URL; ?>/dang-ky"><span class="glyphicon glyphicon-user"></span> Đăng ký</a></li>
