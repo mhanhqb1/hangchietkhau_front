@@ -61,4 +61,17 @@ class HomeController extends AppController {
         $this->set('params', $params);
         $this->set('total', $total);
     }
+    
+    /**
+     * People top page
+     */
+    public function postdetail($slug = '') {
+        $params = $this->getParams(array(
+            'slug' => $slug
+        ));
+        $result = Api::call(Configure::read('API.url_posts_detail'), $params);
+        $data = !empty($result) ? $result : array();
+        $this->set('data', $data);
+        $this->set('params', $params);
+    }
 }
