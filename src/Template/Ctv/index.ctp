@@ -140,17 +140,39 @@ $status = array(
 <div class="row">
     <div class="col-md-6">
         <div class="tile">
-            <h3 class="tile-title">Tin tức</h3>
+            <h3 class="tile-title">Tin tức <a href="<?php echo $BASE_URL;?>/tin-tuc" style="font-size: 70%; float: right;">Xem tất cả</a></h3>
             <div>
+                <?php if (empty($data['news'])): ?>
                 Nội dung đang được cập nhật
+                <?php else: ?>
+                <ul>
+                    <?php foreach ($data['news'] as $v): ?>
+                    <li>
+                        <a href="<?= $BASE_URL;?>/bai-viet/<?= $v['slug']; ?>"><?= $v['name'];?></a>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
+                
+                <?php endif; ?>
             </div>
         </div>
     </div>
     <div class="col-md-6">
         <div class="tile">
-            <h3 class="tile-title">Hướng dẫn</h3>
+            <h3 class="tile-title">Hướng dẫn <a href="<?php echo $BASE_URL;?>/huong-dan" style="font-size: 70%; float: right;">Xem tất cả</a></h3>
             <div>
+                <?php if (empty($data['tutorials'])): ?>
                 Nội dung đang được cập nhật
+                <?php else: ?>
+                <ul>
+                    <?php foreach ($data['tutorials'] as $v): ?>
+                    <li>
+                        <a href="<?= $BASE_URL;?>/bai-viet/<?= $v['slug']; ?>"><?= $v['name'];?></a>
+                    </li>
+                    <?php endforeach; ?>
+                </ul>
+                
+                <?php endif; ?>
             </div>
         </div>
     </div>

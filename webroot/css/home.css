@@ -109,6 +109,7 @@ footer ul li a {
 }
 .post-detail h4 {
     font-weight: bold;
+    height: 40px;
 }
 .content_sortPagiBar {
     text-align: center;
