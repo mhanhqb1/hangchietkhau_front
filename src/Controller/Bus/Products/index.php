@@ -13,8 +13,8 @@ if (!empty($params['lp'])) {
     $urls = explode(PHP_EOL, $data['aff_news_url']);
     foreach ($urls as $u) {
         $tmp = explode(':::', $u);
+        $tmp[1] = preg_replace('/\s+/', '', $tmp[1]);
         $lp = explode('?lp=', $tmp[1]);
-        $lp[1] = preg_replace('/\s+/', '', $lp[1]);
         if ($lp[1] == $params['lp']) {
             $url = $tmp[1].'&aff_sub1='.$params['aff_id'];
             break;
