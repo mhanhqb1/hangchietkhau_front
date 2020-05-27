@@ -14,7 +14,8 @@ if (!empty($params['lp'])) {
     foreach ($urls as $u) {
         $tmp = explode(':::', $u);
         $lp = explode('?lp=', $tmp[1]);
-        if (trim($lp[1], ' ') == $params['lp']) {
+        $lp[1] = preg_replace('/\s+/', '', $lp[1]);
+        if ($lp[1] == $params['lp']) {
             $url = $tmp[1].'&aff_sub1='.$params['aff_id'];
             break;
         }
