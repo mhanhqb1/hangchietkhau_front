@@ -98,7 +98,7 @@ $status = array(
                     <?php if (!empty($data['products'])): ?>
                     <?php foreach ($data['products'] as $p): ?>
                     <tr>
-                        <td><a href="<?php echo $BASE_URL; ?>/san-pham/<?= $p['slug']; ?>?aff_id=<?= $AppUI['id']; ?>" target="_blank"><?= $p['name'];?></a></td>
+                        <td><a href="<?php echo $BASE_URL; ?>/ctv/sp/<?= $p['slug']; ?>?aff_id=<?= $AppUI['id']; ?>" target="_blank"><?= $p['name'];?></a></td>
                         <td><?= number_format($p['price']);?></td>
                         <td><?= number_format($p['wholesale_income']);?></td>
                         <td><button class="btn btn-primary btnCopyLink" data-link="<?php echo $BASE_URL; ?>/san-pham/<?= $p['slug']; ?>?aff_id=<?= $AppUI['id']; ?>">Copy link</button></td>
